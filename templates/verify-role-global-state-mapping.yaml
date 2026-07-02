@@ -1,0 +1,80 @@
+mappingVersion: 1
+kind: role-global-state-mapping
+
+description: >
+  Maps role implementation statuses and verify manifest outcomes to global
+  artifact lifecycle state recommendations.
+
+roleStatusVocabulary:
+  - queued
+  - ready
+  - in_progress
+  - completed
+  - blocked
+  - reopen
+
+globalStateVocabulary:
+  - draft
+  - refined
+  - specified
+  - planned
+  - in_progress
+  - verifying
+  - done
+  - archived
+  - cancelled
+
+inputs:
+  requiredRoles: integer
+  completedRoles: integer
+  blockedRoles: integer
+  inProgressRoles: integer
+  verifyReadyForDone: boolean
+  verifyReadyForArchive: boolean
+
+rules:
+  - id: R1
+    when:
+      verifyReadyForDone: true
+      completedRolesEqualsRequired: true
+      blockedRoles: 0
+    recommendGlobalState: done
+    rationale: all required roles completed and verify gate passed
+
+  - id: R2
+    when:
+      blockedRolesGreaterThan: 0
+    recommendGlobalState: verifying
+    rationale: at least one role is blocked and needs resolution
+
+  - id: R3
+    when:
+      inProgressRolesGreaterThan: 0
+    recommendGlobalState: in_progress
+    rationale: implementation is still active in one or more roles
+
+  - id: R4
+    when:
+      completedRolesEqualsRequired: true
+      verifyReadyForDone: false
+    recommendGlobalState: verifying
+    rationale: role implementation complete but verify still pending or with gaps
+
+  - id: R5
+    when:
+      completedRoles: 0
+      inProgressRoles: 0
+      blockedRoles: 0
+    recommendGlobalState: planned
+    rationale: no role execution started after plan approval
+
+archiveGate:
+  canArchiveWhen:
+    globalState: done
+    verifyReadyForArchive: true
+  otherwise:
+    - keepCurrentState
+    - emitBlockingReason
+
+outputs:
+  recommendedGlobalState: string

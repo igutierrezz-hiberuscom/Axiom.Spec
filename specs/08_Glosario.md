@@ -1,0 +1,29 @@
+# 08 Glosario
+
+## Aviso de ambigüedad de nombres (leer primero)
+
+- **`Axiom.Spec/`** (mayúsculas, este repo): fuente de verdad documental del WORKSPACE de desarrollo de Axiom (specs 00-08, incrementos, bugs, decisiones).
+- **`axiom.spec/`** (minúsculas): carpeta que el PRODUCTO Axiom espera/genera dentro de cualquier proyecto que lo adopte (`config/*.yaml`, `templates/`, `target-axiom-skills/`, `target-axiom-agents/`), incluido potencialmente el propio repo `Axiom/` (dogfooding) — hoy ausente en ese checkout. Ver [context/references/03-riesgos-y-brechas-conocidas.md](../context/references/03-riesgos-y-brechas-conocidas.md).
+- Nunca usar ambos términos como sinónimos en la documentación.
+
+## Términos del producto
+
+- **Builder tooling**: tooling usado para diseñar y construir el propio Axiom.
+- **Product model**: representación interna de Axiom para workflows, capabilities y políticas.
+- **Generated configuration**: archivos de entorno generados a partir del modelo de Axiom.
+- **Capability**: función independiente de plataforma expuesta por Axiom, con `id`, `domain` (`sdd`, `spec`, `code`, `memory`), `requiredTools`, `optionalTools`, `fallbacks`.
+- **Provider**: implementación concreta de una o más capabilities, resuelta según `discoveryOrder` y perfil de discovery (`filesystem-first`, `gateway-first`, `local-only`).
+- **Adapter**: capa de traducción desde capacidades del producto hacia un runtime objetivo (IDE/CLI externo), expuesta como `generate<Target>Config(args)`.
+- **Profile / profile triple**: combinación de `functionalProfile` (`builder` | `product-owner`) + `operationalOverlay` (`local-only` | `standard` | `enterprise`) + `adapterTarget`, persistida en `axiom.yaml` y resuelta a `ResolvedInstallProfile`.
+- **Overlay operacional**: modo de riesgo/compliance del proyecto (`local-only`, `standard`, `enterprise`), que determina discovery order, expectativa de gateway y `minimumSignals` de telemetría.
+- **Target (adapter target)**: IDE o CLI externo de destino (`opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `litellm`, `copilot-vscode`, `antigravity`, `visual-studio-2026`).
+- **Support level**: nivel de soporte de routing por target: `multi-mode` (routing per-slot completo), `single-mode` (routing global, sin per-slot), `fallback-only` (sin routing).
+- **Slot**: carril operativo de routing de modelo (`increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archive`).
+- **ResolvedInstallProfile**: resultado materializado de componer el profile triple contra `profiles.yaml`; input de adapters e installer.
+- **Managed state**: estado versionado de `@axiom/versioning` usado para calcular migraciones y checkpoints de `axiom upgrade`.
+- **Checkpoint**: snapshot pre-mutación (upgrade, uninstall) restaurable; se conservan los últimos 5.
+- **GATE**: verificación explícita y numerada (p. ej. GATE 0010, 0024, 0031) que `@axiom/doctor` puede comprobar en runtime, ligada a un incremento concreto.
+- **Spec repository**: fuente compartida del comportamiento y las decisiones del producto (`Axiom.Spec/` para este workspace).
+- **Product runtime**: implementación ejecutable ubicada bajo `Axiom/`.
+- **Result\<T, E\>**: tipo de retorno sin excepciones usado en todo el dominio (`@axiom/core`) para modelar éxito/fallo explícito.
+- **Dogfooding**: construir Axiom usando la propia disciplina SDD de Axiom (modelo de tres repos de este workspace).

@@ -1,0 +1,80 @@
+manifestVersion: 1
+kind: verify-evidence-manifest
+
+artifact:
+  kind: increment # increment | bug
+  id: INC-YYYYMMDD-HHMMSSZ-HASH4
+  title: ""
+  specVersion: v1
+  planVersion: p1
+
+verification:
+  runId: VERIFY-YYYYMMDD-HHMMSSZ
+  mode: pre-release # pre-release | release-candidate
+  executedAtUtc: ""
+  orchestratorMode: guided # guided | auto
+  requiredRoles:
+    - backend
+    - frontend
+
+repositories:
+  - role: backend
+    repositoryId: backend-repo
+    repositoryUrl: ""
+    branch: ""
+    commitRange: ""
+    planRef:
+      planId: PLAN-YYYYMMDD-HHMMSSZ-HASH4
+      rolePlanVersion: r1
+    implementation:
+      status: completed # completed | blocked | partial
+      completedAtUtc: ""
+      blockers: []
+    coverage:
+      checklistItems:
+        - id: CHK-001
+          covered: true
+          evidenceRef: ""
+      acceptanceCriteria:
+        - id: AC-001
+          covered: true
+          evidenceRef: ""
+    tests:
+      summary:
+        total: 0
+        passed: 0
+        failed: 0
+        skipped: 0
+      suites:
+        - name: ""
+          type: unit # unit | integration | api | e2e | smoke
+          result: passed # passed | failed | partial
+          reportRef: ""
+    qualityGates:
+      buildGreen: true
+      lintGreen: true
+      securityGateGreen: true
+    evidence:
+      diffs:
+        - ""
+      reports:
+        - ""
+      notes: ""
+    signoff:
+      owner: ""
+      approved: true
+      approvedAtUtc: ""
+
+aggregate:
+  roleCompletion:
+    expected: 2
+    completed: 1
+    blocked: 0
+  coverageSummary:
+    checklistCoveragePercent: 0
+    acceptanceCoveragePercent: 0
+    mandatoryTestsPassPercent: 0
+  gaps:
+    - id: GAP-001
+      severity: medium # low | medium | high | critical
+      description: ""

@@ -1,0 +1,82 @@
+metadataVersion: 1
+kind: plan
+
+identity:
+  id: PLAN-YYYYMMDD-HHMMSSZ-HASH4
+  title: ""
+  status: draft # draft | approved | superseded | archived
+
+scope:
+  artifactKind: increment # increment | bug
+  artifactId: ""
+  parentArtifactRoot: ""
+  specVersion: v1
+  planVersion: p1
+  e2eStrategy: none # none | inline | parallel
+
+ownership:
+  architectOwner: ""
+  plannerOwner: ""
+
+lifecycle:
+  createdAtUtc: ""
+  updatedAtUtc: ""
+  approvedAtUtc: ""
+  supersededAtUtc: ""
+  archivedAtUtc: ""
+
+paths:
+  root: ""
+  readme: ""
+  contextFolder: ""
+  roleFilePattern: role-<slug>.md
+
+roles:
+  required: []
+  roleFiles:
+    - role: builder
+      slug: builder
+      file: role-builder.md
+      status: queued # queued | ready | in_progress | completed | blocked
+      startCondition: ""
+      doneCondition: ""
+
+riskModel:
+  risks:
+    - id: RISK-001
+      severity: medium # low | medium | high | critical
+      description: ""
+      mitigation: ""
+      ownerRole: backend
+
+gates:
+  preStart:
+    - plan-approved
+    - no-unresolved-blocking-questions
+    - spec-plan-version-aligned
+  preDone:
+    - required-role-evidence-published
+    - required-tests-passed
+  preArchive:
+    - verify-passed
+    - integration-map-complete
+
+verification:
+  manifestRef: ""
+  preproductionTestPlanRef: ""
+  e2eCandidateRefs:
+    - ""
+
+integration:
+  consolidationTargets:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-plan
+    decision: plan-generated
+    humanConfirmation: false
+    executedAtUtc: ""

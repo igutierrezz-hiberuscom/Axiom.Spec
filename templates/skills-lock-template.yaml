@@ -1,0 +1,24 @@
+schemaVersion: 1
+
+repo:
+  id: axiom-repo-id
+
+installed:
+  - skillId: sdd-apply
+    source: product-registry
+    version: "3.0.0"
+    bundleHash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    reviewStatus: approved
+    securityCheckStatus: ok
+    installedTo: .axiom/skills/sdd-apply/SKILL.md
+    installedAt: "2026-01-15T10:30:00Z"
+    portableEntry: "skill:sdd-apply@3.0.0"
+
+  - skillId: custom-lint-rules
+    source: repo-local
+    version: "1.0.0"
+    bundleHash: sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+    reviewStatus: local-owner
+    securityCheckStatus: local-only
+    installedTo: .axiom/skills/custom-lint-rules/SKILL.md
+    installedAt: "2026-01-15T10:30:00Z"

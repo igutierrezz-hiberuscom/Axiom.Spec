@@ -1,0 +1,87 @@
+metadataVersion: 1
+kind: bug
+
+identity:
+  id: BUG-YYYYMMDD-HHMMSSZ-HASH4
+  title: ""
+  status: draft # reportado | especificado | planificado | en_desarrollo | en_validacion | implementado | integrado | archived
+  severity: medium # low | medium | high | critical
+  priority: medium # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+
+lifecycle:
+  createdAtUtc: ""
+  updatedAtUtc: ""
+  plannedAtUtc: ""
+  doneAtUtc: ""
+  archivedAtUtc: ""
+
+paths:
+  root: ""
+  readme: ""
+  requirements: "" # optional
+  acceptanceCriteria: "" # optional
+  modelChanges: "" # optional
+  uiInteractions: "" # optional
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/bugs/archive"
+
+reproduction:
+  environment: ""
+  actorOrRole: ""
+  preconditions:
+    - ""
+  steps:
+    - ""
+  observedBehavior: ""
+  expectedBehavior: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  affectedRoles: []
+  rolePlans: []
+
+verification:
+  status: not_started # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: ""
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: functional # functional | technical | compliance | ux | testing
+    question: ""
+    blocking: true
+    status: open # open | resolved | deferred
+    resolution: ""
+
+decisions:
+  - id: D-001
+    summary: ""
+    rationale: ""
+    decidedAtUtc: ""
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-bug-create
+    fromState: none
+    toState: draft
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: ""

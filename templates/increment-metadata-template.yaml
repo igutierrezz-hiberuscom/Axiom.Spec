@@ -1,0 +1,101 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-YYYYMMDD-HHMMSSZ-HASH4
+  title: ""
+  status: draft # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: medium # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: ""
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: ""
+  updatedAtUtc: ""
+  specifiedAtUtc: ""
+  plannedAtUtc: ""
+  doneAtUtc: ""
+  archivedAtUtc: ""
+
+paths:
+  root: ""
+  readme: ""
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: "" # optional
+  uiInteractions: "" # optional
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: ""
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: not_started # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: ""
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: functional # functional | technical | compliance | ux | testing
+    question: ""
+    blocking: true
+    status: open # open | resolved | deferred
+    resolution: ""
+
+decisions:
+  - id: D-001
+    summary: ""
+    rationale: ""
+    decidedAtUtc: ""
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: draft
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: ""
