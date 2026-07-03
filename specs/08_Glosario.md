@@ -27,3 +27,16 @@
 - **Product runtime**: implementación ejecutable ubicada bajo `Axiom/`.
 - **Result\<T, E\>**: tipo de retorno sin excepciones usado en todo el dominio (`@axiom/core`) para modelar éxito/fallo explícito.
 - **Dogfooding**: construir Axiom usando la propia disciplina SDD de Axiom (modelo de tres repos de este workspace).
+
+## Términos añadidos por el roadmap de rediseño (cerrado)
+
+- **`schemaVersion`**: campo entero presente en todo schema persistido del producto (`axiom.yaml`, registro de usuario, `TopologyManifest`, índices de skills/contexto técnico, `mcp.yml`) que permite evolución aditiva sin romper consumidores de una versión anterior — nunca se resuelve mal una versión como otra (ver NFR-AXM-011 en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md)).
+- **`ArtifactKind`**: tipo cerrado de artefacto en el modelo de carpeta-por-artefacto (`increment | bug | plan | adr | decision`), cada uno con su propio `metadata.yml` y (salvo `adr`/`decision`) su propio vocabulario `WorkflowState`.
+- **`TopologyManifest`**: schema versionado (`Axiom/packages/topology/src/types.ts`) que declara el modo de topología de un proyecto (`single-repo` | `multi-repo`), sus repos por rol (`sddRepo`, `specRepo`, `roleCodeRepositories`) y sus asignaciones. Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
+- **`RepoRoleKey`**: clave de rol de repo dentro de un proyecto gestionado por Axiom — `sdd` (método/factory), `spec` (conocimiento canónico) o `code` (runtime instalable). No confundir con los roles funcionales del profile triple (`functionalProfile: builder | product-owner`).
+- **`allowedWriteScope`**: campo de `PlanMetadata` (`{ repo: string; paths: string[] }[]`) que declara qué paths, en qué repos, un plan tiene permitido mutar; validado en runtime por `validateWriteScope` (ver RF-AXM-019 en [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md)).
+- **`capabilityId`**: identificador de una herramienta MCP registrada en `@axiom/mcp-tools` (dominios `sdd.*`/`spec.*`), despachada a través del `routeTool` existente de `@axiom/tool-routing` — no debe confundirse con el `id` de `Capability` del modelo de capabilities/providers preexistente (`@axiom/capability-model`), aunque ambos comparten el mismo mecanismo de despacho ortogonal (ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)).
+- **`WorkflowId`**: identificador de tipo de workflow (`'increment' | 'bug' | 'plan' | 'role' | 'qa-e2e'`) usado como clave del registro singleton de `workflow-state.json` — un registro por tipo de workflow, no por instancia de artefacto.
+- **`externalRefs`**: mecanismo agnóstico de proveedor, disponible en todo tipo de artefacto, para enlazar un artefacto de Axiom con un elemento de un sistema externo (p. ej. Azure DevOps). No debe confundirse con el flag de UI `field.externalRef?: boolean` del plugin de Azure DevOps.
+- **`AdrStatus` / `DecisionStatus`**: vocabularios de estado cerrados y no solapados para artefactos `adr` (`proposed | accepted | superseded | rejected`) y `decision` (`proposed | accepted | rejected`, sin `superseded`).
+- **`contextBudget`**: parámetro (`small`|`medium`|`large`) de la herramienta MCP `spec.implementationContextRead` que controla el nivel de inlining de contenido en la respuesta, nunca la presencia de campos.

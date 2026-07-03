@@ -1,6 +1,6 @@
 # Increment: Axiom redesign — reconciled increment roadmap
 
-Status: pending
+Status: closed (roadmap complete — see "Roadmap closure summary" below)
 Date: 2026-07-02
 
 ## Goal
@@ -722,6 +722,13 @@ Dependencies: INC-08, INC-01.
 Subagents: migration-engineer (confirm BC-001/002/003 extension points)
 -> validator-reviewer (defines the new check) -> registry-engineer
 (implements it) -> validator-reviewer (final review).
+Status: closed (2026-07-03). Full 4-role chain complete — see
+`INC-20260702-dogfooding-boundary-reconcile-final-validator/README.md`
+for the final review and closure summary. `DF-001` is implemented in
+`Axiom/packages/doctor/src/checks.ts`, wired into `runDoctorChecks`, and
+tested. This workspace's own `Axiom` repo currently `skip`s (no
+`topology.yaml` declared) rather than `pass`es — an explicitly deferred
+gap, not a defect (see that increment's scope decision).
 
 **INC-24 — Workbench (optional, deferred)**
 No existing package found; remains explicitly out of scope until INC-01
@@ -778,18 +785,17 @@ silently ignored or scoped for replacement.
 
 ## General spec integration
 
-No integration into a `general-spec.md` was performed (it does not exist
-in this repo; the closest equivalents are `Axiom.Spec/specs/00_Resumen_
-Ejecutivo.md` through `08_Glosario.md`). Those documents were not modified.
-They describe intent at a high level that remains accurate; this roadmap
-is increment-sequencing detail. One consolidation candidate for later,
-once INC-01 resolves Q1/Q2/Q5, is worth flagging explicitly: the existing
-`Axiom.Spec/specs/03_Modelo_Operativo_y_Datos.md` currently states "sin
-cerrar el naming final" for the registry/manifest YAMLs — that placeholder
-should be replaced with the actual resolved schema once INC-01 closes, not
-before, because closing it now would either duplicate this roadmap's open
-questions or prematurely lock in an answer to Q1/Q2/Q5 that has not been
-decided yet.
+Superseded by the final consolidation pass recorded in "Roadmap closure
+summary" below: all stable, cross-increment knowledge from this roadmap
+was integrated directly into `Axiom.Spec/specs/00_Resumen_Ejecutivo.md`
+through `08_Glosario.md`, per `Axiom.Spec/specs/README.md`'s own rule
+against maintaining a separate legacy structure "solo por continuidad."
+No standalone `general-spec.md` file exists or should be recreated. The
+`03_Modelo_Operativo_y_Datos.md` "sin cerrar el naming final" placeholder
+has been resolved with the actual shipped registry/manifest schema
+(`~/.axiom/projects.yml` `schemaVersion: 2`, `axiom.yaml schemaVersion: 2`,
+`TopologyManifest`) — see that file's "Topología de repos y registro
+global" section.
 
 ## Next step recommendation
 
@@ -806,3 +812,54 @@ spec in `Axiom.Spec/specs/increments/` with a migration-engineer performing
 the full audit of `@axiom/user-workspace`, `@axiom/project-resolution`, and
 `@axiom/topology` (reading every remaining file in those three packages,
 not just the ones already read in this pass) as its first concrete task.
+
+## Roadmap closure summary (2026-07-03)
+
+All 23 increments in this roadmap (Phases A through G, plus the
+cross-cutting INC-23 dogfooding boundary check), plus the D3 side-quest
+(`axiom.yaml schemaVersion: 2` re-enablement, itself one of the two items
+this roadmap's own original D1/D3 finding named), are now **closed**.
+Each chain went through migration-engineer audit -> design/implementation
+-> validator-review (or a subset of that sequence for genuinely additive,
+no-legacy-package increments), with independent re-verification at the
+terminal validator-reviewer step confirming no unresolved regressions.
+
+This roadmap document's own `Status:` line stayed `pending` throughout
+execution by convention — it is a planning-only index, not itself a
+chain with a terminal validator-reviewer pass — but is updated to
+`closed` now that every increment it sequences has closed and this final
+consolidation pass has run.
+
+One genuine exception, not a closed chain: `INC-20260702-
+tui-menu-promote-inventory-screens`, a **not-started, deferred
+placeholder** increment (raised as OQ1 during the TUI shell-detection
+audit, explicitly deferred out of that increment's scope). It is archived
+alongside the closed chains for record-keeping, but remains open work —
+see `Axiom.Spec/specs/05_Interfaces_Operativas.md`'s TUI section.
+
+**`Axiom.Spec/specs/00_Resumen_Ejecutivo.md` through `08_Glosario.md` are
+now the canonical, current-state reference for the whole Axiom
+architecture**, updated by subject (not by increment number) as part of
+this closure pass. Read those files, not this roadmap or the individual
+increment specs, to understand the current architecture. (An earlier
+version of this closure pass consolidated everything into a standalone
+`Axiom.Spec/general-spec.md` file; that was corrected per
+`Axiom.Spec/specs/README.md`'s explicit rule against a separate legacy
+structure, and the content was redistributed into the 8 topic files
+instead. `general-spec.md` no longer exists.)
+
+All 71 non-roadmap increment folders from this roadmap (including the one
+not-started placeholder above) have been moved to
+`Axiom.Spec/specs/increments/_archive/` — see that folder's own `README.md`
+for what it contains and why it is historical detail rather than a
+reading requirement. This roadmap file remains at the top level as the
+master index and entry point into that history.
+
+**INC-24 (Workbench)** remains explicitly deferred, per its own original
+scope note above ("out of scope until INC-01 through INC-15 are stable,"
+"Subagents: not assigned — out of scope until explicitly requested").
+INC-01 through INC-15 have long since closed, but INC-24 itself was never
+requested and is not opened by this closure pass — see "Deferred / not
+yet built" in `Axiom.Spec/specs/03_Modelo_Operativo_y_Datos.md`
+("Pendientes conocidos") and `Axiom.Spec/specs/02_Requisitos_No_
+Funcionales.md`.

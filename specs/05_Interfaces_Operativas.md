@@ -30,3 +30,29 @@ Menú de 6 items (configurar, sincronizar, diagnóstico, upgrade, model routing,
 ## Regla
 
 Las interfaces operativas se implementan en `Axiom/`, pero su comportamiento esperado se define primero en `Axiom.Spec/`. Regla vigente pero con brecha real: parte de la superficie de comandos (sección anterior) ya existe en código sin haber pasado primero por una spec formal en `Axiom.Spec/`.
+
+## Superficie de comandos ampliada por el roadmap de rediseño (cerrado)
+
+La superficie realmente alcanzable y primaria coincide con la forma preferida `axiom increment ...`, `axiom bug ...`, `axiom plan ...`, `axiom role ...` (registrados en `apps/cli/src/index.ts`), más:
+
+- `axiom-adr`/`axiom-decision` (`create`/`link-plan`/`link-increment`/`list`, más `axiom-adr supersede <old-id> <new-id>`);
+- `axiom index rebuild|validate|list` (todos los tipos de artefacto, `--json`);
+- `axiom validate changes --project <id> --plan <planId>` (validación de write-scope);
+- `axiom bootstrap from-code --level minimal|basic [--role <role>]` y `axiom bootstrap from-legacy-sdd <path> [--dry-run]`;
+- `axiom repair` (general, top-level, distinto de `axiom toolchain repair` y `axiom mcp repair`).
+
+Ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) para el contrato funcional completo de cada uno.
+
+### Colisión de nombrado: dos mecanismos "intent" no relacionados
+
+No es un router único compartido, sino una colisión de nombrado: (1) `apps/cli/src/commands/intent.ts` (spec 0028) es un catálogo cerrado de 3 entradas `IntentChain` (`increment-new`, `bug-new`, `implement-role`), cada uno un wrapper literal alrededor de las funciones de subcomando estructuradas existentes — **no está registrado en `index.ts`**, inalcanzable por ningún usuario hoy pese a tener sus propios tests unitarios. (2) Los intent commands de `@axiom/orchestrator` (`state-machine.ts`) son una unión de 19 entradas `axiom-*-command`, cada una bloqueada por la precondición siempre-fallida `notImplemented`; ninguna ha sido cableada a lógica real por este roadmap. Como ningún candidato a router es alcanzable, no existe hoy ninguna ruta de código donde un usuario sea dirigido hacia uno en vez de los comandos estructurados. Un router opcional real (p. ej. cablear `intent.ts` en `index.ts` como `axiom run <action>`) sería superficie de producto nueva que requeriría su propio incremento — no un gap de cumplimiento.
+
+## TUI — pantallas y flujos añadidos por el roadmap de rediseño
+
+`router.ts`'s `MENU_ITEMS` tiene 7 entradas: configurar, sincronizar, diagnóstico, upgrade, **reparar instalación** (posición 4, entre upgrade y model routing — añadida por este roadmap), model routing, salir. `packages/tui/src/flows/configure.ts`/`upgrade.ts`/`repair.ts` son wrappers sin lógica de negocio (solo formateo de mensajes). Esto extiende, sin reemplazar, el menú de 6 items descrito en la sección "TUI" de arriba.
+
+Las pantallas `mcp-inventory`/`memory-inventory` permanecen accesibles solo por flag de CLI, no como `MENU_ITEMS` de primera clase — promoverlas es un incremento explícitamente no iniciado (`INC-20260702-tui-menu-promote-inventory-screens`, diferido), no un hueco de esta spec.
+
+## Adapters — MCP config por proyecto (no cableado a producción)
+
+`generateOpencodeMcpJson`/`generateClaudeCodeMcpJson` (ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) para el schema `mcp.yml`) están completamente implementados y testeados, pero `runConfigure`/`sync` todavía no los llaman, y ningún installer/scaffold escribe `mcp.yml` a un proyecto real.

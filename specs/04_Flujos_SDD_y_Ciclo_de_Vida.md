@@ -29,3 +29,31 @@ Contrato por comando (lee/escribe) detallado en [03_Modelo_Operativo_y_Datos.md]
 ## Fuera de la baseline inicial (documentado explícitamente como no-goal del MVP)
 
 Según `Axiom/docs/first-project-readiness.md`: overlays `standard`/`enterprise` como camino inicial obligatorio, `visual-studio-2026` como baseline de primer arranque, providers post-MVP (`engram`, `codegraph`, `graphify`) como requisito de entrada, bridges externos/plugins/lanes paralelos avanzados, e instalación user-level del binario como paso obligatorio.
+
+## Ciclo de vida de artefactos (increment/bug/plan/ADR/decision) — roadmap de rediseño, cerrado
+
+Capacidad añadida de forma aditiva por el roadmap de rediseño (23 incrementos, cerrado 2026-07-03); convive con el flujo base de dogfooding de la sección anterior sin reemplazarlo.
+
+1. **Creación**: `axiom-increment/bug/plan/adr/decision create` escribe una carpeta nueva `<specPath>/{increments,bugs,plans,adr,decisions}/<ID>/` con `metadata.yml`, vía las primitivas de `@axiom/workflow`'s `artifact-store.ts`. El ID se genera por sistema (no texto libre).
+2. **Refinado/especificación**: `refine`/`specify` actualizan el `metadata.yml` existente; `link-plan`/`link-increment`/`link-bug` establecen relaciones entre artefactos.
+3. **Transición de estado**: para `increment`/`bug`/`plan`, el estado (`status: WorkflowState`, 9 valores) es dirigido por la máquina de estados de `workflow-state.json` — pero esa máquina es UN registro singleton por `WorkflowId` (tipo de workflow), no por instancia de artefacto; `metadata.yml` (identidad de instancia) y `workflow-state.json` (máquina de estados por tipo) son almacenes independientes. Para `adr`/`decision`, el estado sigue su propio vocabulario no dirigido por máquina de estados (`AdrStatus`/`DecisionStatus`, ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md)) y se escribe directamente en `metadata.yml`, sin pasar por `workflow-state.json`.
+4. **Supersesión de ADR**: `axiom-adr supersede <old-id> <new-id>` es la única transición especial — actualiza ambos ADR atómicamente; Decision no tiene equivalente (sin cadena de supersesión en su schema).
+5. **Cierre**: sigue las mismas reglas de cierre que el flujo base de dogfooding — `closed` solo si objetivo claro, acceptance criteria, implementación o justificación no-code, validación ejecutada, revisión contra intent, y conocimiento estable integrado.
+
+## Flujos de bootstrap
+
+Dos rutas mecánicas de alcance mínimo (no las cadenas literales de 7 subagentes del documento fuente):
+
+1. **`axiom bootstrap from-code --level minimal|basic [--role <role>]`**: analiza el repo actual (`detectStacks`, `buildRepoMap`, `detectCommands`), redacta documentos de contexto técnico con banner `<!-- AXIOM:DRAFT -->`, y puebla `TechnicalContextIndex.available` (nunca `mandatory.*`, que queda para curación humana). Nivel 2 (Standard) en adelante queda diferido — requiere comprensión arquitectónica/de negocio genuina.
+2. **`axiom bootstrap from-legacy-sdd <path> [--dry-run]`**: escanea un repo SDD/spec legado (carpetas `increments/`/`bugs/`/`plans/`/`adr/`/`decisions/`), migra cada entrada como artefacto nuevo vía las primitivas de `@axiom/workflow` (nunca sobrescribe, nunca aborta el lote ante colisión), con banner de procedencia `<!-- AXIOM:MIGRATED -->`. `--dry-run` no escribe nada. Ninguna de las dos rutas toca `workflow-state.json`.
+
+Ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) (RF-AXM-021) para el detalle completo de ambas rutas.
+
+## Flujos operativos de `configure`/`upgrade`/`repair` sobre instalaciones existentes
+
+- `axiom configure`: re-aplica el perfil persistido completo (single-shot, sin flags incrementales). No cubre añadir/quitar repo, rol, adapter o tool/MCP — ver el hueco de 7 operaciones documentado en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md).
+- `axiom upgrade`: calcula y aplica migraciones de `ManagedState` con checkpoint rollback-first; soporta `--dry-run`/`--from-checkpoint`/`--target-version`.
+- `axiom repair`: ejecuta `axiom doctor`, agrupa hallazgos por categoría, y despacha las 4 categorías conocidas-como-corregibles (`install-profiles`, `artifact-index`, `toolchain`, `memory`) a las funciones de reparación ya existentes; el resto se reporta como no auto-corregible. Soporta `--dry-run`.
+- Los tres flujos anteriores están cableados en la TUI (`packages/tui/src/flows/configure.ts`/`upgrade.ts`/`repair.ts`, wrappers sin lógica de negocio); `repair` y `upgrade` exigen preview dry-run + confirmación Y/n antes de mutar el filesystem.
+
+Ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) (RF-AXM-022) y [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) para el detalle de datos persistidos por cada operación.
