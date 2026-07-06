@@ -17,24 +17,26 @@ Según `Axiom/README.md` (2026-06-25/30), todas las capas declaradas están "imp
 
 ## Qué hace el producto hoy
 
+El punto de entrada del operador es `axiom` sin subcomando, que abre la TUI (los subcomandos, `--help` y `--version` siguen funcionando igual). En una carpeta sin proyecto Axiom, la TUI muestra un menú de bootstrap cuya acción de inicializar recorre un **wizard guiado multi-repo** que prepara un workspace completo en una sola operación — repo de control (SDD), repo de Spec y N repos de código por rol, cruzados entre sí, registrados y con MCP configurado (`INC-20260705-*`; supersede al antiguo wizard single-repo de `init`) — ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md). `axiom init` sigue disponible como comando no-interactivo/scriptable single-repo.
+
 Para un proyecto que adopta Axiom, el ciclo de vida real es:
 
 ```
 axiom init → axiom join → axiom configure → axiom sync → axiom start → axiom audit → axiom doctor → axiom upgrade
 ```
 
-Cada comando lee/escribe un conjunto concreto de artefactos (`axiom.yaml`, `.sdd/<project>/*.json`, `.sdd/local/*`) y, según el profile activo, genera surfaces para el IDE/CLI de destino (`.opencode/`, `.claude/`, `.github/copilot-instructions.md`, `.cursor/`, `.vscode/`, `litellm.config.json`). El detalle completo vive en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y en `context/architecture/`.
+Cada comando lee/escribe un conjunto concreto de artefactos (`axiom.yaml`, `.axiom-state/<project>/*.json`, `.axiom-state/local/*`) y, según el profile activo, genera surfaces para el IDE/CLI de destino (`.opencode/`, `.claude/`, `.github/copilot-instructions.md`, `.cursor/`, `.vscode/`, `litellm.config.json`). El detalle completo vive en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y en `context/architecture/`.
 
 ## Dos modelos distintos que conviven bajo el nombre "Axiom" (evitar confundirlos)
 
-1. **El producto Axiom** (`Axiom/`): el CLI/runtime descrito arriba, que cualquier proyecto externo puede adoptar. Su unidad de configuración es `axiom.yaml` + `.sdd/<projectName>/` dentro del proyecto que lo instala, más un catálogo de ~20 YAML de política/capacidad que el propio Axiom espera encontrar en una carpeta `axiom.spec/` (minúsculas) sembrada por `init`/`configure`.
+1. **El producto Axiom** (`Axiom/`): el CLI/runtime descrito arriba, que cualquier proyecto externo puede adoptar. Su unidad de configuración es `axiom.yaml` + estado runtime en `.axiom-state/<projectName>/` dentro del proyecto que lo instala, más un catálogo de ~20 YAML de política/capacidad que el propio Axiom espera encontrar en una carpeta `axiom.config/` (minúsculas) en la raíz del proyecto; el contenido de spec vive aparte en `axiom.spec/`. Ambas carpetas fueron renombradas en `INC-20260703-config-folder-renames` (ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [08_Glosario.md](08_Glosario.md)).
 2. **El workspace de desarrollo de Axiom** (esta raíz: `Axiom/`, `Axiom.SDD/`, `Axiom.Spec/`): el modelo de tres repos desacoplados que `Axiom.SDD/AGENTS.md` establece para construir el propio producto con disciplina SDD ligera (spec en `Axiom.Spec/`, implementación en `Axiom.SDD/`, runtime opcional en `Axiom/`). Este es el "dogfooding" de Axiom sobre sí mismo, y es un concepto de nivel distinto al `axiom.spec/` interno de un proyecto cualquiera.
 
 Ver el glosario ([08_Glosario.md](08_Glosario.md)) para no mezclar `Axiom.Spec/` (este repo) con `axiom.spec/` (carpeta que el producto espera dentro de cualquier proyecto que lo adopte, incluido potencialmente `Axiom/` mismo).
 
 ## Discrepancia real conocida (no resuelta a la fecha de esta spec)
 
-`Axiom/README.md`, `Axiom/docs/first-project-readiness.md` y `Axiom/scripts/verify-first-project-readiness.mjs` asumen que el propio repo `Axiom/` tiene, en su raíz, `axiom.spec/config/`, `axiom.spec/templates/`, `axiom.spec/target-axiom-skills/`, `axiom.spec/target-axiom-agents/`, `AGENTS.md` y `axiom.skills.lock`. Ninguno de esos paths existe hoy en este checkout de `Axiom/` (verificado con listado directo de la raíz del repo). Por tanto, `npm run readiness:first-project` fallaría hoy con `ENOENT` al intentar sembrar la baseline canónica. Ver detalle en [context/references/03-riesgos-y-brechas-conocidas.md](../context/references/03-riesgos-y-brechas-conocidas.md).
+`Axiom/README.md`, `Axiom/docs/first-project-readiness.md` y `Axiom/scripts/verify-first-project-readiness.mjs` asumen que el propio repo `Axiom/` tiene, en su raíz, `axiom.config/` (renombrada desde `axiom.spec/config/`), `axiom.spec/templates/`, `axiom.spec/target-axiom-skills/`, `axiom.spec/target-axiom-agents/`, `AGENTS.md` y `axiom.skills.lock`. Ninguno de esos paths existe hoy en este checkout de `Axiom/` (verificado con listado directo de la raíz del repo). Por tanto, `npm run readiness:first-project` fallaría hoy con `ENOENT` al intentar sembrar la baseline canónica. Ver detalle en [context/references/03-riesgos-y-brechas-conocidas.md](../context/references/03-riesgos-y-brechas-conocidas.md).
 
 ## Roadmap de rediseño (cerrado, parcialmente implementado)
 

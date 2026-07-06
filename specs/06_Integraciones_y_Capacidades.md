@@ -24,7 +24,7 @@ Esto reemplaza la lista aspiracional previa de "targets iniciales" (Opencode CLI
 
 ## Integraciones externas opcionales (post-MVP)
 
-`@axiom/app` (portable operator app, incremento `0030`) expone un sistema de plugins project-scoped con discovery en `.sdd/<project>/app-plugins/*.json` y un bridge declarativo hacia Azure DevOps (mutación externa exige `confirmed: true`; los plugins no introducen lógica de negocio paralela). No hay integración con Jira/Confluence implementada — solo mencionada como posible extensión en el roadmap futuro (`INC-16`).
+`@axiom/app` (portable operator app, incremento `0030`) expone un sistema de plugins project-scoped con discovery en `.axiom-state/<project>/app-plugins/*.json` y un bridge declarativo hacia Azure DevOps (mutación externa exige `confirmed: true`; los plugins no introducen lógica de negocio paralela). No hay integración con Jira/Confluence implementada — solo mencionada como posible extensión en el roadmap futuro (`INC-16`).
 
 ## Capacidad clave
 
@@ -48,6 +48,60 @@ Resuelve la pregunta de arquitectura Q4: el sistema existente `@axiom/capability
 ### `mcp.yml` vs `mcp-manifest.yaml`
 
 Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) para el schema completo y la tabla comparativa — son dos ficheros con responsabilidades distintas que no deben fusionarse.
+
+### Generación de config MCP durante el setup de workspace (SDD MCP + Spec MCP) — INC-20260705-workspace-mcp-generation
+
+El setup de workspace multi-repo (`runWorkspaceSetup`, ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)) genera, como **paso best-effort final tras un registro exitoso**, la config MCP por proyecto. Es el primer y único call site que escribe un `mcp.yml` real a un proyecto (`apps/cli/src/commands/workspace-mcp.ts`, funciones `buildWorkspaceMcpServers` + `writeWorkspaceMcpConfig`).
+
+- **`.axiom/mcp.yml`** (`McpProjectConfig`, `schemaVersion: 1`) se escribe en el repo de control, con exactamente dos entradas `McpServerEntry`, ambas `enabled: true`, `scope: 'repo'`:
+  - `sdd-mcp-server` (SDD MCP) con `targetRepo` = la `roleKey` de registro del repo de control;
+  - `spec-mcp-broker` (Spec MCP) con `targetRepo` = la `roleKey` de registro del repo de spec.
+  
+  Los `targetRepo` referencian claves del mapa de repos del registro v2 (no paths), y la validación reusa `validateMcpProjectConfig` (`@axiom/user-workspace`, sin re-implementar) contra el mismo `homeDir` que usó el registro. En el caso degenerado de que control y spec colapsen a la misma `roleKey` (workspace single-repo), solo se emite `sdd-mcp-server` más un warning, evitando un par `duplicate-type-target-repo` inválido.
+- **Proyección a cada adapter MCP-capaz seleccionado** (generalizada por `INC-20260705-workspace-adapters-multiselect`): originalmente la proyección solo cubría el `target` primario único (`opencode` → `.opencode/mcp.json`, `claude-code` → `.claude/mcp.json`); ahora `writeWorkspaceMcpConfig` acepta la lista `adapters` y recorre el subconjunto MCP-capaz (`opencode`/`claude-code`) presente en la selección, produciendo **un fichero de config de adapter por cada adapter MCP-capaz** (`.opencode/mcp.json` y/o `.claude/mcp.json`, vía `generateOpencodeMcpJson`/`generateClaudeCodeMcpJson`, servers `enabled` mirroreados verbatim). Los adapters seleccionados sin capacidad MCP no producen fichero de proyección (se registra un warning nombrando el target no soportado). `WriteWorkspaceMcpConfigResult` expone `adapterConfigPaths: string[]` (plural; `adapterConfigPath` se conserva como la primera entrada por compatibilidad). `.axiom/mcp.yml` se escribe exactamente una vez, con independencia de cuántos adapters se seleccionen.
+- **Semántica best-effort**: la generación solo corre si el registro tuvo éxito (`register !== false` y `registryRegistered: true`); si se saltó o falló, la generación MCP se salta con un warning explicativo. El paso está envuelto en try/catch que nunca escala: los fallos (incluidos issues de validación) se acumulan en `warnings`, nunca abortan el setup; `.axiom/mcp.yml` se escribe aunque la validación reporte issues (validate-after-write).
+- **Caveat de gitignore**: `.axiom/` está gitignoreado, así que `mcp.yml` es un artefacto machine-local (no versionado) — coherente con que declara qué procesos servidor MCP están habilitados localmente para que los adapters generen config runtime.
+
+Esto no toca `axiom configure`/`sync`, `GENERATED_FILES_BY_TARGET` ni el deferral TR-005 para la ruta no-workspace; tampoco emite entradas MCP para repos de rol/código (solo SDD + Spec MCP).
+
+### Generación multi-adapter en todos los repos del workspace — INC-20260705-workspace-adapters-multiselect
+
+Tras el registro y la generación MCP, `runWorkspaceSetup` materializa, como paso best-effort, los ficheros de **cada adapter seleccionado** (`spec.adapters`, ver el wizard en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md)) en **cada repo del workspace** — control, spec y cada repo de rol. Antes de este incremento el motor nunca escribía la salida real de ningún adapter en los repos scaffoldeados (solo `.axiom/mcp.yml` + su proyección); esta subsección supersede esa limitación. La lógica vive en `apps/cli/src/commands/workspace-adapters.ts` (`generateWorkspaceAdapters`).
+
+- **Un `installProfile` por repo**: para cada repo se resuelve un único `ResolvedInstallProfile` (vía `installProfile`, usando `adapters[0]` como adapter primario y `DEFAULT_PROFILES` de `@axiom/install-profiles` como `profilesData` de fallback), y ese perfil resuelto se reutiliza en cada generador de adapter de ese repo.
+- **Tabla de despacho `target -> generador`** que cubre los 8 `ADAPTER_TARGETS`:
+
+  | Target | Generador / escritura |
+  |---|---|
+  | `opencode` | `generateOpencodeConfig` (`.opencode/AGENTS.md`, `.opencode/mcp.json`) |
+  | `claude-code` | `generateClaudeCodeConfig` (`.claude/AGENTS.md`, `.claude/mcp.json`) |
+  | `vscode` | `generateVscodeConfig` |
+  | `cursor` | `generateCursorConfig` |
+  | `github-copilot` | `generateGithubCopilotConfig` |
+  | `litellm` | `generateLitellmConfig` |
+  | `copilot-vscode` | `writeCopilotInstructions` (`.github/copilot-instructions.md` + settings/extensions VS Code) |
+  | `antigravity` | escritura canónica `AGENTS.md` (sin generador dedicado) → `.antigravity/AGENTS.md` |
+  | `visual-studio-2026` | escritura canónica `AGENTS.md` (sin generador dedicado) → `.vs/AXIOM.md` |
+
+- **`antigravity`/`visual-studio-2026` vía el escritor canónico AGENTS.md**: al no tener adapter dedicado, su fichero declarado en `GENERATED_FILES_BY_TARGET` se escribe con `renderCanonicalAgentsMd` + `writeGuardedFile`/`writeCanonicalAgentsMd` (un `AGENTS.md` canónico delgado, no un formato inventado más rico).
+- **Best-effort estricto**: cada llamada a un generador va envuelta; un fallo (input faltante, `Result` en error) se acumula como warning por repo/adapter y nunca aborta el setup global.
+
+### Plantillas de adapter bundleadas (contenido real de instrucciones) — INC-20260705-workspace-adapter-templates
+
+Los generadores de `opencode`/`claude-code`/`copilot-vscode` dependían de plantillas de instrucciones (`agents-md-template.md`, `copilot-instructions.template.md`) que no estaban bundleadas en el producto — solo existían en `Axiom.Spec/templates/` de este workspace. En repos recién scaffoldeados eso degradaba a warnings `template-missing` y los ficheros de instrucciones no se escribían. Este incremento cierra la brecha:
+
+- `agents-md-template.md` y `copilot-instructions.template.md` se bundlean verbatim como constantes TS (`AGENTS_MD_TEMPLATE`/`COPILOT_INSTRUCTIONS_TEMPLATE`, `apps/cli/src/commands/workspace-adapter-templates.ts`) — TS string constants porque `tsc -b` no copia assets no-TS a `dist`.
+- `generateOpencodeConfig`/`generateClaudeCodeConfig` aceptan un parámetro opcional `templateContent?: string`: cuando se provee, se usa en vez de leer `templatePath` de disco; omitido, el comportamiento es byte-por-byte idéntico al previo (back-compat total, `configure`/`sync` intactos).
+- `generateWorkspaceAdapters` pasa `AGENTS_MD_TEMPLATE` como `templateContent` a opencode/claude-code y `COPILOT_INSTRUCTIONS_TEMPLATE` como plantilla a `writeCopilotInstructions`. Resultado: opencode/claude-code/copilot-vscode ahora producen ficheros de instrucciones reales y no vacíos en un repo recién creado, sin warnings `template-missing`.
+
+### Baseline de Axiom SKILLS scaffoldeada en el repo SDD recién creado — INC-20260705-workspace-sdd-skills
+
+Cuando `runWorkspaceSetup` **crea desde cero** el repo de control/SDD (`created === true`), scaffoldea una baseline de SKILLS de Axiom en él como capacidad de agente, usando la API real de `@axiom/skills` (`loadSkillRegistry`, `applySkillSet`, `loadSkillsRoleIndex`/`validateSkillsRoleIndex`, `computeSkillBundleHash`). La lógica vive en `apps/cli/src/commands/workspace-skills.ts` (`scaffoldSddSkills`). Es best-effort, gateada y exclusiva del repo de control — las skills son una preocupación del repo SDD, no del repo de spec ni de los repos de rol.
+
+- **Catálogo semilla bundleado**: `axiom.config/skills-catalog.yaml` (`schemaVersion: 1`) sembrado con un conjunto canónico pequeño de 5 ids — 3 ids canónicos de Axiom (`axiom-sdd-orchestrator`, `axiom-context-persistence`, `axiom-capability-router`) más los dos `DEFAULT_DESIRED_SKILLS` (`serena-this-project`, `context7-this-project`), de modo que un `applyDefaultSkillSet` también resolvería contra este catálogo. El contenido fuente de cada skill se bundlea como constantes TS y se escribe bajo `axiom.spec/target-axiom-skills/<id>.md`; el `bundleHash` de cada entrada se computa con `computeSkillBundleHash` (hash byte-exacto de la fuente bundleada), así que el catálogo es internamente consistente.
+- **Materialización**: `applySkillSet` materializa `.opencode/agents/<id>/SKILL.md` por skill sembrada y `.axiom-state/<projectId>/skills-pending.json`.
+- **Índice de skills por rol**: se escribe un `axiom.config/skills-index/<role>.yaml` por cada rol funcional declarado en el workspace (ids derivados de `role.functionalRoleId ?? role.roleKey` de cada repo `kind: 'role'`), validado con `validateSkillsRoleIndex` antes/después de escribir (warnings, nunca bloqueante). Comparte el schema `SkillsRoleIndex` de RF-AXM-020 (ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md)); `axiom-sdd-orchestrator` + `axiom-context-persistence` se marcan `mandatory` por rol y el resto `available`.
+- **Gating + no-clobber**: solo corre si el repo de control se creó recién en esta misma llamada; si ya existía, se salta por completo (nunca clobbera). El paso entero es idempotente y best-effort — cualquier throw de `@axiom/skills` se degrada a un único warning sin abortar el setup.
 
 ## Plugins externos (confirmado ya cierto: Azure DevOps es opcional y no bloqueante)
 

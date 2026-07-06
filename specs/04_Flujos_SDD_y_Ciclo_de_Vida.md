@@ -20,6 +20,12 @@ Verificado por el script de smoke `Axiom/scripts/verify-first-project-readiness.
 
 Contrato por comando (lee/escribe) detallado en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y en `context/architecture/`.
 
+### Onboarding del operador (entrada TUI y wizard de `init`)
+
+El punto de entrada interactivo es `axiom` sin subcomando, que abre la TUI. En una carpeta sin proyecto Axiom (con TTY), la TUI ofrece un menú de bootstrap desde el que se inicializa el proyecto vía un **wizard guiado**: pregunta `name → role → layout → profile → overlay → target` con defaults inferidos, muestra un resumen de confirmación, y solo al confirmar ejecuta `runInit` (el primer paso del ciclo de vida de arriba) abriendo después la TUI operativa. `axiom init` sigue siendo la vía no-interactiva/scriptable equivalente. Detalle de UI y capas en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) (RF-AXM-023 en [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md)).
+
+Modelo de datos tras el init (fuente única de verdad): `axiom.yaml` es la fuente autoral de la identidad del proyecto (`projectId`/`name`/`repoId`/`role`) y del mapa de repos. `init` escribe `axiom.yaml`, `.gitignore`, `.axiom-state/local/` y `.axiom-state/<projectName>/init.json` (con `profileTriple`+`createdAt`+`version`, sin `projectName` propio) — y ya NO escribe `topology.yaml`, que se deriva de `axiom.yaml` al leer y se materializa de forma perezosa solo al asignar roles (`INC-20260703-config-dedup`; ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)).
+
 ## Baseline operativa actual
 
 1. un solo rol funcional cubierto en profundidad (`functionalProfile: builder`);
@@ -29,6 +35,10 @@ Contrato por comando (lee/escribe) detallado en [03_Modelo_Operativo_y_Datos.md]
 ## Fuera de la baseline inicial (documentado explícitamente como no-goal del MVP)
 
 Según `Axiom/docs/first-project-readiness.md`: overlays `standard`/`enterprise` como camino inicial obligatorio, `visual-studio-2026` como baseline de primer arranque, providers post-MVP (`engram`, `codegraph`, `graphify`) como requisito de entrada, bridges externos/plugins/lanes paralelos avanzados, e instalación user-level del binario como paso obligatorio.
+
+## Punto de partida de un repo de spec recién creado (setup de workspace)
+
+Cuando el setup de workspace multi-repo (`runWorkspaceSetup`) crea desde cero el repo de Spec, lo scaffoldea desde la base canónica de plantillas (`specs/README.md` + `specs/00..08` + `context/TECHNICAL_CONTEXT.md`/`README.md` + los directorios estructurales `specs/{increments,bugs,archive}` y `context/*`) — `INC-20260705-workspace-spec-base`. Así un workspace nuevo arranca ya con la estructura numerada de spec y las carpetas de artefacto donde vive el ciclo de vida de abajo, en vez de una carpeta vacía. Es best-effort y guardado per-file (nunca sobrescribe contenido existente); ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 
 ## Ciclo de vida de artefactos (increment/bug/plan/ADR/decision) — roadmap de rediseño, cerrado
 
