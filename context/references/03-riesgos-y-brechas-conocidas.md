@@ -2,6 +2,17 @@
 
 Este documento existe para que la spec general no maquille el estado real. Cada punto fue verificado directamente contra el filesystem del repo, no inferido de la documentación.
 
+## Estado de resolución (actualizado 2026-07-10)
+
+Varias brechas de este documento (redactado el 2026-07-02) ya están resueltas. Resumen:
+
+- **Brecha 1 — RESUELTA** (`INC-20260708-product-repo-self-bootstrap`): `Axiom/axiom.spec/`, `AGENTS.md`, `axiom.skills.lock` y `axiom.config/` (con sus YAML canónicos) existen hoy en la raíz de `Axiom/`; `npm run doctor` y `readiness:first-project` pasan contra el propio repo.
+- **Brecha 4 — RESUELTA**: el roadmap de rediseño quedó cerrado (23/24 incrementos; INC-24 Workbench diferido).
+- **Ola 2026-07-10 (10 incrementos)** — resolvió además: drift de schemas en `mcp-manifest.yaml`/`integrations.yaml` (CLI `mcp`/`toolchain` ya funcionan contra los artefactos reales; con tests que los cargan de verdad, no fixtures); ausencia de `workflows.yaml`/`topology.yaml` en el propio repo (dogfooding); roles fijos → registro dinámico de roles de equipo (1..N) con validador reconciliado; planes sin separación por rol; contexto técnico que el MCP servía como `null` (ahora indexado y servido); paridad de comandos del wizard TUI; separación arquitecto↔miembro (compartido/committeado vs personal/gitignored) con `member install`/`bindings`; y correctitud (`archive` mueve carpeta, `self-update`, estados reales de toolchain, código muerto del orchestrator). Ver [../../specs/00_Resumen_Ejecutivo.md](../../specs/00_Resumen_Ejecutivo.md) §"Ola de endurecimiento 2026-07-10".
+- **Brechas 2, 3 y 5 — VIGENTES (parcial)**: aún hay comandos CLI sin página de doc dedicada (aunque menos), packages sin README, y persiste la ambigüedad de nombres `Axiom.Spec/` vs `axiom.spec/`.
+
+El texto original de cada brecha se conserva abajo como registro histórico; contrastar siempre contra el filesystem actual antes de citarlo.
+
 ## 1. `axiom.spec/`, `AGENTS.md` y `axiom.skills.lock` faltan en la raíz de `Axiom/`
 
 `Axiom/README.md`, `Axiom/docs/first-project-readiness.md`, `Axiom/docs/cli/*.md` y `Axiom/scripts/verify-first-project-readiness.mjs` (función `seedCanonicalBaseline`) asumen que la raíz del propio repo `Axiom/` contiene:

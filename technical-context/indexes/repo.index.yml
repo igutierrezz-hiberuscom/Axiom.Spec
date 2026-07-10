@@ -1,0 +1,65 @@
+# GENERADO por `axiom context index` — no editar a mano, volver a correr el generador.
+# status: draft (contenido mecánico, no revisado todavía por un humano).
+
+schemaVersion: 1
+status: draft
+role: repo
+repoKinds:
+  - repo
+mandatory:
+  always:
+    - id: context.entry-point
+      path: ../../context/TECHNICAL_CONTEXT.md
+      reason: Puerta de entrada obligatoria al contexto técnico curado del producto.
+  whenTags: []
+available:
+  - id: architecture.01-vision-general-y-capas
+    path: ../../context/architecture/01-vision-general-y-capas.md
+    tags:
+      - architecture
+    summary: Visión general y capas del runtime Axiom
+  - id: architecture.02-modelo-de-datos-y-configuracion
+    path: ../../context/architecture/02-modelo-de-datos-y-configuracion.md
+    tags:
+      - architecture
+    summary: Modelo de datos y configuración
+  - id: architecture.03-ciclo-de-vida-cli-y-orquestacion
+    path: ../../context/architecture/03-ciclo-de-vida-cli-y-orquestacion.md
+    tags:
+      - architecture
+    summary: Ciclo de vida CLI y orquestación
+  - id: architecture.04-adapters-y-model-routing
+    path: ../../context/architecture/04-adapters-y-model-routing.md
+    tags:
+      - architecture
+    summary: Adapters y model routing
+  - id: integrations.01-capabilities-providers-y-toolchain
+    path: ../../context/integrations/01-capabilities-providers-y-toolchain.md
+    tags:
+      - integrations
+    summary: Capabilities, providers y toolchain externo
+  - id: operations.01-instalacion-y-onboarding
+    path: ../../context/operations/01-instalacion-y-onboarding.md
+    tags:
+      - operations
+    summary: Instalación y onboarding
+  - id: operations.02-doctor-troubleshooting-y-telemetria
+    path: ../../context/operations/02-doctor-troubleshooting-y-telemetria.md
+    tags:
+      - operations
+    summary: Doctor, troubleshooting y telemetría
+  - id: references.01-inventario-de-packages
+    path: ../../context/references/01-inventario-de-packages.md
+    tags:
+      - references
+    summary: Inventario de packages
+  - id: references.02-historial-de-incrementos
+    path: ../../context/references/02-historial-de-incrementos.md
+    tags:
+      - references
+    summary: Historial de incrementos (0015–0030, post-MVP)
+  - id: references.03-riesgos-y-brechas-conocidas
+    path: ../../context/references/03-riesgos-y-brechas-conocidas.md
+    tags:
+      - references
+    summary: Riesgos y brechas conocidas (verificadas)
