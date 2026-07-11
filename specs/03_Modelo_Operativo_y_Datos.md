@@ -116,6 +116,12 @@ Tres repos por rol dentro de un proyecto gestionado:
 - Los bindings locales por usuario (`.axiom-state/local/topology-bindings.yaml`, `LocalBindings { schemaVersion: 1; localPaths: Record<string, string> }`) explícitamente no se versionan.
 - Todos los helpers conscientes de topología del código (write-scope, límite de dogfooding, etc.) resuelven repos vía `loadTopology`/`loadLocalBindings`/`resolveRepoPath` de `@axiom/topology`, todos libres de `homeDir` — patrón establecido y reusable para cualquier check futuro que necesite ser parametrizado por rol en vez de hardcodeado a nombres de repo concretos.
 
+### Materialización de `topology.yaml` en cada repo, colapso de `repoId` y canonicalización de paths Windows (2026-07-11)
+
+- **`topology.yaml` materializado en CADA repo** (control + spec + cada repo de rol), anclado per-repo (`INC-20260711-repo-affinity-guard`): supersede la nota de arriba de que solo el repo de control recibía `topology.yaml`. El mapa role→repo se escribe en todos los repos (por `runWorkspaceSetup`, `runRepoAdd` y best-effort por `member install`) para que `loadTopology(repoActual)` resuelva la identidad de rol desde cualquier repo — es la base del guard de repo-affinity (ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md)). `ProjectResolution` gana `role`/`repoId` aditivos (poblados desde `axiom.yaml` schemaVersion 2).
+- **Colapso del doble segmento de `repoId`** (`INC-20260711-audit-bug-fixes`): `buildRoleAwareAxiomYaml` colapsa `repoId = ${projectId}-${repoRole}-${roleKey}` a un solo segmento cuando `repoRole === roleKey` (ya no `<project>-sdd-sdd`/`-spec-spec`). Cosmético: ningún lookup usa `repoId` (usan `roleKey`/`topologyId`).
+- **Canonicalización de paths Windows 8.3 (compare-time)** (`INC-20260711-audit-bug-fixes`): nuevo `canonicalizePath` (`@axiom/filesystem-truth`) resuelve la forma corta 8.3 (`IGUTIE~1`) vs. larga (`igutierrezz`) a una forma consistente, aplicado en los sitios de COMPARACIÓN del registro/resolver (`findByRootPath`/`findByRepoPathV2`/`findByAncestorRepoPathV2`, `normalizeForAncestorCompare`, `relativeRef`). NO reescribe los paths ALMACENADOS (Decision D-001) — solo canonicaliza ambos operandos al comparar, para no romper asserts de path exacto.
+
 ### Dos ejes de "rol", desacoplados (Decision D5, `INC-20260710-dynamic-team-roles`)
 
 Axiom tiene DOS conceptos distintos de "rol" que no deben conflarse:

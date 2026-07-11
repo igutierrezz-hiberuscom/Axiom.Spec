@@ -84,6 +84,12 @@ Separación explícita de responsabilidades: el ARQUITECTO corre `axiom workspac
 
 Ambos comandos son app-owned (registrados directo en `index.ts`, no vía `@axiom/cli-commands`) y `runMemberInstall`/`runBindings*` están separados de sus `register*` de commander (mismo patrón que el resto de la CLI) para poder testearse sin spawn del binario.
 
+### Superficie CLI añadida por la tanda INC-20260711-* (review de write-scope + repo-affinity)
+
+- **`axiom validate changes --plan <id> --all-repos`** (`INC-20260711-per-role-review`, extiende el `validate changes` existente): modo AGREGADO que resuelve cada `targetRepo` del plan a ruta absoluta vía `LocalBindings`, diffea y valida cada uno, y emite un reporte consolidado per-repo (✓/✗) + repos NO RESUELTOS explícitos + resultado global (exit 1 ante cualquier violación o repo no resuelto). Pensado para ejecutarse desde el repo de SPEC (`runValidateChangesAggregate` + `formatAggregateReport`, `validate-changes.ts`).
+- **`axiom-role complete --no-review` / `--force`** (`INC-20260711-per-role-review`): `axiom-role complete` corre ahora un review de write-scope del `git diff` del repo de rol contra el `allowedWriteScope` del plan como gate explícito que bloquea la completion ante una violación; `--no-review` (o `--force`) omite ese gate. Ver el modelo de review en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
+- **Repo-affinity de `axiom-increment`/`axiom-bug`/`axiom-plan`/`axiom-role`** (`INC-20260711-repo-affinity-guard`): estos cuatro entrypoints se rechazan (exit 1) si se ejecutan desde el repo equivocado en un workspace multi-repo con roles definidos (increment/bug/plan ↔ repo de spec; role X ↔ repo del rol X) — NO-OP fuera de ese caso. Ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
+
 ### Colisión de nombrado: dos mecanismos "intent" no relacionados (uno ya eliminado)
 
 Había una colisión de nombrado, no un router único compartido: (1)

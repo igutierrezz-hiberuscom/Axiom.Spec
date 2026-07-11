@@ -1,0 +1,105 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-repo-affinity-guard
+  title: "Repo-affinity guard for lifecycle commands"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: "workspace-owner"
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-11T00:00:00Z"
+  updatedAtUtc: "2026-07-11T00:00:00Z"
+  specifiedAtUtc: "2026-07-11T00:00:00Z"
+  plannedAtUtc: "2026-07-11T00:00:00Z"
+  doneAtUtc: "2026-07-11T00:00:00Z"
+  archivedAtUtc: "2026-07-11T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260711-repo-affinity-guard"
+  readme: "specs/increments/INC-20260711-repo-affinity-guard/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: "axiom"
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-11T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: functional # functional | technical | compliance | ux | testing
+    question: ""
+    blocking: false
+    status: resolved # open | resolved | deferred
+    resolution: ""
+
+decisions:
+  - id: D-001
+    summary: "Guard is a strict NO-OP unless topology is multi-repo, the current repo resolves to a v2 axiom.yaml role/repoId, and role assignments exist."
+    rationale: "Preserves single-repo/self-hosted/unresolvable behaviour and the Axiom dogfood (v1 axiom.yaml) — keeps the 2275-test suite green."
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D-002
+    summary: "Materialize the topology.yaml (role->repo map) into EVERY repo (control + spec + role), anchored per-repo, so any repo can answer 'what's my role, which repo owns role X'."
+    rationale: "loadTopology(currentRepo) must see the shared assignments from any repo; per-repo anchoring keeps refs correct for existing ref-resolving consumers."
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: in_progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-11T00:00:00Z"

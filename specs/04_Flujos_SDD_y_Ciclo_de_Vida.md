@@ -94,3 +94,26 @@ El paso de REVISIÓN del ciclo de vida (el reviewer de producto `axiom-reviewer`
 - **Re-review scoped**: una re-review toma el ledger persistido + el diff del fix, verifica la resolución de cada hallazgo del ledger y revisa SOLO las líneas tocadas por el fix (nunca re-lee el diff original completo). Un hallazgo sobre una línea NO tocada se registra con `status: info` (señal de calidad de la primera pasada) y NO dispara por sí solo una ronda nueva.
 
 El contrato se bundlea como UNA constante TS canónica (`@axiom/document-bootstrap`'s `review-ledger-contract.ts`: `REVIEW_LEDGER_CONTRACT`), embebida verbatim (bloque delimitado por marcadores `AXIOM:REVIEW-LEDGER-CONTRACT`) en el agent catalog `axiom.spec/target-axiom-agents/axiom-reviewer.md` y guardada por un test de drift (`packages/document-bootstrap/tests/review-ledger-contract.test.ts`) que falla si la constante y el asset divergen. El agent bootstrap `.claude/agents/axiom-review.md` adopta el mismo flujo. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
+
+## Repo-affinity y review por rol (2026-07-11) — INC-20260711-repo-affinity-guard / INC-20260711-per-role-review
+
+Dos endurecimientos del ciclo de vida para workspaces multi-repo con roles↔repos definidos; ambos son un **NO-OP estricto** fuera de ese caso (single-repo, `axiom.yaml` schemaVersion 1, o sin asignaciones — el dogfood de Axiom incluido), así que no afectan al flujo por defecto.
+
+### Repo-affinity de los comandos de ciclo de vida (INC-20260711-repo-affinity-guard)
+
+Un guard compartido `checkRepoAffinity` (mismo patrón que `checkPlanIsApproved`) cableado en los cuatro entrypoints de ciclo de vida enforce DESDE QUÉ repo se ejecuta cada comando:
+
+- `axiom-increment` / `axiom-bug` / `axiom-plan` deben ejecutarse desde el **repo de SPEC**; desde el repo de control (`sdd`) o un repo de rol/código se rechazan (exit 1, mensaje accionable que nombra el repo correcto).
+- `axiom-role` para el rol **X** (`start`/`apply`/`complete`/`sync-graph`) debe ejecutarse SOLO desde el repo asignado al rol **X**; abrir el repo de otro rol se rechaza nombrando el repo correcto.
+- **Condiciones de gating (las tres deben cumplirse; si no, NO-OP):** `loadTopology(repoActual)` OK y `mode === 'multi-repo'`; `resolveProject` resuelto con `role` no vacío (i.e. `axiom.yaml` schemaVersion 2); `assignments.length > 0`. El rol destino de `axiom-role` se deriva del `--slug`/`--id` operado contra `topology.yaml#roles`/`#assignments`.
+
+Depende de que `topology.yaml` esté materializado en CADA repo (control + spec + cada rol), anclado per-repo, para que `loadTopology(repoActual)` responda "cuál es mi rol / qué repo dueña el rol X" desde cualquier repo — ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md). La identidad de repo (`role`/`repoId`) surface como campos aditivos de `ProjectResolution`.
+
+### Review de write-scope por rol y agregado (INC-20260711-per-role-review)
+
+La revisión de write-scope pasa de estar conceptualmente solo en el archive-time desde el spec a dos superficies complementarias que comparten la MISMA primitiva `validateWriteScope` (`@axiom/workflow`) y los helpers de change-set de `@axiom/doctor` (sin lógica duplicada):
+
+- **Review por rol en `axiom-role complete`** (gate explícito dentro de `runRoleSubcommand`, no un hook): valida el `git diff` real del repo de rol contra el `allowedWriteScope` del plan para ESE repo y **bloquea la completion** (exit 1, el estado sigue `in-progress`) ante cualquier violación, salvo `--no-review`/`--force`. Degrada a un SKIP explícito (la completion procede) cuando el repo no es identificable, no hay plan aprobado local, o el plan no tiene scope para este repo — nunca crashea. Resuelve el plan solo del contexto local del repo de rol; el estado cross-repo del plan queda como follow-up (Q-001).
+- **Validación agregada desde el spec**: `axiom validate changes --plan <id> --all-repos` resuelve CADA `targetRepo` a ruta absoluta vía `LocalBindings`, diffea y valida cada uno, y emite un reporte consolidado per-repo (✓/✗) + repos NO RESUELTOS explícitos + resultado global (exit 1 ante cualquier violación o repo no resuelto). `buildRepoChangeSets` (`@axiom/doctor`) ahora resuelve rutas bindings-preferred (cierra el gap P1, back-compat).
+
+El paso de archive / `WS-001` de doctor preexistente se mantiene como red de seguridad; estas dos superficies añaden puntos de validación más tempranos (local) y más amplios (multi-repo). Superficie de comandos en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).

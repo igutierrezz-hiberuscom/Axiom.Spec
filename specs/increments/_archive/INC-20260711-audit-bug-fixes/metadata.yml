@@ -1,0 +1,99 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-audit-bug-fixes
+  title: "Fix confirmed audit bugs (correctness + consistency)"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-11T11:13:40Z"
+  updatedAtUtc: "2026-07-11T11:29:01Z"
+  specifiedAtUtc: "2026-07-11T11:13:40Z"
+  plannedAtUtc: ""
+  doneAtUtc: "2026-07-11T11:29:01Z"
+  archivedAtUtc: "2026-07-11T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260711-audit-bug-fixes"
+  readme: "specs/increments/INC-20260711-audit-bug-fixes/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-11T11:29:01Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap: []
+
+openQuestions: []
+
+decisions:
+  - id: D-001
+    summary: "Item 5 (path canonicalization) applied at compare-time only, not write-time."
+    rationale: >-
+      Canonicalizing stored registry paths at write time via fs.realpathSync.native
+      rewrites Windows 8.3 short names (e.g. IGUTIE~1) to their long form
+      (igutierrezz), which would break unflagged exact-path assertions
+      (implementation-context-handler.test.ts, workspace-incremental.test.ts).
+      Canonicalizing both operands at every comparison site (registry find
+      functions, resolver ancestor compare, relativeRef) fully fixes the
+      cross-form matching bug without mutating stored values or requiring
+      test-assertion changes.
+    decidedAtUtc: "2026-07-11T11:13:40Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in-progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-11T11:13:40Z"

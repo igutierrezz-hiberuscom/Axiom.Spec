@@ -1,0 +1,156 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-sdd-launcher-core-port
+  title: "Port sdd-launcher capabilities into Axiom core (design epic)"
+  # NOTE: the owner's brief labels this "pending". The structured enum in
+  # increment-metadata-template.yaml has no `pending`; `draft` is the
+  # schema-valid value for an authored-but-not-approved design epic. The
+  # README header uses "Pendiente (design/epic — no ejecutado)" for humans.
+  status: draft # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: igutierrezz@hiberus.com
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-11T00:00:00Z"
+  updatedAtUtc: "2026-07-11T00:00:00Z"
+  specifiedAtUtc: ""
+  plannedAtUtc: ""
+  doneAtUtc: ""
+  archivedAtUtc: ""
+
+paths:
+  root: "specs/increments/INC-20260711-sdd-launcher-core-port"
+  readme: "specs/increments/INC-20260711-sdd-launcher-core-port/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: "specs/increments/INC-20260711-sdd-launcher-core-port/artifacts/plans"
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: axiom/sdd-launcher-core-port
+  isolationValidated: false
+  isolationNotes: >-
+    Design-only increment. No code is written in Axiom, Axiom.SDD, or the
+    read-only source extension at C:/repos/KVP25 Workspace/Kvp.Sdd/tools/sdd-launcher.
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles:
+    - architect
+    - backend
+    - frontend
+  rolePlans: []
+
+verification:
+  status: not_started # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: ""
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "Axiom.Spec/specs/04_Flujos_SDD_y_Ciclo_de_Vida.md"
+      targetAnchor: "Ciclo de vida / state machine"
+      operation: patch
+      deltaSummary: >-
+        Declare per-transition side-effects (local YAML + optional tracker) and
+        the guided next-step recommendation as part of the canonical lifecycle.
+    - targetDocument: "Axiom.Spec/specs/05_Interfaces_Operativas.md"
+      targetAnchor: "axiom app / operator front-end"
+      operation: patch
+      deltaSummary: >-
+        Re-home sdd-launcher's prompt-crafting front-end behind the existing
+        `axiom app` HTTP server; add the Launcher abstraction.
+    - targetDocument: "Axiom.Spec/specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: "Integraciones externas opcionales (plugins)"
+      operation: patch
+      deltaSummary: >-
+        Fill the declarative Azure DevOps plugin stub with a real IWorkItemTracker
+        implementation ported from sdd-launcher; ship NullTracker as the local-only default.
+
+openQuestions:
+  - id: Q-001
+    type: technical
+    question: >-
+      Do we extend @axiom/workflow (+ @axiom/core) as the "sdd-core", or create a
+      parallel @axiom/sdd-core package? (RECONCILIATION.md recommends EXTEND.)
+    blocking: true
+    status: open
+    resolution: ""
+  - id: Q-002
+    type: technical
+    question: >-
+      Should the re-homed prompt-crafting front-end replace the thin existing
+      `axiom app` PWA (apps/cli/static/*), or run alongside it as a second view?
+    blocking: false
+    status: open
+    resolution: ""
+  - id: Q-003
+    type: technical
+    question: >-
+      Lifecycle vocabulary reconciliation: map sdd-launcher's emoji-prefixed
+      Spanish literals (En Borrador..Integrado) onto Axiom's 9 WorkflowStates, or
+      widen WorkflowState? A pure mapping table is preferred (non-breaking).
+    blocking: false
+    status: open
+    resolution: ""
+  - id: Q-004
+    type: technical
+    question: >-
+      Is a FileSystem port added to @axiom/core (NodeFs impl) now, or deferred?
+      artifact-store already atomic-writes via raw `fs`; the port is polish, not
+      a blocker.
+    blocking: false
+    status: open
+    resolution: ""
+
+decisions:
+  - id: D-001
+    summary: >-
+      This is a design/epic increment; it writes NO production code and scaffolds
+      NO packages. status kept `draft` (schema-valid stand-in for the owner's "pending").
+    rationale: >-
+      Deliverable is a spec document set. Execution is deferred to the phased plan
+      in PLAN.md, each phase opened as its own increment.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: draft
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-11T00:00:00Z"

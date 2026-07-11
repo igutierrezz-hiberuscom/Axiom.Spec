@@ -1,0 +1,113 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-per-role-review
+  title: "Per-role write-scope review at role-complete + aggregate whole-increment validation from spec"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: "workspace-owner"
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-11T00:00:00Z"
+  updatedAtUtc: "2026-07-11T00:00:00Z"
+  specifiedAtUtc: "2026-07-11T00:00:00Z"
+  plannedAtUtc: "2026-07-11T00:00:00Z"
+  doneAtUtc: "2026-07-11T00:00:00Z"
+  archivedAtUtc: "2026-07-11T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260711-per-role-review"
+  readme: "specs/increments/INC-20260711-per-role-review/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: "axiom"
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-11T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: technical # functional | technical | compliance | ux | testing
+    question: "How does a role repo obtain the plan's allowedWriteScope when the plan workflow-state + metadata live in the SPEC repo?"
+    blocking: false
+    status: deferred # open | resolved | deferred
+    resolution: "Per-role review resolves the plan from the role repo's OWN local project context only. When the plan/scope is not available locally (true cross-repo state), the review degrades to an explicit SKIP note. Cross-repo workflow-state sharing is out of scope for the per-role path; the aggregate-from-spec command is the multi-repo validation surface."
+
+decisions:
+  - id: D-001
+    summary: "Attach the per-role review as an explicit step inside runRoleSubcommand (on `complete`), NOT as a workflow hook."
+    rationale: "The generic hook engine is fire-and-forget (void) and currently no-op, so it cannot gate the completion (return exit 1). An explicit step mirrors the existing checkPlanIsApproved / checkRepoAffinity gate pattern already in axiom-role.ts and lets a failing review block the transition (state stays in-progress)."
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D-002
+    summary: "Aggregate whole-increment validation is delivered as `axiom validate changes --plan <id> --all-repos` (extend the existing command) rather than a new `axiom-increment verify` path."
+    rationale: "runValidateChanges already loads plan metadata + topology + builds repo change-sets + runs validateWriteScope; adding an aggregate mode reuses that plumbing with the least new surface and keeps a single conceptual home for write-scope validation."
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D-003
+    summary: "Upgrade buildRepoChangeSets to prefer LocalBindings (loadLocalBindings + resolveRepoPath) over projectRoot-relative refs, keeping the relative-ref path as fallback."
+    rationale: "Closes the P1 gap at packages/doctor/src/write-scope.ts (multi-repo absolute paths were wrong). resolveRepoPath already does binding-first then absolute-ref then projectRoot/relative, so existing single-repo tests (no bindings) are unaffected."
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D-004
+    summary: "Aggregate mode reports unresolvable target repos EXPLICITLY (not-in-topology | path-missing) instead of silently skipping them, and treats any unresolved repo as an overall non-zero (exit 1) outcome."
+    rationale: "A target repo that cannot be reached is a validation GAP, not a pass. The consolidated report separates violations from unresolved repos so the operator sees exactly what was and was not validated."
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: in_progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-11T00:00:00Z"

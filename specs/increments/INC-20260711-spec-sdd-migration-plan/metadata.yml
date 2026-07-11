@@ -1,0 +1,141 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-spec-sdd-migration-plan
+  title: "Migrate foreign spec/SDD repos into Axiom-apt, MCP-queryable form"
+  status: draft # draft | specified | planned | in_progress | implemented | integrated | archived  (design/plan artifact — 'pending' no es un valor de enum válido)
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: architect
+  analystOwner: migration-engineer
+  architectOwner: migration-engineer
+
+lifecycle:
+  createdAtUtc: "2026-07-11"
+  updatedAtUtc: "2026-07-11"
+  specifiedAtUtc: ""
+  plannedAtUtc: ""
+  doneAtUtc: ""
+  archivedAtUtc: ""
+
+paths:
+  root: "specs/increments/INC-20260711-spec-sdd-migration-plan"
+  readme: "specs/increments/INC-20260711-spec-sdd-migration-plan/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: ""
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: >-
+    Design/plan artifact only. Documents a future implementation that MUST
+    write migrated artifacts into the RESOLVED spec scope (not the control
+    repo root), assuming the known from-legacy-sdd scope bug is fixed first.
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles:
+    - migration-engineer
+    - cli-implementer
+  rolePlans: []
+
+verification:
+  status: not_started # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: ""
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: >-
+        On integration, document the adopt-existing-repo migration path
+        (format detectors, from-context ingest, install-time adoption).
+
+openQuestions:
+  - id: Q-001
+    type: technical
+    question: >-
+      Which foreign spec formats are in-scope for the FIRST detector pass
+      (OpenSpec openspec/changes, docs/adr, alternate folder names,
+      front-matter status) vs deferred to a later iteration?
+    blocking: false
+    status: open
+    resolution: ""
+  - id: Q-002
+    type: technical
+    question: >-
+      For structural conversion, do we reshape a foreign body into the
+      canonical multi-doc increment layout (01_Requisitos/03_Criterios),
+      or land it as a single README with sectioned headings first?
+    blocking: false
+    status: open
+    resolution: ""
+  - id: Q-003
+    type: technical
+    question: >-
+      Should `from-context` ingest emit `status: draft` on the generated
+      TechnicalContextIndex (mirroring from-code) and never populate
+      `mandatory.*` mechanically?
+    blocking: false
+    status: open
+    resolution: ""
+  - id: Q-004
+    type: compliance
+    question: >-
+      For an ID collision where a foreign item already carries an Axiom-style
+      ID, do we preserve the original ID (idempotent re-run) or always mint a
+      fresh one (current from-legacy-sdd behavior)?
+    blocking: true
+    status: open
+    resolution: ""
+
+decisions:
+  - id: D-001
+    summary: >-
+      This iteration is a targeted adopter for a foreign SPEC repo and a
+      foreign SDD repo, NOT a general importer for every SDD tool.
+    rationale: >-
+      Keep scope shippable; extend the detector registry incrementally.
+    decidedAtUtc: "2026-07-11"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: draft
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-11"
