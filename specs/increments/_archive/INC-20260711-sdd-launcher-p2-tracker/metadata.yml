@@ -1,0 +1,119 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-sdd-launcher-p2-tracker
+  title: "P2 — IWorkItemTracker port + NullTracker + @axiom/tracker-ado"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: "orchestrator"
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-11T00:00:00Z"
+  updatedAtUtc: "2026-07-11T00:00:00Z"
+  specifiedAtUtc: "2026-07-11T00:00:00Z"
+  plannedAtUtc: "2026-07-11T00:00:00Z"
+  doneAtUtc: "2026-07-11T00:00:00Z"
+  archivedAtUtc: "2026-07-11T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260711-sdd-launcher-p2-tracker"
+  readme: "specs/increments/INC-20260711-sdd-launcher-p2-tracker/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: "axiom"
+  projectScopeKey: "axiom/sdd-launcher-core-port"
+  isolationValidated: true
+  isolationNotes: "Implemented entirely inside the Axiom code repo (packages/tracker, packages/tracker-ado, apps/cli). Spec lives in Axiom.Spec. KVP25's adoWorkflowService.ts is a READ-ONLY reference, never modified."
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-11T00:00:00Z"
+
+integration:
+  status: integrated # active | integrated | archived
+  integratedAtUtc: "2026-07-11T00:00:00Z"
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "Axiom.Spec/specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: "Integraciones externas opcionales (plugins)"
+      operation: patch
+      deltaSummary: >-
+        Fill the declarative Azure DevOps plugin stub with a real IWorkItemTracker
+        implementation (@axiom/tracker-ado) behind an injected HttpTransport +
+        SecretStore + promptForSecret; ship NullTracker as the local-only default.
+
+openQuestions: []
+
+decisions:
+  - id: D2-001
+    summary: >-
+      The tracker is selected by config (`tracker.kind: none|ado`) via a factory
+      (`createWorkItemTracker`) — no core workflow path branches on tracker kind.
+    rationale: >-
+      Keeps the pure workflow engine tracker-agnostic (RECONCILIATION.md point 2):
+      the tracker is an injected, optional plugin, not a code-path decision.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D2-002
+    summary: >-
+      The ADO client is ported behind an injected HttpTransport port (default
+      NodeHttpsTransport using raw https + _apis v7.1). @axiom/tracker-ado has NO
+      vscode import (RISK-002); the 2 VSCode touches become SecretStore + promptForSecret.
+    rationale: >-
+      Faithful port of the lifecycle-critical WIT surface with zero editor dep and
+      hermetic tests (fake transport, never dev.azure.com).
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D2-003
+    summary: >-
+      Peripheral ADO surface (Build defs/artifacts, Git commit/PR traceability,
+      sprint/iteration catalog, attachments) is PARTIAL/deferred; the WIT-critical
+      surface (auth, create/get/update/transition/link/child/WIQL, 4 mappings) is FULL.
+    rationale: >-
+      Scope realism for an XL phase: a correct, tested core over a broad-but-shaky port.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: archived
+    decision: implemented-and-archived
+    humanConfirmation: false
+    executedAtUtc: "2026-07-11T00:00:00Z"

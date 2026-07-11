@@ -1,0 +1,149 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-sdd-launcher-p3-front-server
+  title: "P3 — Local server endpoints + front-end transport shim + Launcher abstraction"
+  status: in_progress # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: "orchestrator"
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-11T00:00:00Z"
+  updatedAtUtc: "2026-07-11T00:00:00Z"
+  specifiedAtUtc: "2026-07-11T00:00:00Z"
+  plannedAtUtc: "2026-07-11T00:00:00Z"
+  doneAtUtc: "2026-07-11T00:00:00Z"
+  archivedAtUtc: ""
+
+paths:
+  root: "specs/increments/INC-20260711-sdd-launcher-p3-front-server"
+  readme: "specs/increments/INC-20260711-sdd-launcher-p3-front-server/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: "axiom"
+  projectScopeKey: "axiom/sdd-launcher-core-port"
+  isolationValidated: true
+  isolationNotes: "Implemented inside the Axiom code repo (apps/cli + packages/launcher). Spec lives in Axiom.Spec. KVP25's media/launcher.js, extension.ts getLauncherHtml and launchBridge.ts are READ-ONLY references, never modified. The re-homed front is a purpose-built working core that reuses the SAME postMessage/window-message protocol shape so a full launcher.js port can drop in behind the shim."
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-11T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "Axiom.Spec/specs/05_Interfaces_Operativas.md"
+      targetAnchor: "Front-end operativo y superficie del launcher"
+      operation: patch
+      deltaSummary: >-
+        Re-homes the sdd-launcher prompt-crafting front behind a ~100-line transport shim
+        served by the EXISTING `axiom app` HTTP server. The shim replaces
+        acquireVsCodeApi() with fetch to local server endpoints and re-dispatches server
+        responses as window `message` events, preserving the launcher's postMessage
+        protocol shape. Adds a `Launcher` abstraction (ClipboardLaunch / HttpLaunch /
+        VSCodeLaunch) in @axiom/launcher that replaces launchBridge.ts. The shipped front
+        contains ZERO VSCode APIs and no `--vscode-*` theme vars.
+
+openQuestions: []
+
+decisions:
+  - id: D3-001
+    summary: >-
+      Extend the EXISTING `axiom app` HTTP server (app-api.ts) with launcher endpoints
+      mapped onto the established GET-read / POST-execute-with-`confirmed` contract, rather
+      than standing up a second server. Endpoints: GET .../launcher/data (families/actions
+      from the @axiom/launcher catalog + adapters + roles + launcher kinds), POST
+      .../launcher/craft (pure prompt preview via craftPrompt — NO mutation), POST
+      .../launcher/execute (delegates to the existing executeSubcommand / P1 run-functions;
+      no mutation without confirmed:true), GET .../launcher/registry (increments/bugs/plans
+      via listArtifacts), POST .../launcher/launch (uses the Launcher abstraction).
+    rationale: >-
+      Reuse over rebuild (README §4/§5). The launcher data + prompt craft are read-only;
+      only execute + the confirmed launch mutate, and both honor the safety gate.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D3-002
+    summary: >-
+      Scope realism (L phase). Faithfully re-homing all ~5359 LOC of media/launcher.js
+      (plus the 979-LOC getLauncherHtml shell and 26 message types) balloons the increment
+      and risks the green gate. We ship the transport shim + a WORKING CORE of the UI
+      (project/adapter/launcher selection, action nav from the catalog, dynamic form with
+      visibleWhen, live prompt preview, execute/confirm, registry table) and mark the
+      advanced panels (copilot cost dashboard, deployment/trace panels, ADO suggestions,
+      role-branch/commit-sync git panels) PARTIAL/pending. The shim keeps the SAME
+      postMessage/window-message protocol so a later full launcher.js port drops in.
+    rationale: >-
+      Ships a usable, tested, local-only prompt-crafting slice now; defers the bulk-but-
+      mechanical panels without faking completion or breaking green.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D3-003
+    summary: >-
+      The `Launcher` abstraction (launch(prompt, adapterTarget) => Promise<LaunchResult>)
+      lives in @axiom/launcher (pure, dependency-injected) with ClipboardLaunch,
+      HttpLaunch(agentEndpoint) and optional VSCodeLaunch, replacing KVP25 launchBridge.ts.
+      ClipboardLaunch takes an injectable clipboard sink (default in-memory) so the
+      clipboard path is testable with NO running agent; HttpLaunch takes an injectable
+      fetch; VSCodeLaunch takes an injectable command runner (no `vscode` import). The
+      browser front selects the kind; the server launch endpoint uses the abstraction
+      (server-side HttpLaunch avoids browser CORS; clipboard is delegated to the browser).
+    rationale: >-
+      Satisfies "Launcher selection user-visible + testable; clipboard asserted without a
+      running agent" while keeping @axiom/launcher free of I/O and editor deps.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D3-004
+    summary: >-
+      RISK-004 assertion. The shipped front (apps/cli/static/launcher/*) contains no
+      `acquireVsCodeApi` reference and no `--vscode-*` CSS var; the shim exposes a clean
+      `window.AxiomBridge` transport with the same postMessage-out / window-`message`-in
+      contract as a VSCode webview. A test greps the shipped assets to enforce this.
+    rationale: >-
+      Front-end must run in a plain browser with zero VSCode APIs present.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in_progress
+    decision: implemented-core-slice
+    humanConfirmation: false
+    executedAtUtc: "2026-07-11T00:00:00Z"

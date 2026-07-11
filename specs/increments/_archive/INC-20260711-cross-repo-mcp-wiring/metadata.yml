@@ -1,0 +1,164 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-cross-repo-mcp-wiring
+  title: "Cross-repo MCP wiring: role commands read plan state cross-repo + sdd.transitionApply"
+  # Implemented and gate-green (build + 2431 tests + typecheck + doctor PASS,
+  # e2e transcript captured). `archived` per the workflow's terminal state; the
+  # general-spec (06_*.md) consolidation is deferred to the parent epic's §8
+  # closing step (same pattern as the archived P0 increment), so
+  # `integration.status` stays `active`.
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: igutierrezz@hiberus.com
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-11T00:00:00Z"
+  updatedAtUtc: "2026-07-11T00:00:00Z"
+  specifiedAtUtc: "2026-07-11T00:00:00Z"
+  plannedAtUtc: "2026-07-11T00:00:00Z"
+  doneAtUtc: "2026-07-11T00:00:00Z"
+  archivedAtUtc: "2026-07-11T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260711-cross-repo-mcp-wiring"
+  readme: "specs/increments/INC-20260711-cross-repo-mcp-wiring/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: "specs/increments/INC-20260711-cross-repo-mcp-wiring/artifacts/plans"
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: axiom/cross-repo-mcp-wiring
+  isolationValidated: true
+  isolationNotes: >-
+    All code changes live in the Axiom TS monorepo (C:/repos/Axiom Workspace/Axiom).
+    No git mutations. Cross-project isolation is enforced by the existing MCP
+    input-builders `pinned()` chokepoint; the new `sdd.transitionApply` mutation
+    tool reuses it verbatim.
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles:
+    - backend
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-11T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "Axiom.Spec/specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: "MCP como plano de control bidireccional"
+      operation: patch
+      deltaSummary: >-
+        Document the MCP surface as a bidirectional control plane: existing read
+        tools (spec.planRead / sdd.allowedWriteScopeRead) plus the new
+        `sdd.transitionApply` mutation tool (preview/confirm-gated). This is the
+        P-cross-cutting slice of the epic; full general-spec integration happens
+        at the epic's end (INC-20260711-sdd-launcher-core-port §8).
+
+relatedArtifacts:
+  - id: INC-20260711-sdd-launcher-core-port
+    relation: parent-epic
+    note: "Delivers the cross-cutting MCP control-plane slice + decision D-004."
+
+openQuestions: []
+
+decisions:
+  - id: D-004
+    summary: >-
+      MCP is a bidirectional control plane, not read-only (owner clarification
+      2026-07-11, recorded in the parent epic). This increment ships the near-term
+      slice: role-side commands READ plan workflow-state + allowedWriteScope from
+      the spec repo in a multi-repo workspace, and a role/external client can PUSH
+      a workflow transition via the confirm-gated `sdd.transitionApply` MCP tool.
+    rationale: >-
+      In a true multi-repo workspace the approved plan state lives in the spec
+      repo, but role-implementation runs from each role repo. Reading local-only
+      degraded `axiom-role start`'s plan-approval gate and the per-role review to
+      SKIP. This closes that gap without building git-script side-effects (P3).
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D-CRMW-001
+    summary: >-
+      The CLI's actual primary for cross-repo plan-state reads is the topology
+      BINDINGS DIRECT-READ path (resolve the spec repo via topology specRepo +
+      local bindings, read its `.axiom-state/local/workflow-state.json` and plan
+      `metadata.yml` directly). A live stdio MCP client from the CLI is NOT wired
+      (it would force `checkPlanIsApproved`/`runRoleReview`/`runRoleSubcommand`
+      async, a large blast radius risking the green suite). The same read IS
+      exposed over MCP (`spec.planRead` / `sdd.allowedWriteScopeRead`) for
+      external clients — that is the "MCP endpoint" leg of the resolution order.
+    rationale: >-
+      Keeps the 2409-test suite green and the change surgical while delivering the
+      real unblock. Resolution order: (1) MCP endpoint (for external clients, via
+      the existing read tools), (2) bindings direct-read (CLI primary), (3)
+      local-only fallback (single-repo / spec repo not present → today's behavior,
+      no regression).
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D-CRMW-002
+    summary: >-
+      Cross-repo read is engaged ONLY when: topology mode is `multi-repo` AND the
+      resolved spec repo path EXISTS on disk AND differs from the role repo's own
+      root. Otherwise the role commands read local (preserving today's behavior).
+    rationale: >-
+      A resolvable-but-absent spec repo (e.g. a bare `./spec` ref that was never
+      created) must fall back to local rather than hard-block, keeping existing
+      multi-repo tests green and avoiding false negatives.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D-CRMW-003
+    summary: >-
+      `sdd.transitionApply` applies the WORKFLOW-STATE transition only (persist the
+      new `WorkflowStateRecord`). It surfaces the transition's declared P0
+      side-effects (`{ localYaml, tracker }`) for transparency but does NOT itself
+      mutate artifact `metadata.yml` nor run any git/script action — those remain
+      their P1/P2/P3 owners' responsibility (git scripts are explicitly P3, out of
+      scope here).
+    rationale: >-
+      The workflow-state record is exactly what a role repo reads for its
+      plan-approval gate, so persisting it is the sufficient, correct core of
+      "push a state transition". Keeps the tool focused and green.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: draft
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-11T00:00:00Z"

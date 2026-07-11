@@ -1,7 +1,7 @@
 # Phased plan — sdd-launcher → Axiom core port
 
 > **Artefacto origen**: `INC-20260711-sdd-launcher-core-port` (increment)
-> **Estado**: draft
+> **Estado**: epic activo (umbrella) — P0/P1/P2/P4/PX shipped y archivados; P3 core entregado, largo plazo pendiente
 > **Versión de spec**: v1 · **Versión de plan**: p1
 > **E2E**: `parallel` (materialized in P3)
 
@@ -16,7 +16,14 @@ XL ≈ >2000. LOC counts are *net-new/ported* code, not the sdd-launcher totals
 
 ---
 
-## Phase P0 — Core reconciliation + canonical generator + explicit state (local-only)
+## Phase P0 — Core reconciliation + canonical generator + explicit state (local-only) — ✅ DONE (2026-07-11)
+
+**Shipped** as `INC-20260711-sdd-launcher-p0-core-generator` (archived): canonical
+skeleton generator (`artifact-skeleton.ts` + `scaffoldArtifact`, plans get
+`plan.metadata.yml` + per-role files), declared per-transition side-effects
+(`{ localYaml, tracker }` + `transition-effects.ts` runner), pure `recommendNext`,
+lifecycle-vocabulary table. Gate green (2375 tests, typecheck, doctor PASS, DF-001
+green). P0.5 (`FileSystem` port) deferred. See that increment for details.
 
 **Goal.** Make `@axiom/workflow` (+ `@axiom/core`) the canonical **sdd-core**: one
 structure generator, declared per-transition side-effects, guided next-step. No ADO,
@@ -54,7 +61,7 @@ no front-end.
 
 ---
 
-## Phase P1 — CLI generator subcommands (scaffold / normalize / integrate / validate / state)
+## Phase P1 — CLI generator subcommands (scaffold / normalize / integrate / validate / state) — ✅ DONE (`INC-20260711-sdd-launcher-p1-cli-subcommands`, archivado)
 
 **Goal.** Expose the P0 generator and state model as first-class, script-invocable
 CLI subcommands so the AI invokes structure, never invents it.
@@ -85,7 +92,7 @@ CLI subcommands so the AI invokes structure, never invents it.
 
 ---
 
-## Phase P2 — `IWorkItemTracker` port + `NullTracker` + `@axiom/tracker-ado`
+## Phase P2 — `IWorkItemTracker` port + `NullTracker` + `@axiom/tracker-ado` — ✅ DONE (`INC-20260711-sdd-launcher-p2-tracker`, archivado; superficie ADO periférica build/git/sprint/attachment pendiente)
 
 **Goal.** Make the tracker a decoupled, optional plugin. Axiom runs **local-only by
 default**; ADO is opt-in and fills the existing declarative stub.
@@ -117,7 +124,7 @@ default**; ADO is opt-in and fills the existing declarative stub.
 
 ---
 
-## Phase P3 — Local server + front-end transport shim + `Launcher`
+## Phase P3 — Local server + front-end transport shim + `Launcher` — 🟡 CORE SHIPPED, LONG-TAIL PENDING (`INC-20260711-sdd-launcher-p3-front-server`, in_progress: dashboards/paneles avanzados, push WebSocket, mapeo execute `plan-new`/`plan-execute` diferidos)
 
 **Goal.** Run the prompt-crafting front-end **from anywhere**, served by Axiom's
 **existing** `axiom app` HTTP server. Reuse sdd-launcher's front-end; do not rebuild.
@@ -146,7 +153,7 @@ consumed here but P4 can land first or concurrently (see note).
 
 ---
 
-## Phase P4 — Adapter-agnostic prompt engine + routing table + MCP/skill integration
+## Phase P4 — Adapter-agnostic prompt engine + routing table + MCP/skill integration — ✅ DONE (`INC-20260711-sdd-launcher-p4-launcher`, archivado)
 
 **Goal.** Craft prompts against whichever adapter's commands/skills the user chose.
 
@@ -173,6 +180,23 @@ unblocks P3 if sequenced first).
   (behavior preserved from `agentRoutingService`).
 
 ---
+
+## Cross-cutting — MCP control plane + git scripts (owner clarification, 2026-07-11) — 🟡 CROSS-REPO WIRING SHIPPED (`INC-20260711-cross-repo-mcp-wiring`, archivado: `sdd.transitionApply` confirm-gated + role gate/review leen estado del spec); git-services/`script/action` side-effect PENDIENTE
+
+The MCP surface is a **bidirectional control plane**, not read-only. This threads through P2/P3:
+- **P2** additionally exposes **MCP action tools** that apply a workflow transition and
+  invoke a tracker/side-effect — behind the `axiom app` preview/execute/`confirmed`
+  contract (nothing runs unconfirmed). The transition side-effect taxonomy (shipped in
+  P0 as `{ localYaml, tracker }`) gains a **`script/action` variant**.
+- **P3** ports KVP25's **git services** (`roleBranchService` / `commitSync` /
+  `gitSyncService`) into the core behind a small `GitRunner` seam, exposed as the
+  concrete `script/action` implementations and as MCP action tools, so a role repo can
+  **push its transition and launch its own git script cross-repo** (read state from the
+  spec repo via MCP; topology bindings as a no-server fallback). See README §5
+  (bidirectional MCP, git services) and D-004.
+- The near-term **cross-repo wiring** (role commands read plan state from the spec repo
+  instead of local-only) is the smallest slice of this and can ship as its own increment
+  ahead of the full front-end.
 
 ## Sequencing summary
 

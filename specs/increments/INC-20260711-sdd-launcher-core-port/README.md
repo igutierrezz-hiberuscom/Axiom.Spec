@@ -1,7 +1,7 @@
 # Increment: Port sdd-launcher capabilities into Axiom core
 
 > **Código**: INC-20260711-sdd-launcher-core-port
-> **Estado**: Pendiente (design/epic — no ejecutado)
+> **Estado**: Design/epic ACTIVO (umbrella). Todas las fases entregadas 2026-07-11 — P0 (`INC-20260711-sdd-launcher-p0-core-generator`, archivado), P1 (`INC-20260711-sdd-launcher-p1-cli-subcommands`, archivado), P2 (`INC-20260711-sdd-launcher-p2-tracker`, archivado), P4 (`INC-20260711-sdd-launcher-p4-launcher`, archivado), PX (`INC-20260711-cross-repo-mcp-wiring`, archivado); P3 (`INC-20260711-sdd-launcher-p3-front-server`) core entregado, largo plazo pendiente. **Restante**: largo plazo del front P3 + git-services/`script/action` side-effect + superficie ADO periférica.
 > **Fecha de creación**: 2026-07-11
 > **Tipo de cambio**: Nueva capacidad + Reconciliación de arquitectura
 > **Referencias externas**: `C:/repos/KVP25 Workspace/Kvp.Sdd/tools/sdd-launcher` (read-only source)
@@ -183,7 +183,26 @@ package or a fill-in of an existing stub.
   only the header/mention and launch verb vary per selected adapter.
 - **Transition side-effect descriptor** — extend the `workflows.yaml` step shape so
   each transition declares its local-YAML mutation and its optional tracker call,
-  moving that logic out of the CLI wrappers into the declared graph.
+  moving that logic out of the CLI wrappers into the declared graph. **The
+  side-effect taxonomy is extensible to a named *script/action* variant** (owner
+  clarification 2026-07-11) — e.g. a transition can declare "run the `role-branch`
+  or `commit-sync` git action in the target repo". P0 shipped the `{ localYaml,
+  tracker }` shape; the `action`/`script` variant + its runner (git services below)
+  land with P2/P3 when there is a consumer (no speculative widening in P0).
+- **MCP as a bidirectional control plane** (owner clarification 2026-07-11) — the MCP
+  surface must not be read-only. In addition to today's read/validation tools
+  (`spec.*Read`, `sdd.allowedWriteScopeRead`), add **action/mutation tools** that (a)
+  apply a workflow state transition and (b) **launch a declared script/action in the
+  target repo** (git: role-branch, commit, sync). All mutations run **behind the
+  existing `axiom app` preview/execute/`confirmed` safety contract** — nothing
+  executes without confirmation. This is how a role repo both *reads* plan state from
+  the spec repo and *pushes* its transition / triggers its git script cross-repo
+  (topology bindings remain a no-server fallback).
+- **Git services port** — bring KVP25's `roleBranchService` / `commitSync` /
+  `gitSyncService` (currently in the extension) into the core as the concrete
+  implementations behind the `script/action` side-effect variant and the MCP action
+  tools. Axiom already shells `git` (`gitSyncService` uses `execFile git`), so this is
+  a mechanical port behind a small `GitRunner` seam.
 
 ## 6. Dudas abiertas
 
@@ -200,6 +219,7 @@ package or a fill-in of an existing stub.
 | D-001 | Design/epic only — no code, no scaffolding | Execution deferred to `PLAN.md`; each phase opens its own increment |
 | D-002 | Reuse sdd-launcher's front-end (re-home backend), **not** rebuild, and **not** keep the earlier discardable HTML front | Front-end is ported behind a transport shim onto `axiom app` |
 | D-003 | ADO stays optional and decoupled; `NullTracker` is the default | Axiom runs local-only out of the box; ADO is opt-in via `tracker.kind: ado` |
+| D-004 | MCP is a **bidirectional control plane**, not read-only (owner 2026-07-11) | Add MCP action tools (apply transition + launch script in target repo) behind the `axiom app` preview/execute/`confirmed` model; the transition side-effect taxonomy gains a `script/action` variant; KVP25 git services (`roleBranch`/`commitSync`/`gitSync`) are ported into core. Scoped into P2/P3. |
 
 ## 8. Consolidación en la spec general
 

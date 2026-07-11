@@ -90,6 +90,19 @@ Ambos comandos son app-owned (registrados directo en `index.ts`, no vía `@axiom
 - **`axiom-role complete --no-review` / `--force`** (`INC-20260711-per-role-review`): `axiom-role complete` corre ahora un review de write-scope del `git diff` del repo de rol contra el `allowedWriteScope` del plan como gate explícito que bloquea la completion ante una violación; `--no-review` (o `--force`) omite ese gate. Ver el modelo de review en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
 - **Repo-affinity de `axiom-increment`/`axiom-bug`/`axiom-plan`/`axiom-role`** (`INC-20260711-repo-affinity-guard`): estos cuatro entrypoints se rechazan (exit 1) si se ejecutan desde el repo equivocado en un workspace multi-repo con roles definidos (increment/bug/plan ↔ repo de spec; role X ↔ repo del rol X) — NO-OP fuera de ese caso. Ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
 
+### Superficie CLI y front de prompts añadidos por la tanda sdd-launcher-port (2026-07-11)
+
+Port del sdd-launcher de KVP25 a Axiom core (P1/P2/P3/P4/PX; contexto en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)):
+
+- **`axiom scaffold increment|bug|plan`** (`INC-20260711-sdd-launcher-p1-cli-subcommands`): genera el esqueleto estructural completo delegando en el generador P0 (`axiom-increment create` es un alias, sin duplicación); `scaffold e2e` diferido (no hay clase de artefacto e2e).
+- **`axiom normalize`**: canonicaliza el `status` de forma idempotente contra la tabla de vocabulario de ciclo de vida.
+- **`axiom integrate`**: archiva + aplica la transición terminal (reusa `archiveArtifactDir`).
+- **`axiom validate transition`**: rechaza transiciones ilegales con el error tipado `invalid-transition` y lista las legales.
+- **`axiom state`**: inspector de estado actual / transiciones disponibles / recomendada.
+- **`axiom external-sync azure-devops …`** (`INC-20260711-sdd-launcher-p2-tracker`): la ruta de sync ADO, ahora respaldada por un cliente real detrás de `IWorkItemTracker` (ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)).
+- **Front de prompts en `axiom app`** (`INC-20260711-sdd-launcher-p3-front-server`; core operativo, largo plazo diferido): el front re-alojado se sirve bajo `/launcher/` desde el server `axiom app` (endpoints preview/execute/`confirmed`) tras un transport shim sin APIs de VSCode — nav + formulario dinámico + preview de prompt + execute/confirm + registry funcionan. La abstracción `Launcher` tiene tres impls: `ClipboardLaunch` / `HttpLaunch` / `VSCodeLaunch`.
+- **Routing de adapter** (`INC-20260711-sdd-launcher-p4-launcher`, `@axiom/launcher`): la misma acción resuelve a ids reales de comando/skill/MCP por adapter `claude-code` / `github-copilot` / `cli`, con fallback a `defaultAgentMention`.
+
 ### Colisión de nombrado: dos mecanismos "intent" no relacionados (uno ya eliminado)
 
 Había una colisión de nombrado, no un router único compartido: (1)

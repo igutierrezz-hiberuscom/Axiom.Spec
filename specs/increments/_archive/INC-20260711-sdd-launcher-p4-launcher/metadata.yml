@@ -1,0 +1,147 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-sdd-launcher-p4-launcher
+  title: "P4 — Adapter-agnostic prompt engine + routing table + MCP/skill integration"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: "orchestrator"
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-11T00:00:00Z"
+  updatedAtUtc: "2026-07-11T00:00:00Z"
+  specifiedAtUtc: "2026-07-11T00:00:00Z"
+  plannedAtUtc: "2026-07-11T00:00:00Z"
+  doneAtUtc: "2026-07-11T00:00:00Z"
+  archivedAtUtc: "2026-07-11T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260711-sdd-launcher-p4-launcher"
+  readme: "specs/increments/INC-20260711-sdd-launcher-p4-launcher/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: "axiom"
+  projectScopeKey: "axiom/sdd-launcher-core-port"
+  isolationValidated: true
+  isolationNotes: "Implemented entirely inside the Axiom code repo (packages/launcher). Spec lives in Axiom.Spec. KVP25's promptBuilder.ts / launcherDefinitions.ts / agentRoutingService.ts are READ-ONLY references, never modified."
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-11T00:00:00Z"
+
+integration:
+  status: integrated # active | integrated | archived
+  integratedAtUtc: "2026-07-11T00:00:00Z"
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "Axiom.Spec/specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: "Adaptadores y superficies de invocacion"
+      operation: patch
+      deltaSummary: >-
+        Introduce @axiom/launcher: a pure prompt-crafting engine + a families x modes
+        action catalog + an adapter-agnostic routing table that maps a launcher action
+        to the SELECTED adapter's real surface (Claude Code skill/slash-command, GitHub
+        Copilot chat participant, plain CLI command), resolving to real @axiom/skills,
+        @axiom/mcp-tools and @axiom/workflow ids. The prompt body is adapter-neutral;
+        only the header/mention and launch verb vary per adapter.
+
+openQuestions: []
+
+decisions:
+  - id: D4-001
+    summary: >-
+      buildPrompt stays adapter-neutral. The ONLY adapter-specific inputs are the
+      header/mention line (first line of the prompt) and the launch verb/mechanism;
+      the structured body, context lines and notes are identical across adapters.
+    rationale: >-
+      Satisfies the P4 acceptance directly (same action -> 2 adapters differ only in
+      header + launch verb) and keeps the ported KVP25 promptBuilder pure/deterministic.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D4-002
+    summary: >-
+      agentRouting.actions (a flat action-id -> mention map with a single
+      defaultAgentMention) is generalized into a per-adapter table
+      { id, promptDialect, routingMap, launchMechanism, defaultAgentMention }.
+      Two fallback levels preserve agentRoutingService behavior: (a) selecting an
+      adapter id absent from the table falls back to the table-level
+      defaultAgentMention; (b) an action absent from an adapter's routingMap falls
+      back to that adapter's defaultAgentMention.
+    rationale: >-
+      Faithful behavioral superset of agentRoutingService.resolveAgentMention's
+      key -> intentId -> defaultAgentMention chain, extended over the adapter axis.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D4-003
+    summary: >-
+      routingMap targets resolve to REAL ids on the selected surface: CLI targets carry
+      the canonical @axiom/workflow transition command (DEFAULT_WORKFLOWS) plus the real
+      `axiom <cmd> <sub>` invocation; Claude Code / Copilot targets resolve to a
+      catalogued @axiom/skills skill id (axiom-sdd-orchestrator); MCP action tools resolve
+      to @axiom/mcp-tools MCP_TOOL_CAPABILITY_IDS values (sdd.transitionApply for mutation,
+      spec.*Read for reads). A test cross-checks every declared workflowCommand against
+      DEFAULT_WORKFLOWS and every mcp id against MCP_TOOL_CAPABILITY_IDS so no target is invented.
+    rationale: >-
+      Directly satisfies "wire to real commands/skills" with a verifiable, non-inventing
+      guarantee; keeps the dependency direction sane (launcher depends on
+      workflow/skills/mcp-tools, never the reverse).
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+  - id: D4-004
+    summary: >-
+      Family/mode reconciliation to Axiom's 5 workflows is monotonic and documented
+      (README "Routing model"): family `incremento` -> workflow `increment`, `bug` -> `bug`,
+      `plan` -> `plan`, `back`/`front` -> the single `role` workflow (repo-role
+      distinguishes them), `e2e` -> `qa-e2e`; modes new/execute/close/archive map to the
+      workflow's start/advance/finalize/archive transitions. The ported KVP25 catalog
+      literals are preserved as-is (no source rename); reconciliation lives in a
+      FAMILY_TO_WORKFLOW map + a reconciliation table, not by mutating the port.
+    rationale: >-
+      Preserves port fidelity while wiring to Axiom's real lifecycle. Plan new/execute
+      have no single workflow transition (plan authoring is a CLI scaffold, not a state
+      transition), so those carry a CLI target with no workflowCommand.
+    decidedAtUtc: "2026-07-11T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: archived
+    decision: implemented-and-archived
+    humanConfirmation: false
+    executedAtUtc: "2026-07-11T00:00:00Z"
