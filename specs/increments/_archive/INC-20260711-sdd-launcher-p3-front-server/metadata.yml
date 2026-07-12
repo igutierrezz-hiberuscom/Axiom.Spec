@@ -4,7 +4,10 @@ kind: increment
 identity:
   id: INC-20260711-sdd-launcher-p3-front-server
   title: "P3 — Local server endpoints + front-end transport shim + Launcher abstraction"
-  status: in_progress # draft | specified | planned | in_progress | implemented | integrated | archived
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  # Long-tail RESOLVED in INC-20260711-front-longtail (server push channel +
+  # plan-new/plan-execute execute mapping); cost-dashboard + deployment-trace
+  # DISCARDED (out of Axiom scope, owner decision 2026-07-11 — not deferred).
   priority: high # low | medium | high | critical
 
 versioning:

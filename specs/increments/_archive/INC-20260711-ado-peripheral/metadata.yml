@@ -1,0 +1,128 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-ado-peripheral
+  title: "Complete the Azure DevOps client's peripheral surface (Build/Git/sprints/attachments)"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: medium # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: "orchestrator"
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-12T00:00:00Z"
+  updatedAtUtc: "2026-07-12T00:00:00Z"
+  specifiedAtUtc: "2026-07-12T00:00:00Z"
+  plannedAtUtc: "2026-07-12T00:00:00Z"
+  doneAtUtc: "2026-07-12T00:00:00Z"
+  archivedAtUtc: "2026-07-12T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260711-ado-peripheral"
+  readme: "specs/increments/INC-20260711-ado-peripheral/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: "axiom"
+  projectScopeKey: "axiom/sdd-launcher-core-port"
+  isolationValidated: true
+  isolationNotes: "Implemented entirely inside the Axiom code repo (packages/tracker, packages/tracker-ado). Spec lives in Axiom.Spec. KVP25's adoWorkflowService.ts is a READ-ONLY reference, never modified. Extends the P2 IWorkItemTracker port additively."
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+relations:
+  continues: "INC-20260711-sdd-launcher-p2-tracker"
+  partOf: "INC-20260711-sdd-launcher-core-port"
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-12T00:00:00Z"
+
+integration:
+  status: integrated # active | integrated | archived
+  integratedAtUtc: "2026-07-12T00:00:00Z"
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "Axiom.Spec/specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: "Integraciones externas opcionales (plugins)"
+      operation: patch
+      deltaSummary: >-
+        Complete the Azure DevOps IWorkItemTracker port with the peripheral
+        surface (Build defs/artifacts/runs, Git commit/PR traceability + branch/
+        PR/commit ArtifactLink, sprint/iteration catalog + role-close scheduling,
+        binary attachment upload+attach) behind optional segregated
+        sub-interfaces; NullTracker no-ops them; swap stays config-only.
+
+openQuestions: []
+
+decisions:
+  - id: DP-001
+    summary: >-
+      The peripheral surface is exposed as OPTIONAL segregated sub-interfaces on
+      IWorkItemTracker (build?/git?/sprints?/attachments?), not extra required
+      methods, so the extension is fully back-compatible with every existing impl
+      and test double.
+    rationale: >-
+      Additive + optional keeps back-compat guaranteed; segregation keeps ADO's
+      broad peripheral API cohesive and lets NullTracker no-op each capability.
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+  - id: DP-002
+    summary: >-
+      A `requestBinary` (Buffer body, application/octet-stream) is added to the
+      ADO request layer for the attachment upload path, reusing resolvePat and the
+      injected HttpTransport; peripheral impls live in separate modules
+      (ado-build/ado-git/ado-sprints/ado-attachments) to keep the diff acotado.
+    rationale: >-
+      Faithful port of uploadInlineAttachments' binary path with zero new network
+      seam and hermetic tests (fake transport, never dev.azure.com).
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+  - id: DP-003
+    summary: >-
+      Inline repro-image HTML (buildReproStepsHtml with <img>) stays OUT; only the
+      reusable binary upload+attach path is shipped.
+    rationale: >-
+      The HTML render belongs with the P3/P4 front-end consumer; the binary path
+      is the lifecycle-relevant primitive.
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: archived
+    decision: implemented-and-archived
+    humanConfirmation: false
+    executedAtUtc: "2026-07-12T00:00:00Z"

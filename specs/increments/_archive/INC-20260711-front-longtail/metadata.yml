@@ -1,0 +1,142 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-front-longtail
+  title: "Front long-tail — WebSocket/SSE push channel + plan-new/plan-execute execute mapping + discard cleanup"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: medium # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: "orchestrator"
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-12T00:00:00Z"
+  updatedAtUtc: "2026-07-12T00:00:00Z"
+  specifiedAtUtc: "2026-07-12T00:00:00Z"
+  plannedAtUtc: "2026-07-12T00:00:00Z"
+  doneAtUtc: "2026-07-12T00:00:00Z"
+  archivedAtUtc: ""
+
+paths:
+  root: "specs/increments/INC-20260711-front-longtail"
+  readme: "specs/increments/INC-20260711-front-longtail/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: "axiom"
+  projectScopeKey: "axiom/sdd-launcher-core-port"
+  isolationValidated: true
+  isolationNotes: >-
+    Resolves the KEPT P3 front long-tail of the epic
+    INC-20260711-sdd-launcher-core-port (phase INC-20260711-sdd-launcher-p3-front-server):
+    the server push channel and the plan-new/plan-execute execute mapping. Implemented in the
+    Axiom code repo (apps/cli). Spec lives in Axiom.Spec. The two DISCARDED long-tail items
+    (copilot-usage cost dashboard, deployment/trace panels) are removed from all pending records
+    by owner decision 2026-07-11 — out of Axiom scope, NOT deferred/pending.
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-12T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "Axiom.Spec/specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: "Trabajo futuro planificado (diseño ACTIVO, no implementado)"
+      operation: patch
+      deltaSummary: >-
+        Removes the KEPT long-tail items (push channel, plan-new/plan-execute execute mapping)
+        from the epic's "remaining" pointer now that they are implemented here, and removes the
+        two DISCARDED items (copilot-usage cost dashboard, deployment/trace panels) entirely —
+        they leave Axiom scope by owner decision 2026-07-11 and are NOT tracked as pending.
+    - targetDocument: "Axiom.Spec/specs/05_Interfaces_Operativas.md"
+      targetAnchor: "Front-end operativo y superficie del launcher"
+      operation: patch
+      deltaSummary: >-
+        The re-homed launcher front gains a server push channel (SSE) so registry changes are
+        pushed to the browser, with a graceful fetch fallback when EventSource is unavailable.
+
+openQuestions: []
+
+decisions:
+  - id: DLT-001
+    summary: >-
+      Push channel implemented as Server-Sent Events (SSE), not a raw WebSocket. SSE is a plain
+      text/event-stream HTTP response on the EXISTING `axiom app` http.Server — no new dependency,
+      no 101-Upgrade handshake/framing — and is consumed by the browser `EventSource`. The
+      transport shim opens the stream on `configure` and re-dispatches server pushes as `window`
+      `message` events (the same contract the front already consumes); when `EventSource` is
+      absent or the stream errors, the shim closes it and falls back to the existing request/
+      response fetch path (the front re-requests the registry after each execute).
+    rationale: >-
+      "Either satisfies server push"; SSE is the dependency-light, minimal-handshake choice that
+      rides the existing server primitive. A per-server LauncherEventHub broadcasts to subscribers
+      of a project; a confirmed execute broadcasts `registryChanged`.
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+  - id: DLT-002
+    summary: >-
+      `plan-new` and `plan-execute` move from preview-only to real execute, delegating to the P1
+      run-functions (no lifecycle reimplementation). `plan-new` scaffolds a plan via
+      `runPlanCreate` (axiom-plan create; metadata-only, not a state transition). `plan-execute`
+      delegates to the plan's real transition `plan-approve` via the existing `executeSubcommand`
+      (runPlanApprove). Both honor the preview/execute/confirmed contract — no mutation without
+      confirmed:true. Axiom's plan workflow has a single real transition, so plan-execute and
+      plan-close both resolve to plan-approve.
+    rationale: >-
+      Owner-approved kept long-tail; delegate to existing P1 helpers, respect the safety gate.
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+  - id: DLT-003
+    summary: >-
+      Cost dashboard (copilot-usage) and deployment/trace panels are DISCARDED — out of Axiom
+      scope by owner decision 2026-07-11. They are removed from every pending/deferred record
+      (P3 README long-tail list, epic README/PLAN, 06_Integraciones) and are explicitly NOT
+      tracked as deferred/pending. A future revisit is possible but untracked.
+    rationale: >-
+      Owner: "lo que descarto queda fuera y no queda como pendiente, sale de axiom".
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in_progress
+    decision: implemented-kept-long-tail
+    humanConfirmation: false
+    executedAtUtc: "2026-07-12T00:00:00Z"

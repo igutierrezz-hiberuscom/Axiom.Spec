@@ -1,7 +1,7 @@
 # Increment: Port sdd-launcher capabilities into Axiom core
 
 > **Código**: INC-20260711-sdd-launcher-core-port
-> **Estado**: Design/epic ACTIVO (umbrella). Todas las fases entregadas 2026-07-11 — P0 (`INC-20260711-sdd-launcher-p0-core-generator`, archivado), P1 (`INC-20260711-sdd-launcher-p1-cli-subcommands`, archivado), P2 (`INC-20260711-sdd-launcher-p2-tracker`, archivado), P4 (`INC-20260711-sdd-launcher-p4-launcher`, archivado), PX (`INC-20260711-cross-repo-mcp-wiring`, archivado); P3 (`INC-20260711-sdd-launcher-p3-front-server`) core entregado, largo plazo pendiente. **Restante**: largo plazo del front P3 + git-services/`script/action` side-effect + superficie ADO periférica.
+> **Estado**: Design/epic ACTIVO (umbrella). Todas las fases entregadas 2026-07-11 — P0 (`INC-20260711-sdd-launcher-p0-core-generator`, archivado), P1 (`INC-20260711-sdd-launcher-p1-cli-subcommands`, archivado), P2 (`INC-20260711-sdd-launcher-p2-tracker`, archivado), P4 (`INC-20260711-sdd-launcher-p4-launcher`, archivado), PX (`INC-20260711-cross-repo-mcp-wiring`, archivado); P3 (`INC-20260711-sdd-launcher-p3-front-server`, archivado) core + largo plazo mantenido entregado — el push channel (SSE) y el mapeo execute `plan-new`/`plan-execute` se entregaron en `INC-20260711-front-longtail`; **cost-dashboard + deployment-trace DESCARTADOS (fuera de Axiom, decisión de owner 2026-07-11 — no quedan como pendientes)**. **Restante**: git-services/`script/action` side-effect + superficie ADO periférica + paneles del front ADO-suggestions/role-branch/commit-sync.
 > **Fecha de creación**: 2026-07-11
 > **Tipo de cambio**: Nueva capacidad + Reconciliación de arquitectura
 > **Referencias externas**: `C:/repos/KVP25 Workspace/Kvp.Sdd/tools/sdd-launcher` (read-only source)

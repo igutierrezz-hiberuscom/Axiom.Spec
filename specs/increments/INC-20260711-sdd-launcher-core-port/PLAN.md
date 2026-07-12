@@ -1,7 +1,7 @@
 # Phased plan — sdd-launcher → Axiom core port
 
 > **Artefacto origen**: `INC-20260711-sdd-launcher-core-port` (increment)
-> **Estado**: epic activo (umbrella) — P0/P1/P2/P4/PX shipped y archivados; P3 core entregado, largo plazo pendiente
+> **Estado**: epic activo (umbrella) — P0/P1/P2/P3/P4/PX shipped y archivados; P3 core + largo plazo mantenido entregado (push channel + mapeo execute `plan-new`/`plan-execute` en `INC-20260711-front-longtail`); cost-dashboard + deployment-trace DESCARTADOS (fuera de Axiom, no pendientes)
 > **Versión de spec**: v1 · **Versión de plan**: p1
 > **E2E**: `parallel` (materialized in P3)
 
@@ -124,7 +124,7 @@ default**; ADO is opt-in and fills the existing declarative stub.
 
 ---
 
-## Phase P3 — Local server + front-end transport shim + `Launcher` — 🟡 CORE SHIPPED, LONG-TAIL PENDING (`INC-20260711-sdd-launcher-p3-front-server`, in_progress: dashboards/paneles avanzados, push WebSocket, mapeo execute `plan-new`/`plan-execute` diferidos)
+## Phase P3 — Local server + front-end transport shim + `Launcher` — ✅ CORE + KEPT LONG-TAIL SHIPPED (`INC-20260711-sdd-launcher-p3-front-server`, archivado; push channel SSE + mapeo execute `plan-new`/`plan-execute` entregados en `INC-20260711-front-longtail`; cost-dashboard + deployment-trace DESCARTADOS — fuera de Axiom, no pendientes; ADO-suggestions/role-branch/commit-sync git panels PARCIAL)
 
 **Goal.** Run the prompt-crafting front-end **from anywhere**, served by Axiom's
 **existing** `axiom app` HTTP server. Reuse sdd-launcher's front-end; do not rebuild.

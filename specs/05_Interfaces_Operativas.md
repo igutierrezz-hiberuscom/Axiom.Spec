@@ -103,6 +103,15 @@ Port del sdd-launcher de KVP25 a Axiom core (P1/P2/P3/P4/PX; contexto en [04_Flu
 - **Front de prompts en `axiom app`** (`INC-20260711-sdd-launcher-p3-front-server`; core operativo, largo plazo diferido): el front re-alojado se sirve bajo `/launcher/` desde el server `axiom app` (endpoints preview/execute/`confirmed`) tras un transport shim sin APIs de VSCode — nav + formulario dinámico + preview de prompt + execute/confirm + registry funcionan. La abstracción `Launcher` tiene tres impls: `ClipboardLaunch` / `HttpLaunch` / `VSCodeLaunch`.
 - **Routing de adapter** (`INC-20260711-sdd-launcher-p4-launcher`, `@axiom/launcher`): la misma acción resuelve a ids reales de comando/skill/MCP por adapter `claude-code` / `github-copilot` / `cli`, con fallback a `defaultAgentMention`.
 
+### Git side-effects, gate de verify y canal push — tanda git-services / functional-verify / front-longtail (2026-07-11)
+
+Superficie añadida sobre la tanda sdd-launcher-port; contexto de flujo en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md):
+
+- **`axiom-role start --create-branch [--commit] [--push] --confirm`** (`INC-20260711-git-services`): efecto git OPT-IN de la transición `start` — crea la rama de rol y (con `--commit`) commitea LOCALMENTE, empujando solo con `--push` explícito y `--confirm`. Sin flags el comportamiento por defecto no cambia (ningún git).
+- **Gate de verificación funcional** (`INC-20260711-functional-verify`): `axiom-increment verify` y `axiom-role complete` descubren y ejecutan la validación del repo destino y BLOQUEAN ante fallo; `--no-verify`/`--force` saltan el gate y `--preview`/`--dry-run` reporta lo descubierto sin correr. `axiom-qa-e2e verify --run-validation` opta la lane QA a una corrida real (inline-noop sigue siendo el default).
+- **Tools MCP de acción git** `sdd.gitRoleBranch` / `sdd.gitCommitSync` (`INC-20260711-git-services`): espejo de `sdd.transitionApply` — preview por defecto, mutan solo con `{ confirmed: true }`, nunca push salvo `{ push: true }`.
+- **Canal push SSE en `axiom app`** (`INC-20260711-front-longtail`): el server emite `text/event-stream` sobre el `http.Server` existente y el shim del front lo consume con `EventSource`, degradando a fetch cuando no está disponible; añade el mapeo execute (confirm-gated) de `plan-new`/`plan-execute`, cerrando el largo plazo P3 mantenido.
+
 ### Colisión de nombrado: dos mecanismos "intent" no relacionados (uno ya eliminado)
 
 Había una colisión de nombrado, no un router único compartido: (1)

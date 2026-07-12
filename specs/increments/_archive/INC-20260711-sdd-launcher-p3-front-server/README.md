@@ -2,7 +2,9 @@
 
 > **Código**: INC-20260711-sdd-launcher-p3-front-server
 > **Implementa**: Phase **P3** of epic `INC-20260711-sdd-launcher-core-port`
-> **Estado**: in_progress (core slice shipped green; advanced panels pending)
+> **Estado**: archived (core slice shipped green; kept long-tail — server push channel +
+> `plan-new`/`plan-execute` execute mapping — RESOLVED in `INC-20260711-front-longtail`;
+> cost-dashboard + deployment-trace DISCARDED, out of Axiom scope by owner decision 2026-07-11)
 > **Fecha**: 2026-07-11
 > **Referencias externas (READ-ONLY)**: `C:/repos/KVP25 Workspace/Kvp.Sdd/tools/sdd-launcher/{media/launcher.js, src/extension.ts, src/services/launchBridge.ts}`
 
@@ -89,11 +91,15 @@ transport shim; add a `Launcher` abstraction that replaces `launchBridge`.
     unit-tested (clipboard asserted with no agent; http via injected fetch).
   - E2E lane test (open → craft → preview → confirm → local artifact, no ADO).
   - Server-endpoint tests; front no-VSCode assertion test.
-- **PENDING / PARTIAL (deferred, D3-002):**
-  - Faithful port of the full `launcher.js` (advanced panels): copilot-usage cost dashboard,
-    deployment/trace panels, ADO suggestions, role-branch/commit-sync git panels. These map to
-    the peripheral message types and are out of the P3 core slice.
-  - `plan-new` / `plan-execute` execute mapping (plan authoring is a CLI scaffold, not a
-    workflow transition; surfaced as preview-only, not executable via the app).
-  - WebSocket push channel (the shim uses request/response `fetch`; server pushes are modelled
-    as synchronous `message` re-dispatch — sufficient for the core slice).
+- **LONG-TAIL — RESOLVED / DISCARDED (`INC-20260711-front-longtail`):**
+  - ✅ **Server push channel** — implemented as **SSE** (`GET .../launcher/events`,
+    `text/event-stream`; no new dependency, no WebSocket handshake). The transport shim opens the
+    stream and re-dispatches pushes as `window` `message` events, with a graceful fetch fallback
+    when `EventSource` is unavailable. A confirmed execute pushes `registryChanged`.
+  - ✅ **`plan-new` / `plan-execute` execute mapping** — `plan-new` scaffolds a plan via
+    `runPlanCreate`; `plan-execute` delegates to the real `plan-approve` transition. Both honor
+    the preview/execute/**confirmed** contract (no mutation without `confirmed:true`).
+  - ❌ **Cost dashboard and deployment trace: DISCARDED — out of Axiom scope by owner decision
+    2026-07-11; not deferred/pending.** (Future revisit possible but untracked.)
+- **STILL PARTIAL (epic remaining pointer, not this phase):** faithful port of the remaining
+  advanced `launcher.js` panels — ADO suggestions, role-branch/commit-sync git panels.

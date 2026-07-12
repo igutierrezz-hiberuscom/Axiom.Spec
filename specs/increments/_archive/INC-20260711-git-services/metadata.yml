@@ -1,0 +1,175 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-git-services
+  title: "Git services + script/action side-effect variant + confirm-gated git MCP tools"
+  # Implemented and gate-green (build + full vitest suite + typecheck + doctor
+  # PASS; git ran ONLY in throwaway temp repos, never in a workspace repo).
+  # `archived` per the workflow terminal state; general-spec (04/06_*.md)
+  # consolidation is deferred to the parent epic's §8 closing step (same pattern
+  # as the archived P0 / cross-repo-mcp-wiring increments), so
+  # `integration.status` stays `active`.
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: igutierrezz@hiberus.com
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-12T00:00:00Z"
+  updatedAtUtc: "2026-07-12T00:00:00Z"
+  specifiedAtUtc: "2026-07-12T00:00:00Z"
+  plannedAtUtc: "2026-07-12T00:00:00Z"
+  doneAtUtc: "2026-07-12T00:00:00Z"
+  archivedAtUtc: "2026-07-12T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260711-git-services"
+  readme: "specs/increments/INC-20260711-git-services/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: "specs/increments/INC-20260711-git-services/artifacts/plans"
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: axiom/git-services
+  isolationValidated: true
+  isolationNotes: >-
+    All CODE changes live in the Axiom TS monorepo (C:/repos/Axiom Workspace/Axiom).
+    The FEATURE runs git in a target/role repo, but is confirm-gated and never
+    pushes by default. SAFETY: no mutating git command was ever run against the
+    Axiom / Axiom.SDD / Axiom.Spec workspace repos — every git test/e2e creates a
+    THROWAWAY `git init` repo under a fresh temp dir (os.tmpdir mkdtemp / the
+    session scratch dir) and operates only there. Unit tests use an injectable
+    fake GitRunner that records commands without touching disk.
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles:
+    - backend
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-12T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "Axiom.Spec/specs/04_Flujos_SDD_y_Ciclo_de_Vida.md"
+      targetAnchor: "Ciclo de vida / side-effects declarados por transición"
+      operation: patch
+      deltaSummary: >-
+        Extend the declared per-transition side-effect taxonomy with a
+        script/action variant (`effects.actions: NamedAction[]`), dispatched by a
+        pure action runner to a registry of handlers; the git services
+        (role-branch / commit-sync) are the first registered handlers.
+    - targetDocument: "Axiom.Spec/specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: "MCP como plano de control bidireccional"
+      operation: patch
+      deltaSummary: >-
+        Add the confirm-gated git MCP action tools (`sdd.gitRoleBranch`,
+        `sdd.gitCommitSync`) mirroring `sdd.transitionApply`: preview by default,
+        mutate only with { confirmed: true }, never push unless { push: true }.
+        Full general-spec consolidation happens at the epic's end
+        (INC-20260711-sdd-launcher-core-port §8).
+
+relatedArtifacts:
+  - id: INC-20260711-sdd-launcher-core-port
+    relation: parent-epic
+    note: "Delivers the git-services + script/action side-effect + git MCP tools slice of D-004 (§5)."
+  - id: INC-20260711-cross-repo-mcp-wiring
+    relation: sibling
+    note: "Shipped sdd.transitionApply (the confirm-gated MCP mutation pattern these git tools mirror)."
+
+openQuestions: []
+
+decisions:
+  - id: D-GIT-001
+    summary: >-
+      Git services live as a MODULE inside `@axiom/workflow` (`src/git/`), NOT a
+      new `@axiom/git` package.
+    rationale: >-
+      The script/action side-effect taxonomy + the pure action-dispatch runner
+      live in `@axiom/workflow` (transition-effects.ts); the git services are the
+      concrete handlers for the `role-branch`/`commit-sync` named actions, so
+      co-locating them is the cleaner fit. It also avoids the new-package
+      `npm install` symlink gotcha and any workflow<->git dependency cycle. Git
+      needs only Node built-ins (child_process/fs/path), so no heavy dependency is
+      pulled into the otherwise dependency-light workflow package.
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+  - id: D-GIT-002
+    summary: >-
+      The `GitRunner` seam shells git via `spawnSync` (synchronous), injectable;
+      a fake runner records commands for unit tests.
+    rationale: >-
+      Mirrors the repo's existing precedent (`@axiom/doctor` write-scope.ts
+      `runGitDiff` + self-update.ts use spawnSync with an injectable runner).
+      Synchronous keeps the new `sdd.git*` MCP handlers synchronous like every
+      other `sdd.*`/`spec.*` handler (only `memory.*` is async), avoiding the
+      async blast radius that INC-cross-repo-mcp-wiring D-CRMW-001 deliberately
+      avoided.
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+  - id: D-GIT-003
+    summary: >-
+      No-push-by-default is enforced in the service itself: `commitSync` stages +
+      commits LOCALLY and only pushes when `push: true`; the confirm gate
+      (`confirmed`/`--confirm`) is a SEPARATE, additional requirement. Preview
+      (dryRun) mutates nothing and reports the exact git commands that WOULD run
+      plus current porcelain status.
+    rationale: >-
+      Safety-sensitive feature. Two independent guards (explicit push opt-in AND
+      confirmation) make an accidental remote push impossible on the default path.
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+  - id: D-GIT-004
+    summary: >-
+      `axiom-role start` git side-effect is OPT-IN (`--create-branch`) and
+      confirm-gated (`--confirm`); default behavior is unchanged (no git). The
+      pure action runner is generic over its handler context so `@axiom/workflow`
+      stays git-agnostic; the git-specific context (repoRoot/vars/gitRunner) lives
+      in the git module.
+    rationale: >-
+      The existing 2526-test suite must stay green; the role `start` transition's
+      default path must not gain a git side-effect. Gating behind a flag + confirm
+      preserves every existing test and the doctor dogfooding/write-scope
+      boundary (git actions are runtime features, not workspace mutations).
+    decidedAtUtc: "2026-07-12T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: draft
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-12T00:00:00Z"
