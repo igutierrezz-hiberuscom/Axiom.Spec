@@ -1,0 +1,130 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-mig-context-ingest
+  title: "from-context ingest — adopt an existing technical context into Axiom-apt, MCP-queryable form"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: architect
+  analystOwner: migration-engineer
+  architectOwner: migration-engineer
+
+lifecycle:
+  createdAtUtc: "2026-07-13"
+  updatedAtUtc: "2026-07-13"
+  specifiedAtUtc: "2026-07-13"
+  plannedAtUtc: "2026-07-13"
+  doneAtUtc: "2026-07-13"
+  archivedAtUtc: "2026-07-13"
+
+paths:
+  root: "specs/increments/INC-20260711-mig-context-ingest"
+  readme: "specs/increments/INC-20260711-mig-context-ingest/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: ""
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: >-
+    Implements Phase 3 of INC-20260711-spec-sdd-migration-plan. Writes migrated
+    technical-context docs + index into the RESOLVED spec scope (same
+    resolveSpecScopeAbsolutePath helper from-code already uses), never the
+    control repo root.
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles:
+    - migration-engineer
+    - cli-implementer
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: >-
+        On integration, document the `axiom bootstrap from-context <path>`
+        adoption path (ingest existing docs -> technical-context/* + a draft
+        TechnicalContextIndex served over MCP).
+
+openQuestions:
+  - id: Q-003
+    type: technical
+    question: >-
+      Should from-context ingest emit `status: draft` on the generated
+      TechnicalContextIndex (mirroring from-code) and never populate
+      `mandatory.*` mechanically?
+    blocking: false
+    status: resolved
+    resolution: >-
+      Yes. Index carries `status: draft`, `available`-only, `mandatory.always`
+      / `mandatory.whenTags` left empty — curation is a human judgment (same
+      Q-bootstrap-1/3 rationale as from-code). Confirmed in implementation.
+
+decisions:
+  - id: D-001
+    summary: >-
+      Reuse `buildTechnicalContextIndex` from `bootstrap-from-code/index-builder.ts`
+      VERBATIM (re-exported), and the exact from-code write plumbing
+      (`writeGuardedFile` + `technicalContextIndexPath`), so MCP-queryability is
+      free (`spec.technicalContextIndexRead` serves it with no new MCP surface).
+    rationale: >-
+      The plan mandates mirroring from-code's ingest->map->index shape and
+      sharing all of its write plumbing.
+    decidedAtUtc: "2026-07-13"
+  - id: D-002
+    summary: >-
+      Context docs carry an `AXIOM:MIGRATED` provenance banner naming the
+      source path, DISTINCT from from-code's `AXIOM:DRAFT` banner.
+    rationale: >-
+      A reviewer must tell a migrated existing document apart from a fresh
+      mechanical draft.
+    decidedAtUtc: "2026-07-13"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: draft
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13"

@@ -55,7 +55,7 @@ Ver el detalle por área en `03`/`04`/`05`/`06`/`07` (actualizados por cada incr
 
 ## Ola de endurecimiento 2026-07-11 (correctness + affinity + review, cerrada)
 
-Tanda de 3 incrementos implementados y verificados (build + suite en verde; `specs/increments/_archive/INC-20260711-audit-bug-fixes|repo-affinity-guard|per-role-review`): 7 fixes de correctitud/consistencia auditados, un **guard de repo-affinity** (cada comando de ciclo de vida enforced contra el repo correcto en multi-repo) y un **review de write-scope por rol** en `axiom-role complete` más un agregado `axiom validate changes --all-repos` desde el spec. Detalle por área en `03`/`04`/`05`/`06`.
+Tanda de 3 incrementos implementados y verificados (build + suite en verde; `specs/increments/_archive/INC-20260711-audit-bug-fixes|repo-affinity-guard|per-role-review`): 7 fixes de correctitud/consistencia auditados, un **guard de repo-affinity** (cada comando de ciclo de vida enforced contra el repo correcto en multi-repo) y un **review de write-scope por rol** en `axiom-role complete` más un agregado `axiom validate changes --all-repos` desde el spec. Detalle por área en `03`/`04`/`05`/`06`. En la misma oleada quedaron **totalmente entregados y archivados** el epic `INC-20260711-sdd-launcher-core-port` (re-home del sdd-launcher de KVP25 a Axiom core: P0-P4 + PX + los tres paneles del front, cerrados en `INC-20260711-epic-close-panels`) y el **adopter de migración de repos foráneos** (`from-legacy-sdd` format-aware + ingesta de contexto + UX de adopción); ver `05`/`06`.
 
 ## Roadmap de rediseño (cerrado, parcialmente implementado)
 

@@ -1,0 +1,151 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-mig-spec-adopter
+  title: "Foreign spec-repo adopter — format detectors + structural conversion (Phases 1+2)"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: architect
+  analystOwner: migration-engineer
+  architectOwner: cli-implementer
+
+lifecycle:
+  createdAtUtc: "2026-07-12"
+  updatedAtUtc: "2026-07-12"
+  specifiedAtUtc: "2026-07-12"
+  plannedAtUtc: ""
+  doneAtUtc: ""
+  archivedAtUtc: ""
+
+paths:
+  root: "specs/increments/INC-20260711-mig-spec-adopter"
+  readme: "specs/increments/INC-20260711-mig-spec-adopter/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: ""
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: >-
+    Implements Phases 1 (pluggable format-detector layer + broadened status
+    parsing) and 2 (structural conversion pass + per-run migration report) of
+    INC-20260711-spec-sdd-migration-plan. Phase 0 (spec-scope routing) already
+    shipped in INC-20260711-audit-bug-fixes; migration writes to the resolved
+    spec scope. Code lives in Axiom/apps/cli/src/bootstrap-from-legacy-sdd.
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles:
+    - cli-implementer
+    - migration-engineer
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-12"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "specs/increments/INC-20260711-spec-sdd-migration-plan/README.md"
+      targetAnchor: "Phased implementation plan"
+      operation: patch
+      deltaSummary: >-
+        Phases 1 and 2 of the migration plan are now implemented; the plan's
+        remaining phases (3 from-context, 4 idempotency map, 5 install UX)
+        stay pending.
+
+openQuestions:
+  - id: Q-001
+    type: technical
+    question: >-
+      Which foreign spec formats are in-scope for the first detector pass?
+      RESOLVED for this increment: axiom-native, openspec, docs-adr,
+      generic-folders (matches the plan's proposed set).
+    blocking: false
+    status: resolved
+    resolution: >-
+      Shipped exactly those four detectors; the registry is injectable so it
+      grows incrementally (D-001 of the parent plan).
+  - id: Q-002
+    type: technical
+    question: >-
+      Conversion depth: reshape into the full multi-doc canonical increment
+      layout, or land a single sectioned README first?
+    blocking: false
+    status: resolved
+    resolution: >-
+      Single sectioned canonical README with a "Contenido original migrado"
+      appendix. Multi-doc splitting (01_Requisitos/03_Criterios files) deferred
+      — see parent plan Q-002.
+  - id: Q-004
+    type: compliance
+    question: >-
+      ID policy for idempotent re-runs (preserve foreign Axiom-style ID vs
+      always mint fresh)?
+    blocking: false
+    status: open
+    resolution: >-
+      Out of scope here (Phase 4). Current behavior (always mint fresh via
+      generateUniqueArtifactId, never overwrite) is retained unchanged.
+
+decisions:
+  - id: D-001
+    summary: >-
+      ScannedLegacyItem stays the stable seam; migrator.ts status semantics
+      (resolveWorkflowStateForMigration / resolveDisplayStatusForMigration) are
+      unchanged and remain the single source of truth for the final status.
+    rationale: >-
+      Detection and conversion are additive; the safe status resolver must not
+      be weakened. axiom-native detector reproduces today's scan verbatim.
+    decidedAtUtc: "2026-07-12"
+  - id: D-002
+    summary: >-
+      Structural conversion is graceful-downgrade: unstructured bodies fall
+      back to today's verbatim-with-AXIOM:MIGRATED-banner output, byte-identical
+      to the pre-increment behavior. No information is ever lost or invented.
+    rationale: >-
+      Guarantees zero regression for the existing from-legacy-sdd test suite and
+      honors the plan's "conversion is additive quality, never a data-loss risk".
+    decidedAtUtc: "2026-07-12"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: in_progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-12"

@@ -1,0 +1,149 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-mig-idempotency
+  title: "Idempotent re-runs + source→artifact provenance map (Phase 4)"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: architect
+  analystOwner: migration-engineer
+  architectOwner: migration-engineer
+
+lifecycle:
+  createdAtUtc: "2026-07-13"
+  updatedAtUtc: "2026-07-13"
+  specifiedAtUtc: "2026-07-13"
+  plannedAtUtc: "2026-07-13"
+  doneAtUtc: "2026-07-13"
+  archivedAtUtc: "2026-07-13"
+
+paths:
+  root: "specs/increments/INC-20260711-mig-idempotency"
+  readme: "specs/increments/INC-20260711-mig-idempotency/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: ""
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: >-
+    Implements Phase 4 of INC-20260711-spec-sdd-migration-plan. The
+    source→artifact provenance map is persisted at the RESOLVED spec scope
+    (technical-context/.migration-provenance.yml), never the control repo root,
+    and covers BOTH migration subjects (spec artifacts + context docs).
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles:
+    - migration-engineer
+    - cli-implementer
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: >-
+        On integration, document the idempotent re-run behavior: adoption is
+        keyed by a source→artifact provenance map (normalized source path +
+        content hash), so re-running over the same foreign repo skips
+        already-migrated sources and never duplicates.
+
+openQuestions:
+  - id: Q-004
+    type: compliance
+    question: >-
+      For an ID collision where a foreign item already carries an Axiom-style
+      ID, do we preserve the original ID (idempotent re-run) or always mint a
+      fresh one (current from-legacy-sdd behavior)?
+    blocking: true
+    status: resolved
+    resolution: >-
+      Idempotency is keyed by a source→artifact provenance map (key =
+      normalized source path + sha256 content hash), NOT by ID reuse. Default =
+      mint FRESH Axiom ids (keep generateUniqueArtifactId) and RECORD the
+      mapping source -> {artifactId, artifactRelPath, contentHash,
+      migratedAtUtc, kind, subject}. A foreign Axiom-style id is preserved ONLY
+      if it already matches Axiom's id format AND does not collide (else mint
+      fresh + record). On re-run, SKIP any source whose (path OR content-hash)
+      is already recorded AND whose recorded target still exists on disk. If the
+      provenance file is absent/corrupt it is treated as EMPTY and the existing
+      artifactExists / non-existence guards apply (never duplicate silently,
+      never crash).
+
+decisions:
+  - id: D-001
+    summary: >-
+      Provenance map lives at <specScope>/technical-context/.migration-provenance.yml
+      (a single file covering BOTH subjects), keyed by normalized source path +
+      sha256 content hash.
+    rationale: >-
+      Both subjects resolve the same spec scope; a single dot-prefixed YAML at
+      that scope is the plan's suggested location, is not picked up by the
+      technical-context ingest/index/MCP surfaces, and survives across runs.
+    decidedAtUtc: "2026-07-13"
+  - id: D-002
+    summary: >-
+      The provenance skip is ADDITIVE and opt-in at the migrator API
+      (migrateLegacyItems gains an optional options arg). A first run with an
+      empty map, and any call without provenance options, behaves byte-identical
+      to pre-Phase-4.
+    rationale: >-
+      Keeps the INC-MIG-SPEC / INC-MIG-CONTEXT suites green; the only command
+      behavior that changes is the intended one (a SECOND real run now skips
+      already-migrated sources instead of duplicating).
+    decidedAtUtc: "2026-07-13"
+  - id: D-003
+    summary: >-
+      The run timestamp (migratedAtUtc) is threaded from the CLI layer (nowUtc),
+      never invented inside pure/lower code; tests inject a fixed timestamp.
+    rationale: >-
+      Q-004 owner constraint: no impure now() in the migration core.
+    decidedAtUtc: "2026-07-13"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: draft
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13"

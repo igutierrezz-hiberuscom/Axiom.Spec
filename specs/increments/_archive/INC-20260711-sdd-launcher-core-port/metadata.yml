@@ -4,11 +4,9 @@ kind: increment
 identity:
   id: INC-20260711-sdd-launcher-core-port
   title: "Port sdd-launcher capabilities into Axiom core (design epic)"
-  # NOTE: the owner's brief labels this "pending". The structured enum in
-  # increment-metadata-template.yaml has no `pending`; `draft` is the
-  # schema-valid value for an authored-but-not-approved design epic. The
-  # README header uses "Pendiente (design/epic — no ejecutado)" for humans.
-  status: draft # draft | specified | planned | in_progress | implemented | integrated | archived
+  # Epic FULLY DELIVERED (all phases P0-P4 + PX + front panels shipped and
+  # archived); flipped to the terminal `archived` state on epic close 2026-07-13.
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
   priority: high # low | medium | high | critical
 
 versioning:
@@ -26,11 +24,11 @@ ownership:
 
 lifecycle:
   createdAtUtc: "2026-07-11T00:00:00Z"
-  updatedAtUtc: "2026-07-11T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
   specifiedAtUtc: ""
   plannedAtUtc: ""
   doneAtUtc: ""
-  archivedAtUtc: ""
+  archivedAtUtc: "2026-07-13T00:00:00Z"
 
 paths:
   root: "specs/increments/INC-20260711-sdd-launcher-core-port"

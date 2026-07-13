@@ -1,7 +1,7 @@
 # Phased plan — sdd-launcher → Axiom core port
 
 > **Artefacto origen**: `INC-20260711-sdd-launcher-core-port` (increment)
-> **Estado**: epic activo (umbrella) — P0/P1/P2/P3/P4/PX shipped y archivados; P3 core + largo plazo mantenido entregado (push channel + mapeo execute `plan-new`/`plan-execute` en `INC-20260711-front-longtail`); cost-dashboard + deployment-trace DESCARTADOS (fuera de Axiom, no pendientes)
+> **Estado**: ENTREGADO/COMPLETO (archivado) — P0/P1/P2/P3/P4/PX shipped y archivados; push channel + mapeo execute `plan-new`/`plan-execute` en `INC-20260711-front-longtail`, git-services en `INC-20260711-git-services`, ADO periférica en `INC-20260711-ado-peripheral`, y los tres paneles del front en `INC-20260711-epic-close-panels`; cost-dashboard + deployment-trace DESCARTADOS (fuera de Axiom, no pendientes)
 > **Versión de spec**: v1 · **Versión de plan**: p1
 > **E2E**: `parallel` (materialized in P3)
 
@@ -124,7 +124,7 @@ default**; ADO is opt-in and fills the existing declarative stub.
 
 ---
 
-## Phase P3 — Local server + front-end transport shim + `Launcher` — ✅ CORE + KEPT LONG-TAIL SHIPPED (`INC-20260711-sdd-launcher-p3-front-server`, archivado; push channel SSE + mapeo execute `plan-new`/`plan-execute` entregados en `INC-20260711-front-longtail`; cost-dashboard + deployment-trace DESCARTADOS — fuera de Axiom, no pendientes; ADO-suggestions/role-branch/commit-sync git panels PARCIAL)
+## Phase P3 — Local server + front-end transport shim + `Launcher` — ✅ DONE (`INC-20260711-sdd-launcher-p3-front-server`, archivado; push channel SSE + mapeo execute `plan-new`/`plan-execute` entregados en `INC-20260711-front-longtail`; cost-dashboard + deployment-trace DESCARTADOS — fuera de Axiom, no pendientes; los tres paneles del front ADO-suggestions/role-branch/commit-sync entregados en `INC-20260711-epic-close-panels`)
 
 **Goal.** Run the prompt-crafting front-end **from anywhere**, served by Axiom's
 **existing** `axiom app` HTTP server. Reuse sdd-launcher's front-end; do not rebuild.
@@ -181,7 +181,7 @@ unblocks P3 if sequenced first).
 
 ---
 
-## Cross-cutting — MCP control plane + git scripts (owner clarification, 2026-07-11) — 🟡 CROSS-REPO WIRING SHIPPED (`INC-20260711-cross-repo-mcp-wiring`, archivado: `sdd.transitionApply` confirm-gated + role gate/review leen estado del spec); git-services/`script/action` side-effect PENDIENTE
+## Cross-cutting — MCP control plane + git scripts (owner clarification, 2026-07-11) — ✅ SHIPPED (`INC-20260711-cross-repo-mcp-wiring`, archivado: `sdd.transitionApply` confirm-gated + role gate/review leen estado del spec; git-services/`script/action` side-effect entregado en `INC-20260711-git-services`)
 
 The MCP surface is a **bidirectional control plane**, not read-only. This threads through P2/P3:
 - **P2** additionally exposes **MCP action tools** that apply a workflow transition and

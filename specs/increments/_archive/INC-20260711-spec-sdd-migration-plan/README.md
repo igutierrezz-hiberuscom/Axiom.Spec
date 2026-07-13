@@ -1,14 +1,24 @@
 # Increment: Migrate foreign spec/SDD repos into Axiom-apt form
 
-Status: pending (design spec + phased plan — no code in this artifact)
+Status: archived (design spec + phased plan — IMPLEMENTED; see "Implemented by" below)
 Date: 2026-07-11
 Type: New capability
 Owner: migration-engineer
 
-> This document is a DESIGN SPEC and a PHASED PLAN. It specifies what a future
-> implementation increment must build. It contains no production code and
-> mandates no build. Every reference to current behavior is grounded in the
-> real code paths cited inline.
+> This document is a DESIGN SPEC and a PHASED PLAN. It specified what the
+> implementation increments had to build. All of its phases (0-5) are now
+> shipped (build+test+typecheck+doctor green); it is archived. Every reference
+> to current behavior is grounded in the real code paths cited inline.
+
+## Implemented by
+
+All phases of this plan are now implemented and archived across five increments:
+
+- **Phase 0** (spec-scope routing prerequisite) — `INC-20260711-audit-bug-fixes`.
+- **Phases 1 + 2** (pluggable format-detector layer + broadened status parsing + structural conversion + per-run migration report) — `INC-20260711-mig-spec-adopter`.
+- **Phase 3** (`from-context` ingest → `technical-context/*` + a draft `TechnicalContextIndex` served over MCP) — `INC-20260711-mig-context-ingest`.
+- **Phase 4** (source→artifact provenance map + idempotent skip-already-migrated for both subjects) — `INC-20260711-mig-idempotency`.
+- **Phase 5** (install-time `axiom workspace setup --adopt-spec/--adopt-sdd/--ingest-context` dry-run→confirm UX + subject-B conformance report) — `INC-20260711-mig-adopt-ux`.
 
 ## Goal
 

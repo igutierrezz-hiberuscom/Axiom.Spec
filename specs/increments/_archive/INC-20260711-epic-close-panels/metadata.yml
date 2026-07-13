@@ -1,0 +1,154 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-epic-close-panels
+  title: "Epic close — ADO-suggestions + git role-branch + commit-sync front panels"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: "orchestrator"
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-13T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
+  specifiedAtUtc: "2026-07-13T00:00:00Z"
+  plannedAtUtc: "2026-07-13T00:00:00Z"
+  doneAtUtc: "2026-07-13T00:00:00Z"
+  archivedAtUtc: ""
+
+paths:
+  root: "specs/increments/INC-20260711-epic-close-panels"
+  readme: "specs/increments/INC-20260711-epic-close-panels/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: "axiom"
+  projectScopeKey: "axiom/sdd-launcher-core-port"
+  isolationValidated: true
+  isolationNotes: >-
+    Delivers the ONLY remaining item of the epic INC-20260711-sdd-launcher-core-port:
+    the front panels for ADO suggestions, role-branch, and commit-sync. These are thin
+    FRONT-END panels + thin server endpoints over engines that ALREADY shipped in prior
+    phases (@axiom/tracker + @axiom/tracker-ado createWorkItemTracker/listWorkItems;
+    @axiom/workflow git-services roleBranch/commitSync/gitStatus). NO new engine is
+    written. Implemented in the Axiom code repo (apps/cli). Spec lives in Axiom.Spec.
+    Git operations run ONLY in temp repos in tests, never in this workspace. After this
+    increment the epic is fully delivered.
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "Axiom.Spec/specs/05_Interfaces_Operativas.md"
+      targetAnchor: "Front-end operativo y superficie del launcher"
+      operation: patch
+      deltaSummary: >-
+        The re-homed launcher front gains three operator panels — ADO suggestions
+        (read-only), git role-branch (preview/confirm), and commit-sync
+        (preview/confirm, no-push-by-default) — each a thin front over an already
+        shipped engine, behind new thin `axiom app` endpoints.
+    - targetDocument: "Axiom.Spec/specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: "Trabajo futuro planificado (diseño ACTIVO, no implementado)"
+      operation: patch
+      deltaSummary: >-
+        Removes the epic's LAST remaining pointer (ADO suggestions + git role-branch/
+        commit-sync panels) now that these panels ship here. The epic
+        INC-20260711-sdd-launcher-core-port is fully delivered after this increment.
+
+openQuestions: []
+
+decisions:
+  - id: DEP-001
+    summary: >-
+      The three panels are thin FRONT + thin server endpoints over ALREADY SHIPPED
+      engines — no new engine is written. ADO suggestions reuse the
+      createWorkItemTracker factory + IWorkItemTracker.listWorkItems (WIQL); the git
+      panels reuse the @axiom/workflow git-services (roleBranch/commitSync/gitStatus),
+      the same functions the confirm-gated sdd.gitRoleBranch / sdd.gitCommitSync MCP
+      handlers wrap.
+    rationale: >-
+      The epic's remaining item was UI over shipped engines. Reusing the engines keeps
+      the change surgical and preserves every safety property already tested (no-push
+      default, path-escape guard, branch-name validation, NullTracker local-only).
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: DEP-002
+    summary: >-
+      tracker.kind != 'ado' (NullTracker) yields a graceful, network-free
+      "ADO no configurado" result (configured:false, reason, empty suggestions) — NOT
+      an error. The suggestions panel is display-only (no confirm-gated link action) to
+      keep the mutation surface bounded.
+    rationale: >-
+      Local-only is the DEFAULT tracker; the panel must never crash or hit the network
+      when ADO is not configured. Link-to-work-item is out of scope for this closing
+      slice (bounded).
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: DEP-003
+    summary: >-
+      The git panels follow the SAME preview/execute/confirmed contract as the rest of
+      `axiom app`: POST without confirmed → preview (planned git commands + porcelain
+      status, dryRun, NO mutation); POST with confirmed:true → apply in the pinned repo.
+      commit-sync pushes ONLY when an explicit push toggle is set AND confirmed
+      (two independent guards); default is NO push. A confirmed git apply broadcasts a
+      `registryChanged` push over the existing SSE hub.
+    rationale: >-
+      Mirrors the shipped 0025 preview/execute/confirmed gate and the git-services'
+      no-push-by-default (D-GIT-003). No new safety model.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: DEP-004
+    summary: >-
+      No new engine; the two DISCARDED sdd-launcher items (copilot-usage cost dashboard,
+      deployment/trace panels) stay OUT of Axiom scope (owner 2026-07-11) — not revived,
+      not deferred.
+    rationale: >-
+      Scope discipline: this increment closes the epic's remaining pointer only.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in_progress
+    decision: implemented-epic-close-panels
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13T00:00:00Z"

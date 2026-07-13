@@ -111,6 +111,7 @@ Superficie añadida sobre la tanda sdd-launcher-port; contexto de flujo en [04_F
 - **Gate de verificación funcional** (`INC-20260711-functional-verify`): `axiom-increment verify` y `axiom-role complete` descubren y ejecutan la validación del repo destino y BLOQUEAN ante fallo; `--no-verify`/`--force` saltan el gate y `--preview`/`--dry-run` reporta lo descubierto sin correr. `axiom-qa-e2e verify --run-validation` opta la lane QA a una corrida real (inline-noop sigue siendo el default).
 - **Tools MCP de acción git** `sdd.gitRoleBranch` / `sdd.gitCommitSync` (`INC-20260711-git-services`): espejo de `sdd.transitionApply` — preview por defecto, mutan solo con `{ confirmed: true }`, nunca push salvo `{ push: true }`.
 - **Canal push SSE en `axiom app`** (`INC-20260711-front-longtail`): el server emite `text/event-stream` sobre el `http.Server` existente y el shim del front lo consume con `EventSource`, degradando a fetch cuando no está disponible; añade el mapeo execute (confirm-gated) de `plan-new`/`plan-execute`, cerrando el largo plazo P3 mantenido.
+- **Paneles operadores del front `/launcher/`** (`INC-20260711-epic-close-panels`): el front bajo `/launcher/` gana tres paneles, cada uno UI fina sobre un motor ya entregado — **sugerencias ADO** (lista read-only vía `IWorkItemTracker.listWorkItems`; enlace display-only, degrada a "ADO no configurado" con `NullTracker`, sin red) y **role-branch** + **commit-sync** (preview→confirm sobre las git-services de `@axiom/workflow`; git local-only, sin push por defecto). Un apply git confirmado emite `registryChanged` por el canal SSE de arriba.
 
 ### Colisión de nombrado: dos mecanismos "intent" no relacionados (uno ya eliminado)
 
@@ -206,3 +207,11 @@ Cuando el provider `engram` está habilitado (`workspace.json#providers`), la MI
 ## Reviewer con ledger de hallazgos — INC-20260709-review-findings-ledger
 
 El agent de revisión (`axiom-reviewer` en el catálogo de agents materializable, y el agent bootstrap `axiom-review` de este workspace) emite ahora, además de su recomendación de cierre, un **ledger de hallazgos** estructurado (`id`/`lens`/`location`/`severity`/`status`/`evidence`) producido por una primera pasada exhaustiva loop-until-dry, y hace re-review scoped al ledger + diff del fix. El detalle del contrato y su persistencia vive en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
+
+## Superficie de adopción/migración de repos foráneos (2026-07-11) — tanda migración
+
+Comandos añadidos para adoptar un proyecto preexistente (detalle de capacidad en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md); flujo en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md)):
+
+- **`axiom bootstrap from-context <path>`** (`INC-20260711-mig-context-ingest`): ingiere un contexto técnico existente (`ARCHITECTURE.md`/`docs/**`/ADRs) a `technical-context/*` + un `TechnicalContextIndex` `draft` servido por `spec.technicalContextIndexRead` (MCP); cada doc lleva banner `AXIOM:MIGRATED` (distinto del `AXIOM:DRAFT` de `from-code`); re-corrida sin clobber.
+- **`axiom bootstrap from-legacy-sdd`** ahora es **format-aware** (`INC-20260711-mig-spec-adopter`): además de carpetas Axiom-shaped, detecta repos spec foráneos (`openspec` / `docs-adr` / `generic-folders`) vía un registro de detectores enchufable y convierte a la plantilla canónica de incremento; el `--dry-run` lista el/los formato(s) detectado(s).
+- **`axiom workspace setup --adopt-spec / --adopt-sdd / --ingest-context [--dry-run] [-y]`** (`INC-20260711-mig-adopt-ux`): orquesta en install-time la conformancia del repo de control (subject B: reporte present/added/must-reconcile) + la migración del repo de spec foráneo (subject A) + la ingesta de contexto; por defecto muestra un preview dry-run y exige confirmación antes de escribir (`-y` la salta).

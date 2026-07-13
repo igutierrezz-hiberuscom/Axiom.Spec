@@ -4,7 +4,7 @@ kind: increment
 identity:
   id: INC-20260711-spec-sdd-migration-plan
   title: "Migrate foreign spec/SDD repos into Axiom-apt, MCP-queryable form"
-  status: draft # draft | specified | planned | in_progress | implemented | integrated | archived  (design/plan artifact — 'pending' no es un valor de enum válido)
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived  (design/plan — all phases 0-5 shipped; see README "Implemented by")
   priority: high # low | medium | high | critical
 
 versioning:
@@ -22,11 +22,11 @@ ownership:
 
 lifecycle:
   createdAtUtc: "2026-07-11"
-  updatedAtUtc: "2026-07-11"
+  updatedAtUtc: "2026-07-13"
   specifiedAtUtc: ""
   plannedAtUtc: ""
   doneAtUtc: ""
-  archivedAtUtc: ""
+  archivedAtUtc: "2026-07-13"
 
 paths:
   root: "specs/increments/INC-20260711-spec-sdd-migration-plan"

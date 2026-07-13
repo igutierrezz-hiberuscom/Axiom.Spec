@@ -1,0 +1,162 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260711-mig-adopt-ux
+  title: "Install-time adoption UX for existing spec/sdd repos (Phase 5)"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: architect
+  analystOwner: migration-engineer
+  architectOwner: migration-engineer
+
+lifecycle:
+  createdAtUtc: "2026-07-13"
+  updatedAtUtc: "2026-07-13"
+  specifiedAtUtc: "2026-07-13"
+  plannedAtUtc: "2026-07-13"
+  doneAtUtc: "2026-07-13"
+  archivedAtUtc: "2026-07-13"
+
+paths:
+  root: "specs/increments/INC-20260711-mig-adopt-ux"
+  readme: "specs/increments/INC-20260711-mig-adopt-ux/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: ""
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: >-
+    Implements Phase 5 (the LAST phase) of INC-20260711-spec-sdd-migration-plan.
+    The adoption flow is additive over the shipped Phases 0-4: it orchestrates
+    runWorkspaceSetup (subject B, adopt mode) + runBootstrapFromLegacySdd
+    (subject A) + runBootstrapFromContext (context), all of which already write
+    into the RESOLVED spec scope and are provenance-idempotent. No new write
+    primitive is introduced; the four preserved guarantees (no-clobber,
+    provenance, dry-run, collision-skip) are enforced by the composed
+    primitives, not re-implemented.
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles:
+    - migration-engineer
+    - cli-implementer
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned
+    codegraph: planned
+    engram: planned
+    gga: planned
+    caveman: planned
+    graphify: planned
+  integrationMap:
+    - targetDocument: "specs/06_Integraciones_y_Capacidades.md"
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: >-
+        On integration, document the install-time adoption UX: `axiom workspace
+        setup --adopt-spec/--adopt-sdd/--ingest-context [--dry-run] [--yes]`
+        adopts a foreign spec repo (subject A migration) and/or SDD/control repo
+        (subject B additive parametrization + conformance report), defaulting to
+        a dry-run preview + confirmation gate, ending with migrated,
+        MCP-queryable content.
+
+openQuestions:
+  - id: Q-005
+    type: technical
+    question: >-
+      Should the adoption flow be a new `axiom workspace adopt` subcommand or
+      additive flags on `axiom workspace setup`?
+    blocking: false
+    status: resolved
+    resolution: >-
+      Additive flags on `axiom workspace setup` (`--adopt-spec`, `--adopt-sdd`,
+      `--ingest-context`, `--dry-run`, `--yes`). Rationale: setup already builds
+      the full workspace spec (control + spec + roles) and already models an
+      adopt-in-place repo via WorkspaceRepoSpec.create:false; the adoption flags
+      only (a) designate which repo is the foreign one to adopt in place,
+      (b) trigger subject-A/context migration, and (c) add the dry-run-first +
+      confirmation gate. The normal (no-adoption-flag) setup path is byte-for-byte
+      unchanged, keeping all existing setup tests green.
+
+decisions:
+  - id: D-001
+    summary: >-
+      Adoption is a pure orchestrator (`runWorkspaceAdopt`, workspace-adopt.ts)
+      over the already-shipped primitives: runWorkspaceSetup (subject B, adopt
+      mode) + runBootstrapFromLegacySdd (subject A) + runBootstrapFromContext
+      (context). No new write primitive; runWorkspaceSetup's public signature is
+      unchanged (additive).
+    rationale: >-
+      Phases 0-4 already enforce the four preserved guarantees at the primitive
+      level; composing them keeps the guarantees for free and avoids duplicating
+      write logic.
+    decidedAtUtc: "2026-07-13"
+  - id: D-002
+    summary: >-
+      Dry-run and the confirmation gate are enforced ABOVE the setup call: the
+      preview (subject-B conformance prediction + subject-A scan + context
+      ingest) is built entirely from READ-ONLY probes (scanLegacyRepo /
+      ingestContextDocs / filesystem existence), so a dry-run OR an unconfirmed
+      run performs ZERO writes — runWorkspaceSetup (which writes) is only invoked
+      after an explicit confirmation.
+    rationale: >-
+      A true dry-run cannot call runWorkspaceSetup (which parametrizes on disk);
+      building the preview from read-only scans is the only way to preview
+      subject A for a fresh install whose project is not resolvable until setup
+      has run.
+    decidedAtUtc: "2026-07-13"
+  - id: D-003
+    summary: >-
+      Subject-B conformance report covers the 6 concerns of the plan's table
+      (AGENTS.md, axiom.yaml v2, topology.yaml, skills-index, .axiom/mcp.yml,
+      architect declarations) with status present | added | must-reconcile-by-hand,
+      computed by diffing a pre-setup snapshot against a post-setup snapshot. A
+      hand-written .axiom/mcp.yml that would change is PRESERVED (restored) and
+      flagged must-reconcile-by-hand (the plan's explicit reconcile example).
+    rationale: >-
+      The plan's subject-B approach is "run setup in adopt mode + emit a
+      conformance report of what was already present, what was added, and what
+      must be reconciled by hand".
+    decidedAtUtc: "2026-07-13"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment-create
+    fromState: none
+    toState: draft
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13"
