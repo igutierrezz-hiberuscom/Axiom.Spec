@@ -1,0 +1,113 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260713-fix-impl-context-path
+  title: "Thread role-derived spec rel-path into the implementationContextRead composite handler"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-13T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
+  specifiedAtUtc: "2026-07-13T00:00:00Z"
+  plannedAtUtc: "2026-07-13T00:00:00Z"
+  doneAtUtc: "2026-07-13T00:00:00Z"
+  archivedAtUtc: "2026-07-13T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260713-fix-impl-context-path"
+  readme: "specs/increments/INC-20260713-fix-impl-context-path/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: "" # optional
+  uiInteractions: "" # optional
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: technical # functional | technical | compliance | ux | testing
+    question: "Should the composite handler derive the role from the registry repo entry or from the resolved spec repo's axiom.yaml?"
+    blocking: false
+    status: resolved # open | resolved | deferred
+    resolution: >-
+      From the resolved spec repo's axiom.yaml via resolveProject(specRepoRoot).role,
+      NOT from the registry `repos.spec.role`. The registry role key is a denormalized
+      copy of the map key (always literally 'spec' when selected via repos['spec']), so
+      it cannot discriminate a dedicated spec repo from a self-hosted one. resolveProject
+      reads the actual axiom.yaml role — the same discriminator FIX-A's context.ts uses.
+
+decisions:
+  - id: D-001
+    summary: "Reuse FIX-A's resolveSpecRelPathForScope helper + resolveProject-based role derivation; no third copy of the rule."
+    rationale: >-
+      The composite handler (buildImplementationContext) re-resolves the spec repo itself
+      and does its own artifact-store reads WITHOUT a specRelPath, so they fell back to the
+      DEFAULT_SPEC_REL_PATH ('axiom.spec') and returned plan:null / relatedSpec:null /
+      allowedWriteScope:[] for a dedicated spec repo. Deriving the rel-path from
+      resolveProject(specRepoRoot).role and passing resolveSpecRelPathForScope(role) into
+      every spec-scope read converges the composite with the direct MCP builders + CLI +
+      migration onto the same tree, with byte-identical behavior for self-hosted / single-repo.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in-progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13T00:00:00Z"

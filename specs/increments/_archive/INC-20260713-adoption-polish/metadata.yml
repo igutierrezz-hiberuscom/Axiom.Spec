@@ -1,0 +1,161 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260713-adoption-polish
+  title: "Adoption polish: preview provenance parity, role-repo baseline-commit warning, resolvable MCP command"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-13T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
+  specifiedAtUtc: "2026-07-13T00:00:00Z"
+  plannedAtUtc: "2026-07-13T00:00:00Z"
+  doneAtUtc: "2026-07-13T00:00:00Z"
+  archivedAtUtc: "2026-07-13T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260713-adoption-polish"
+  readme: "specs/increments/INC-20260713-adoption-polish/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: "" # optional
+  uiInteractions: "" # optional
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: technical # functional | technical | compliance | ux | testing
+    question: "Should the adoption preview resolve the spec scope exactly like the real run, even before runWorkspaceSetup has parametrized the control repo?"
+    blocking: false
+    status: resolved # open | resolved | deferred
+    resolution: >-
+      Yes, best-effort. The preview resolves the project from the control repo path
+      (resolveProject + resolveSpecScopeAbsolutePath) exactly as the real run does.
+      On a FRESH run the control repo has no axiom.yaml yet, so resolution returns
+      null and the provenance map is empty -> everything reports would-migrate (the
+      correct first-run prediction). On a RE-RUN the control repo is already
+      parametrized, resolution succeeds, and the loaded provenance map yields the
+      accurate already-migrated split. This mirrors what the real run does, so the
+      preview never over-reports.
+
+decisions:
+  - id: D-001
+    summary: "Adoption preview consults the migration provenance map, matching the real run item-for-item."
+    rationale: >-
+      Before this increment the workspace-adopt preview filtered scanned spec
+      items ONLY by the AXIOM:MIGRATED banner guard (isMigrationOutputBody), so a
+      re-run predicted "would migrate N" while the real run (bootstrap
+      from-legacy-sdd / from-context, provenance-idempotent since
+      INC-20260711-mig-idempotency) correctly skipped all N. A new shared helper
+      `resolveLiveProvenanceMatch` (bootstrap-shared/provenance.ts) encapsulates
+      the exact "live provenance match" predicate (path OR content-hash match whose
+      recorded target still exists on disk). Both the bootstrap from-legacy-sdd
+      dry-run AND the adoption preview call it, so the preview reports
+      `would-migrate` vs `already-migrated` identically to the real run. The
+      context preview additionally accounts for the target-exists (skip-if-exists)
+      gate via mapIngestedDocs. Real-run behaviour is unchanged.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-002
+    summary: "Adoption warns (never mutates) when a role code-repo has no baseline commit."
+    rationale: >-
+      The KVP25 sandbox adoption left role code-repos on an UNBORN branch (git init
+      with no commit), so a later `axiom-role start --create-branch` created a
+      branch off nothing. Adoption now DETECTS, per role repo, whether it is its own
+      git repo root (a `.git` entry at the repo root, avoiding git's parent-directory
+      walk) with at least one commit (`git rev-parse --verify HEAD`, a READ-ONLY
+      probe via the existing @axiom/workflow GitRunner seam). A repo with no commits
+      (or that is not a git repo) surfaces a clear warning in the adoption/conformance
+      report and in `result.warnings`. Guardrail honoured: adoption runs ZERO git
+      mutations — it never runs `git init`/`git commit`; it only reports and tells
+      the operator to establish a baseline. The GitRunner is injectable
+      (WorkspaceAdoptArgs.gitRunner) for deterministic tests.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-003
+    summary: "MCP launch command: resolve a runnable form (approach a) via resolveMcpLaunchCommand(); close the two remaining bare-`axiom` call sites."
+    rationale: >-
+      Axiom's intended distribution IS a global `axiom` on PATH: `scripts/install-global.mjs`
+      materializes a Windows shim (`axiom.cmd` -> `node "<repo>\\apps\\cli\\dist\\index.js" %*`)
+      or `npm link` on POSIX, and `self-update`/`member install` assume that binary.
+      `resolveMcpLaunchCommand()` (INC-20260710-per-member-install, BUG-2) already
+      implements approach (a): it PREFERS `axiom` when it resolves on PATH, and only
+      when it does not (exactly the sandbox case) falls back to
+      `node <abs cli entry>` (process.argv[1] — the CLI that is actually running,
+      guaranteed correct for this install, never a guessed path). The production
+      adoption path (`runWorkspaceSetup`) and `axiom member install` ALREADY thread
+      it; the only paths still emitting the hard-coded default `MCP_LAUNCH_COMMAND
+      = 'axiom'` were `axiom workspace mcp-config` (runWorkspaceMcpConfig) and
+      `axiom workspace add-repo` (runWorkspaceAddRepo). Both now pass
+      `resolveMcpLaunchCommand()` (override-injectable, mirroring
+      `runWorkspaceSetup`'s existing `mcpLaunchCommandOverride`). This is the
+      least-invasive correct fix: one threaded argument per call site, reusing the
+      already-shipped/tested resolver, with NO machine-specific path baked into a
+      SHARED committed file (native MCP configs are per-machine local artifacts each
+      member regenerates via `axiom member install` / `axiom workspace mcp-config`).
+      The adoption report also emits an informational note stating the resolved
+      launch command and the global-`axiom` prerequisite (the documented-prereq half
+      of option b), so the choice is visible to the operator.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in-progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13T00:00:00Z"

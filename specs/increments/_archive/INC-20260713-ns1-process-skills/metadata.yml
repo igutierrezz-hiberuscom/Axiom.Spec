@@ -1,0 +1,144 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260713-ns1-process-skills
+  title: "NS-1: author the SDD process (HOW) skills/agents for the 3 operating flows"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-13T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
+  specifiedAtUtc: "2026-07-13T00:00:00Z"
+  plannedAtUtc: "2026-07-13T00:00:00Z"
+  doneAtUtc: "2026-07-13T00:00:00Z"
+  archivedAtUtc: "2026-07-13T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260713-ns1-process-skills"
+  readme: "specs/increments/INC-20260713-ns1-process-skills/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: "" # optional
+  uiInteractions: "" # optional
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: technical # functional | technical | compliance | ux | testing
+    question: "Should the 3 flows be authored as skills, agents, or both?"
+    blocking: false
+    status: resolved # open | resolved | deferred
+    resolution: >-
+      Both. The rich process HOW lives in a skill per flow (what the sdd/spec MCP
+      serves via skillIndexRead / skillCatalogRead / skillRead), and a thin
+      materializable agent contract per flow declares role/inputs/outputs and points
+      at its skill (what NS-2 will generate as an invocable agent per role). This
+      mirrors the pre-existing dual pattern where axiom-sdd-orchestrator is BOTH a
+      skill (the HOW) and an agent (the contract); it is not a new framework.
+
+decisions:
+  - id: D-001
+    summary: "The 3 process flows are authored as reusable catalog content (skills + agents), not as generator changes."
+    rationale: >-
+      NS-1 authors the process content (the HOW) that the sdd/spec MCP serves and
+      that a later increment (NS-2) will generate into repos. It adds 3 rich skills
+      (axiom-spec-author = analyst, axiom-role-planner = architect,
+      axiom-role-implementer = implementer) under axiom.spec/target-axiom-skills/ and
+      3 thin agent contracts under axiom.spec/target-axiom-agents/, registering each in
+      skills-catalog.yaml / agents-catalog.yaml with a sha256 bundleHash. Content is
+      role/repo-parameterizable via literal placeholders ({role}, {specRepo},
+      {repoPath}, {projectId}) that the NS-2 generator fills; the placeholders are
+      literal text at cataloging time, so bundleHash integrity (doctor TC-010/TC-011)
+      is unaffected. Behavior generalizes KVP25's proven analyst/planner/implementer
+      agents (discovery phases, ambiguity + functional-coverage checklists, per-role
+      plan structure, write-scope discipline, code-intel-with-physical-fallback),
+      re-expressed Axiom-native around the real MCP tools.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-002
+    summary: "Agent roles are mapped onto the closed AgentRole union (planning | sdd-orchestration | product-review)."
+    rationale: >-
+      @axiom/agents' AgentRole is a closed union enforced by loadAgentsCatalog and
+      doctor TC-011. axiom-spec-author (analyst, pre-implementation spec work) and
+      axiom-role-planner (architect) both map to `planning`; axiom-role-implementer
+      maps to `sdd-orchestration` (there is no dedicated implementation role in the
+      union, and the implementer coordinates the SDD implementation flow: reads the
+      WHAT bundle, loads role skills, validates changes against write scope, drives
+      confirm-gated git). No new role was invented (that would be a schema change out
+      of scope for NS-1).
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-003
+    summary: "Real-catalog count/membership test assertions were updated (7 -> 10), not weakened."
+    rationale: >-
+      Four tests read the committed catalogs and assert exact coverage: the doctor
+      smoke tests (TC-010/TC-011: `N/N entries consistentes`) and the catalog
+      integration tests (@axiom/skills and @axiom/agents, `toHaveLength`, plus the
+      agents id/role membership lists). Adding 3 skills and 3 agents makes each
+      catalog 10 entries. The assertions were updated to 10/10 and the agents id/role
+      lists extended to include the 3 new agents. This is maintenance to keep the
+      tests accurate against an intentionally expanded source of truth; every
+      assertion still verifies full source-exists + bundleHash-matches consistency.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in-progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13T00:00:00Z"

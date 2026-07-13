@@ -1,0 +1,147 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260713-ns3-codeintel-mcp
+  title: "NS-3: wire code-intel MCP into generated native configs"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-13T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
+  specifiedAtUtc: "2026-07-13T00:00:00Z"
+  plannedAtUtc: "2026-07-13T00:00:00Z"
+  doneAtUtc: "2026-07-13T00:00:00Z"
+  archivedAtUtc: "2026-07-13T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260713-ns3-codeintel-mcp"
+  readme: "specs/increments/INC-20260713-ns3-codeintel-mcp/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: "" # optional
+  uiInteractions: "" # optional
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13T00:00:00Z"
+
+integration:
+  status: integrated # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: ready # planned | ready | unavailable
+    codegraph: ready # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: ready # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: technical # functional | technical | compliance | ux | testing
+    question: "Which repos get code-intel MCP entries, and from what enablement signal?"
+    blocking: false
+    status: resolved # open | resolved | deferred
+    resolution: >-
+      Code (role) repos only, each pointed at its own path. The enablement signal is the
+      code-intel subset (codegraph/serena/graphify, via @axiom/providers'
+      CODE_INTEL_PROVIDER_IDS/isCodeIntelProviderId) of the project's enabled providers:
+      resolveEnabledCodeIntelProviders(spec) in runWorkspaceSetup, and
+      workspace.json#providers filtered to code-intel ids in runWorkspaceMcpConfig and
+      runRepoAdd (mirroring exactly how engramEnabled is derived). Default (none enabled)
+      emits nothing -> byte-identical to pre-NS-3.
+
+  - id: Q-002
+    type: technical
+    question: "How is the code-intel launch command built, and does it match the runtime provider client?"
+    blocking: false
+    status: resolved
+    resolution: >-
+      A single source of truth in packages/providers/src/code-intel/native-mcp-launch.ts
+      (buildCodeIntelNativeServers). The runtime serena/codegraph/graphify ProviderClients
+      now import the SAME arg builders (serenaMcpArgs/codegraphMcpArgs/graphifyMcpArgs), so
+      the emitted static config matches the provider client's launch shape. One documented
+      divergence: the static config passes codegraph `-p <repoPath>` (pinProject=true)
+      because an IDE-launched entry cannot set the process cwd, whereas the runtime client
+      spawns with cwd=projectRoot; serena pins via `--project <path>` in both.
+
+decisions:
+  - id: D-001
+    summary: "Emit code-intel native MCP entries only for code (role) repos, gated on the enabled code-intel providers; default empty -> nothing emitted."
+    rationale: >-
+      The architect/implementer flows lean on code-intel for CODE repos; serena/codegraph
+      target a code project directory. writeWorkspaceNativeMcpConfigs gains an optional
+      codeIntelProviders arg and each repo carries its structural kind; only kind==='role'
+      repos get code-intel entries (pointed at that repo's path), appended alongside the
+      existing sdd/spec brokers (+ optional engram). When codeIntelProviders is empty/omitted
+      or the repo is not a code repo, output is byte-identical to before, so existing tests,
+      the dogfood, and single-repo setups are unchanged.
+  - id: D-002
+    summary: "Single source of truth for code-intel launch shapes lives in @axiom/providers, shared by the runtime clients and static config emission."
+    rationale: >-
+      buildCodeIntelNativeServers (native-mcp-launch.ts) builds each provider's server entry
+      from the SAME arg builders the runtime ProviderClients use. serena/graphify are
+      byte-identical between runtime and static; codegraph adds `-p <root>` only for the
+      static form (documented) because a static IDE-launched entry cannot set cwd. Mirrors
+      buildEngramNativeServer's pattern (a native-only entry projected into per-tool configs,
+      never into .axiom/mcp.yml).
+  - id: D-003
+    summary: "The physical-path fallback advertisement is inherited from NS-2 (verify, do not duplicate)."
+    rationale: >-
+      NS-2's workspace-process-surfaces.ts already emits, unconditionally, the code-intel
+      with physical-path fallback text in both axiom-role-planner and axiom-role-implementer
+      bodies ("Si el MCP de code-intel no esta disponible, degrada leyendo el repo fisico ...
+      read/search/glob"). This is the correct behavior whether or not the code-intel MCP is
+      wired: when none is enabled, the fallback (physical Read/Grep) is the default and is
+      explicit in the generated agent body. NS-3 verifies this end-to-end and adds a
+      regression assertion; it does not restate the prose.
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in-progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13T00:00:00Z"

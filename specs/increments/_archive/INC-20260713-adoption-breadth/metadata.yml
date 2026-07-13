@@ -1,0 +1,151 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260713-adoption-breadth
+  title: "Adoption breadth: nested spec descend, e2e mapping, registry ignore, context taxonomy"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-13T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
+  specifiedAtUtc: "2026-07-13T00:00:00Z"
+  plannedAtUtc: "2026-07-13T00:00:00Z"
+  doneAtUtc: "2026-07-13T00:00:00Z"
+  archivedAtUtc: "2026-07-13T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260713-adoption-breadth"
+  readme: "specs/increments/INC-20260713-adoption-breadth/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: "" # optional
+  uiInteractions: "" # optional
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: technical # functional | technical | compliance | ux | testing
+    question: "Should archived nested items (e.g. specs/e2e/archive/<item>) be migrated too?"
+    blocking: false
+    status: deferred # open | resolved | deferred
+    resolution: >-
+      Deferred. An `archive/` folder under a kind folder has no direct markdown,
+      so it surfaces as a reported scan failure (never silent) and its nested
+      items are not migrated. Deep-walking archive trees is out of scope for
+      adoption breadth; the descend stays bounded to one level.
+
+decisions:
+  - id: D-001
+    summary: "Bounded descend: the orchestrator probes a `specs/` (then `spec/`) subdir only when NO detector matched at the pointed root."
+    rationale: >-
+      KVP nests spec artifacts under `specs/{increments,bugs,e2e}`. Pointing
+      `--adopt-spec` at the repo root found nothing. The orchestrator now retries
+      the whole detector registry against `<root>/specs` (then `<root>/spec`) when
+      the root matched nothing. It is bounded to one level and to a fixed subdir
+      list, so a root-level layout is byte-identical (the root probe wins first and
+      descend never runs), and it covers every detector uniformly.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-002
+    summary: "Map `e2e/` -> `increment` with an `AXIOM:E2E-ORIGIN` marker."
+    rationale: >-
+      KVP `e2e/<item>` folders are QA/E2E WORK ITEMS (README.md + metadata.yml + a
+      QA plan), not context. There is no `e2e` ArtifactKind, so they map to the
+      closest work-item kind, `increment`. Every migrated e2e README gets a distinct
+      `AXIOM:E2E-ORIGIN` HTML-comment marker (in addition to the AXIOM:MIGRATED
+      banner, which names the `.../e2e/...` source path) so a reviewer can spot and
+      reclassify them. The e2e origin is carried on the scanned item via a new
+      optional `originFolder` field (set by the shared folder-map walk); the body
+      hash and idempotency guards are unaffected (the marker lives in the README,
+      not the verbatim body).
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-003
+    summary: "Ignore known registry/index filenames at the kind-folder level (report, never silent)."
+    rationale: >-
+      A flat `REGISTRO_INCREMENTOS.md` under `increments/` was migrated as a
+      false-positive increment. The shared folder-map walk now skips kind-folder
+      entries whose basename (case-insensitive) is one of `REGISTRO_INCREMENTOS.md`,
+      `README.md`, `INDEX.md`, `_index.md`, recording each on a dedicated `ignored`
+      channel that the command surfaces (never silently dropped). The guard is at the
+      kind-folder ENTRY level, so a per-artifact folder's own inner `README.md`
+      (the artifact body) is unaffected.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-004
+    summary: "from-context: recognize a root TECHNICAL_CONTEXT.md and ALL immediate subfolders as categories; unknown names fall back to `references`."
+    rationale: >-
+      KVP context is `context/{TECHNICAL_CONTEXT.md, architecture/, backend/,
+      frontend/, functional/, shared/, testing/}`. Discovery now (a) ingests a root
+      entry-point `TECHNICAL_CONTEXT.md` mapped to the `architecture` category (the
+      architectural gateway doc), and (b) walks ALL immediate subfolders of the
+      pointed dir (ignore-list + dot-dir aware), classifying each doc by
+      `classifyByRelPath`. Names that match the closed
+      `technical-context-template.md` taxonomy (architecture/testing/...) map to it;
+      unknown names (`backend`/`frontend`/`functional`/`shared`) fall back to the
+      `references` catch-all rather than widening the taxonomy — the closed
+      `ContextCategory` union keeps the index and MCP consumers within the known six
+      folders, and the path-encoded slug preserves the origin folder so nothing
+      collides.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in-progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13T00:00:00Z"

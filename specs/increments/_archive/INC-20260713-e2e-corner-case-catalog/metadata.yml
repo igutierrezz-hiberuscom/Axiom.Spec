@@ -1,0 +1,120 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260713-e2e-corner-case-catalog
+  title: "E2E corner-case catalog + prioritized new e2e tests"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-13T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
+  specifiedAtUtc: "2026-07-13T00:00:00Z"
+  plannedAtUtc: "2026-07-13T00:00:00Z"
+  doneAtUtc: "2026-07-13T00:00:00Z"
+  archivedAtUtc: "2026-07-13T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260713-e2e-corner-case-catalog"
+  readme: "specs/increments/INC-20260713-e2e-corner-case-catalog/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: testing # functional | technical | compliance | ux | testing
+    question: "Should the KNOWN GAPS catalogued here (operator rollback restore, cross-repo upgrade fan-out, member-install/adapter-add surface gaps) each become their own increment?"
+    blocking: false
+    status: open # open | resolved | deferred
+    resolution: >-
+      Left open for the owner. This increment CATALOGS the gaps (with priority)
+      and adds e2e tests for the genuinely-uncovered P0/P1 CROSS-CUTTING gaps; it
+      does not itself build the missing product features (rollback restore,
+      upgrade fan-out, member-install code-intel/process-surfaces).
+
+decisions:
+  - id: D-001
+    summary: "The catalog's coverage column reflects a full read-only survey of the existing suites (274 test files) done this session, not a guess."
+    rationale: >-
+      Five parallel read-only surveys were run over apps/cli/tests/** and
+      packages/*/tests/** (adoption/migration, spec-scope+MCP+cross-repo,
+      lifecycle+affinity+verify, north-star+adapters, versioning+isolation) so
+      each corner case is marked COVERED (with the exact file::test) or NONE.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-002
+    summary: "New e2e tests were added only for genuinely-uncovered P0/P1 CROSS-CUTTING gaps (no duplicates)."
+    rationale: >-
+      Candidate scenarios were verified against the survey before adding. Two
+      strong candidates were DROPPED as already-covered: cross-repo role-start
+      reads plan-approved from the spec repo (axiom-role-cross-repo AC1/AC2) and
+      openspec+docs-adr mixed adoption in one repo (workspace-adopt.e2e). The
+      added tests chain the REAL engine paths (runWorkspaceSetup / runWorkspaceAdopt
+      / runBootstrapFromLegacySdd / runUpgrade / buildImplementationContext) that
+      no single existing test exercises end-to-end.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in-progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13T00:00:00Z"

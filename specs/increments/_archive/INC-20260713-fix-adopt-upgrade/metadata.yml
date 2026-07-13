@@ -1,0 +1,131 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260713-fix-adopt-upgrade
+  title: "Unblock axiom upgrade/sync on adopted projects (init.json materialization + bundled AGENTS.md template fallback)"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-13T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
+  specifiedAtUtc: "2026-07-13T00:00:00Z"
+  plannedAtUtc: "2026-07-13T00:00:00Z"
+  doneAtUtc: "2026-07-13T00:00:00Z"
+  archivedAtUtc: "2026-07-13T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260713-fix-adopt-upgrade"
+  readme: "specs/increments/INC-20260713-fix-adopt-upgrade/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions: []
+
+decisions:
+  - id: D-001
+    summary: "Materialize init.json inside runWorkspaceSetup (the shared write engine), not only in the adopt/setup wrappers."
+    rationale: >-
+      runWorkspaceAdopt delegates to runWorkspaceSetup, and so do repo add / role add
+      (workspace-incremental). Placing the init.json materialization in the single write
+      engine covers `workspace setup`, `workspace adopt`, and incremental repo/role adds
+      with no duplication. The file is written to
+      <control>/.axiom-state/<name>/init.json where <name> === resolveProject().name ===
+      axiom.yaml#name (the exact segment the orchestrator `hasInitJson` gate reads), reusing
+      the same InitRecord shape `axiom init` writes (profileTriple + createdAt + version).
+      Idempotent (never clobbers an existing init.json) and guarded to only write when the
+      control repo's axiom.yaml belongs to this project (mirrors writeOneRepo's no-clobber
+      guard). This is the same design ensureInitJsonForJoin already established for the join
+      path (member-install.ts).
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-002
+    summary: "sync resolves the AGENTS.md template with on-disk precedence, bundled fallback."
+    rationale: >-
+      The adapter generators (opencode/claude-code) read agents-md-template.md from
+      <root>/axiom.spec/templates/ when no templateContent is supplied. sync.ts's
+      materializeAdapterOutputs supplied none, so an adopted project whose spec repo lacks
+      that on-disk template hard-failed with adapterGenerationFailed/template-missing,
+      forcing a rollback of `axiom upgrade` (only --no-sync completed). sync now resolves the
+      template content once: if <root>/axiom.spec/templates/agents-md-template.md exists and
+      is readable it wins (on-disk override precedence preserved — the self-hosted Axiom repo
+      keeps reading its own on-disk copy, byte-identical to the bundled constant), otherwise
+      it falls back to the bundled AGENTS_MD_TEMPLATE constant
+      (workspace-adapter-templates.ts). This mirrors how generateWorkspaceAdapters already
+      bundles the same template.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+  - id: D-003
+    summary: "Update sync Scenario 7 to assert the corrected behavior (bundled fallback succeeds) rather than the old template-missing hard-fail."
+    rationale: >-
+      The prior B1 Scenario 7 (sync.test.ts) asserted that a missing on-disk template makes
+      sync hard-fail with adapterGenerationFailed/template-missing. That asserted the exact
+      defect FIX-E corrects. The scenario is rewritten to assert sync SUCCEEDS via the bundled
+      template (writes .opencode/AGENTS.md + skills-lock.yaml + last-sync.json), and a new
+      scenario asserts on-disk precedence still holds when a template IS present. This is a
+      spec correction, not a weakened test.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in-progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13T00:00:00Z"

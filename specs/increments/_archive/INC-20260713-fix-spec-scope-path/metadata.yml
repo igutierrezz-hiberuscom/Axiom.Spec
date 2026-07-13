@@ -1,0 +1,110 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260713-fix-spec-scope-path
+  title: "Unify spec-scope path resolution (role-derived artifact rel-path)"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-13T00:00:00Z"
+  updatedAtUtc: "2026-07-13T00:00:00Z"
+  specifiedAtUtc: "2026-07-13T00:00:00Z"
+  plannedAtUtc: "2026-07-13T00:00:00Z"
+  doneAtUtc: "2026-07-13T00:00:00Z"
+  archivedAtUtc: "2026-07-13T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260713-fix-spec-scope-path"
+  readme: "specs/increments/INC-20260713-fix-spec-scope-path/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: "" # optional
+  uiInteractions: "" # optional
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-13T00:00:00Z"
+
+integration:
+  status: active # active | integrated | archived
+  integratedAtUtc: ""
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions:
+  - id: Q-001
+    type: technical # functional | technical | compliance | ux | testing
+    question: "Should the subfolder-spec-scope-in-multi-repo case (spec scope != spec repo root over MCP) also converge?"
+    blocking: false
+    status: deferred # open | resolved | deferred
+    resolution: >-
+      Deferred. The documented/dedicated case has spec scope == spec repo root
+      (the KVP25 topology and the repo-affinity fixture). A subfolder spec scope
+      resolved over MCP topology is a pre-existing, separate concern.
+
+decisions:
+  - id: D-001
+    summary: "Derive the spec artifact rel-path from the resolved spec repo's role, not a hardcoded default."
+    rationale: >-
+      The `axiom.spec` subfolder is only correct for the self-hosted / co-located
+      case (specs sharing a code repo). For a DEDICATED spec repo (axiom.yaml
+      role === 'spec'), the spec scope IS the path passed and artifacts live
+      directly under it. Making CLI lifecycle, the spec MCP broker, and migration
+      all derive the same rel-path from the spec repo's role converges them onto
+      one tree without changing single-repo / self-hosted behavior.
+    decidedAtUtc: "2026-07-13T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-increment
+    fromState: none
+    toState: in-progress
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-13T00:00:00Z"
