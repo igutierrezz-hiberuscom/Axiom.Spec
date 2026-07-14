@@ -1,0 +1,131 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260714-op-rollback-restore
+  title: "Operator-invokable checkpoint restore (axiom rollback) — expose restoreCheckpoint via a first-class CLI command"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-14T00:00:00Z"
+  updatedAtUtc: "2026-07-14T09:15:00Z"
+  specifiedAtUtc: "2026-07-14T00:00:00Z"
+  plannedAtUtc: ""
+  doneAtUtc: "2026-07-14T09:15:00Z"
+  archivedAtUtc: "2026-07-14T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260714-op-rollback-restore"
+  readme: "specs/increments/INC-20260714-op-rollback-restore/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/_archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-14T09:15:00Z"
+
+integration:
+  status: integrated # active | integrated | archived
+  integratedAtUtc: "2026-07-14T00:00:00Z"
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions: []
+
+decisions:
+  - id: D-001
+    summary: "New first-class command `axiom rollback`, not a new flag on `upgrade`."
+    rationale: >-
+      A dedicated recovery verb (`axiom rollback <id>`) is clearer than overloading
+      `upgrade`, and keeps `--from-checkpoint` with its existing forward-migration
+      semantics (reuse a checkpoint as the restore point while migrating forward).
+      Avoids two divergent restore paths.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+  - id: D-002
+    summary: "Rollback is NOT gated through the orchestrator `upgrade-command` gate."
+    rationale: >-
+      The upgrade gate requires init.json (hasInitJson). Rollback is a recovery action;
+      gating it on init.json could block the very recovery an operator needs after a bad
+      upgrade. runRollback only requires the project to resolve (withProjectContext). The
+      restore itself is atomic (restoreCheckpoint writes tmp+rename) and reverts init.json /
+      install-profile.json / managed-state.json together.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+  - id: D-003
+    summary: "Unknown checkpoint id must error with zero mutation."
+    rationale: >-
+      restoreCheckpoint already checks manifest existence before any write, so an unknown id
+      throws before mutating. runRollback surfaces that as a clear CLI error (exit 1) and the
+      test asserts the managed-state.json is byte-unchanged. The stale error-message reference
+      inside restoreCheckpoint ("axiom upgrade --dry-run (siguiente lote)") is corrected to
+      point at `axiom rollback --list`.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-autopilot
+    fromState: none
+    toState: specified
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-14T00:00:00Z"
+  - sessionId: ""
+    command: axiom-increment-executor
+    fromState: specified
+    toState: implemented
+    decision: >-
+      Implemented `axiom rollback` (D-001/D-002/D-003 as specified), added
+      apps/cli/tests/rollback.test.ts (15 tests, 0 regressions), fixed the
+      stale error-message reference in checkpoints.ts, ran the full gate
+      (build/test/typecheck/doctor — all green) and an isolated KVP25 sandbox
+      e2e (workspace setup -> upgrade x2 -> hand-mutate -> dry-run -> rollback
+      -> bogus-id -> no-id). Zero git mutations; pristine sandbox baseline and
+      real ~/.axiom left untouched.
+    humanConfirmation: false
+    executedAtUtc: "2026-07-14T09:15:00Z"

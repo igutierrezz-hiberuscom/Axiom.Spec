@@ -1,0 +1,126 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260714-cross-repo-upgrade-fanout
+  title: "Cross-repo axiom upgrade fan-out — migrate/checkpoint every topology repo from the control repo"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: high # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-14T00:00:00Z"
+  updatedAtUtc: "2026-07-14T00:00:00Z"
+  specifiedAtUtc: "2026-07-14T00:00:00Z"
+  plannedAtUtc: ""
+  doneAtUtc: "2026-07-14T00:00:00Z"
+  archivedAtUtc: "2026-07-14T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260714-cross-repo-upgrade-fanout"
+  readme: "specs/increments/INC-20260714-cross-repo-upgrade-fanout/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/_archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: not_started # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: ""
+
+integration:
+  status: integrated # active | integrated | archived
+  integratedAtUtc: "2026-07-14T00:00:00Z"
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions: []
+
+decisions:
+  - id: D-001
+    summary: "Fan-out is gated on multi-repo topology + control repo; single-repo is byte-identical; --repo-only forces single."
+    rationale: >-
+      Fan-out only triggers when loadTopology(rootPath).mode === 'multi-repo' and the command runs
+      from the control (sdd) repo. Existing upgrade tests use single-repo topologies, so they never
+      trigger fan-out and stay byte-identical (no regression). --repo-only is the explicit escape
+      hatch to force today's single-repo behavior even inside a multi-repo project.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+  - id: D-002
+    summary: "Per-repo state via executeUpgrade directly; no init.json fabrication in role/spec repos."
+    rationale: >-
+      The fan-out runs inside the control repo's runOrchestrated('upgrade-command') entry gate
+      (which only requires the control repo's init.json). For each topology repo it calls
+      executeUpgrade({rootPath: repoPath, ...}) from @axiom/versioning, which initializes the
+      ManagedState (readOrInitManagedState) and creates a pre-upgrade checkpoint WITHOUT requiring
+      init.json. So each repo gets its own ManagedState + checkpoint under its own .axiom-state,
+      and there is no need to fabricate init.json in role/spec repos (chose 'per-repo checkpoint',
+      the enunciado-permitted option).
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+  - id: D-003
+    summary: "sync + doctor run once at the end (workspace level), not per repo."
+    rationale: >-
+      Migration + checkpoint are per-repo (executeUpgrade with runSync:false/runDoctor:false), but
+      sync (adapter regeneration across the workspace) and doctor are workspace-level and run once
+      from the control repo after all repos migrated, honoring --no-sync/--no-doctor. Avoids N
+      redundant sync/doctor passes.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+  - id: D-004
+    summary: "Per-repo failure reports + exits non-zero; already-migrated repos are revertible via `axiom rollback` (gap 1 synergy)."
+    rationale: >-
+      executeUpgrade already restores the FAILED repo's own checkpoint on failure. The fan-out
+      collects a per-repo result and, if any repo failed, exits non-zero with the full per-repo
+      report. Repos already migrated in the same run stay migrated; the operator can revert any of
+      them individually with `axiom rollback <checkpointId>` (INC-20260714-op-rollback-restore).
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-autopilot
+    fromState: none
+    toState: specified
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-14T00:00:00Z"

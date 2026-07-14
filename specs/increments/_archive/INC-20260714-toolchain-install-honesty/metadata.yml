@@ -1,0 +1,117 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260714-toolchain-install-honesty
+  title: "Toolchain install honesty — validate reflects marker vs installed-working, no false-green for declared-but-absent tools (even mvp:false)"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: medium # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-14T00:00:00Z"
+  updatedAtUtc: "2026-07-14T00:00:00Z"
+  specifiedAtUtc: "2026-07-14T00:00:00Z"
+  plannedAtUtc: ""
+  doneAtUtc: "2026-07-14T00:00:00Z"
+  archivedAtUtc: "2026-07-14T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260714-toolchain-install-honesty"
+  readme: "specs/increments/INC-20260714-toolchain-install-honesty/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/_archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-14T00:00:00Z"
+
+integration:
+  status: integrated # active | integrated | archived
+  integratedAtUtc: "2026-07-14T00:00:00Z"
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions: []
+
+decisions:
+  - id: D-001
+    summary: "Chose option (b) — honesty (validate reflects reality + declare/scaffold UX) over option (a) real per-provider installers."
+    rationale: >-
+      Real installers (uv tool install serena-agent, etc.) add network side-effects and
+      hard-to-test surface, and border on the heavy integrations the Axiom.SDD bootstrap limits
+      caution against ("do not introduce scripts that do not exist yet"). Option (b) directly
+      closes the false-green (the minimum required) and makes validate reflect marker vs
+      installed-working. Option (a) is recorded as a documented future consideration, not built now.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+  - id: D-002
+    summary: "Close the false-green in presentation/state, not by turning every optional-absent tool into a hard error."
+    rationale: >-
+      Warnings intentionally do not flip validate's ok/exit for non-required/mvp tools (exit-code
+      semantics reserved for required/mvp). Flipping mvp:false absent tools to hard errors would
+      regress doctor PASS. Instead, validate is probe-backed and renders declared-but-not-
+      installed-working tools with their honest state (marker/declared/absent) and counts them as
+      NOT satisfied — never green/OK — regardless of mvp, while keeping exit-code semantics intact.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+  - id: D-003
+    summary: "add/repair UX clarified as declare/scaffold (writes YAML / creates a marker), not install."
+    rationale: >-
+      toolchain add DECLARES (writes toolchain.yaml) and toolchain repair SCAFFOLDS an empty
+      marker dir; neither installs a working tool. The command help/messages are clarified so an
+      operator is not misled; only an installed-working probe counts as installed. Minimal additive
+      aliasing if any, without breaking existing subcommands.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-autopilot
+    fromState: none
+    toState: specified
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-14T00:00:00Z"

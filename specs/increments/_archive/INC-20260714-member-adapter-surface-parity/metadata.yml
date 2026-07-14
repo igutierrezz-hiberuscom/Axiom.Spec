@@ -1,0 +1,116 @@
+metadataVersion: 1
+kind: increment
+
+identity:
+  id: INC-20260714-member-adapter-surface-parity
+  title: "member install + adapter add materialize per-role process surfaces + code-intel MCP (parity with workspace setup/repo add)"
+  status: archived # draft | specified | planned | in_progress | implemented | integrated | archived
+  priority: medium # low | medium | high | critical
+
+versioning:
+  specVersion: v1
+  activePlanVersion: ""
+  planDrift:
+    isDrifted: false
+    driftReason: ""
+    lastComparedAtUtc: ""
+
+ownership:
+  requestedBy: igutierrezz@hiberus.com
+  analystOwner: ""
+  architectOwner: ""
+
+lifecycle:
+  createdAtUtc: "2026-07-14T00:00:00Z"
+  updatedAtUtc: "2026-07-14T00:00:00Z"
+  specifiedAtUtc: "2026-07-14T00:00:00Z"
+  plannedAtUtc: ""
+  doneAtUtc: "2026-07-14T00:00:00Z"
+  archivedAtUtc: "2026-07-14T00:00:00Z"
+
+paths:
+  root: "specs/increments/INC-20260714-member-adapter-surface-parity"
+  readme: "specs/increments/INC-20260714-member-adapter-surface-parity/README.md"
+  requirements: ""
+  acceptanceCriteria: ""
+  modelChanges: ""
+  uiInteractions: ""
+  contextFolder: ""
+  plansFolder: ""
+  archiveRoot: "specs/increments/_archive"
+
+projectIsolation:
+  must: true
+  projectId: axiom
+  projectScopeKey: ""
+  isolationValidated: false
+  isolationNotes: ""
+
+externalRefs:
+  - provider: none # none | azure-devops | jira | github | other
+    id: ""
+    url: ""
+
+planning:
+  requiredRoles: []
+  rolePlans: []
+
+verification:
+  status: passed # not_started | in_progress | passed | failed
+  manifestRef: ""
+  lastVerifiedAtUtc: "2026-07-14T00:00:00Z"
+
+integration:
+  status: integrated # active | integrated | archived
+  integratedAtUtc: "2026-07-14T00:00:00Z"
+  managedProfile: standard # minimal | standard | enterprise | local-only
+  integrationSnapshot:
+    serena: planned # planned | ready | unavailable
+    codegraph: planned # planned | ready | unavailable
+    engram: planned # planned | ready | unavailable
+    gga: planned # planned | ready | unavailable
+    caveman: planned # planned | ready | unavailable
+    graphify: planned # planned | ready | unavailable
+  integrationMap:
+    - targetDocument: ""
+      targetAnchor: ""
+      operation: append # append | replace | patch
+      deltaSummary: ""
+
+openQuestions: []
+
+decisions:
+  - id: D-001
+    summary: "Reuse materializeProcessSurfaces (NS-2) + writeWorkspaceNativeMcpConfigs codeIntelProviders/kind (NS-3); mirror runRepoAdd."
+    rationale: >-
+      runRepoAdd (workspace-incremental.ts ~L668-754) already emits both per-role process surfaces
+      and code-intel MCP entries. member install and adapter add replicate that exact pattern
+      rather than introducing new architecture. The code-intel enablement signal is identical to
+      the rest of the engine: workspaceJson.providers filtered by isCodeIntelProviderId. Default
+      empty => nothing emitted => byte-identical to today (no regression).
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+  - id: D-002
+    summary: "Per-repo role/kind derived from topology (sddRepo=control, specRepo=spec, roleCodeRepositories=role)."
+    rationale: >-
+      adapter add and member install operate on already-existing repos, so per-repo repoRole/kind
+      is derived from the topology manifest (sddRepo->control, specRepo->spec, each
+      roleCodeRepositories entry->role via assignments.roleId). Only kind==='role' (code) repos
+      receive code-intel entries, which writeWorkspaceNativeMcpConfigs already gates on.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+  - id: D-003
+    summary: "member install materializes surfaces/code-intel only for the repos the member actually has locally (bound + on disk)."
+    rationale: >-
+      member install configures a member's own clone; a member may only have some repos cloned.
+      Surfaces + code-intel are materialized per repo whose bound local path exists on disk. The
+      native MCP emission (today limited to sdd+spec) is extended to also cover the code repos the
+      member has. adapter add, run from the control, covers all project.repos.
+    decidedAtUtc: "2026-07-14T00:00:00Z"
+
+executionTrace:
+  - sessionId: ""
+    command: /axiom-autopilot
+    fromState: none
+    toState: specified
+    decision: scaffold-created
+    humanConfirmation: false
+    executedAtUtc: "2026-07-14T00:00:00Z"
