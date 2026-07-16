@@ -163,3 +163,53 @@ Axiom debe poder capturar lecciones al cierre y recuperarlas al inicio del traba
 ### RF-AXM-028 Operaciones incrementales ADD sobre instalaciones existentes (`INC-20260708-incremental-operations`)
 
 El runtime debe permitir AÑADIR incrementalmente un repo / adapter / provider / rol a un proyecto ya inicializado, sin re-correr el setup completo. Verificado: `axiom repo add`, `axiom adapter add <target>`, `axiom provider add <id>`, `axiom role add <roleId> --path <path>` — idempotentes, no-clobber, resuelven el proyecto desde cwd y reusan el motor multi-repo (`runWorkspaceSetup` + helpers exportados). Cierra la mitad aditiva del hueco de 7 operaciones (NFR-AXM-015 en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md)); los REMOVE quedan diferidos. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) y [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
+
+## Requisitos funcionales de la tanda INC-20260715-* (launcher visual + tuning de adapters, cerrado)
+
+### RF-AXM-029 Tuning de agente por adapter (`INC-20260715-adapter-agent-tuning`)
+
+Cada adapter puede declarar `agentTuning` (`verbosity` / `personality` / `model` opcional). El prompt pregenerado del launcher inyecta un preámbulo conciso ("Ajustes del agente" + directiva de trabajo directo/pragmático) derivado de esos ajustes, para que el agente responda de forma terse y económica en tokens y centrada en la tarea. Los tres adapters de serie (`claude-code`, `github-copilot`, `cli`) traen `{ verbosity: 'low', personality: 'pragmatic' }`; sin `agentTuning` no se emite preámbulo (retrocompatible). Es prompt-shaping puro (no toca model-routing ni selección de providers). Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) y [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+
+### RF-AXM-030 Gate de doctor pre-lanzamiento en el launcher (`INC-20260715-launcher-doctor-gate`)
+
+El launcher web ejecuta `runDoctorChecks` del proyecto seleccionado y muestra el estado (pass/warn/fallo) y lo que falta ANTES de lanzar/ejecutar. Las acciones mutantes (ejecutar/lanzar) avisan si hay checks en fallo y requieren un segundo clic para continuar (gate visible, no bloqueo duro). Endpoint `GET /api/projects/:id/launcher/doctor`, best-effort y no-crash. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) y [09 revisiones en manuales](manuales/09_Revisiones.md).
+
+### RF-AXM-031 Onboarding visual desde el launcher (`INC-20260715-launcher-onboarding`)
+
+Desde el launcher, sin terminal ni TUI, un miembro puede: instalar Axiom en un proyecto nuevo (`runInit`), unirse a un proyecto existente (`runProjectsJoin`), y registrar roles + asociarlos a repos (`runRolesRegister` / `runRolesAssign`), con un explorador de carpetas (endpoint `GET /api/launcher/browse`). Endpoints server-level `POST /api/launcher/{install,join}` (pre-proyecto) y project-scoped `POST /api/projects/:id/launcher/roles/{register,assign}`, todos confirm-gated. Tras un install/join exitoso el proyecto aparece en el selector. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) y [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
+
+### RF-AXM-032 Puente Azure DevOps en creación desde el launcher (`INC-20260715-launcher-ado-bridge`)
+
+Cuando el tracker ADO está configurado (`kind:'ado'` + `enabled` + org/project), tras crear un incremento/bug desde el launcher se ofrece un work item pre-rellenado (incremento→`User Story`, bug→`Bug`), editable y confirm-gated de un clic, reusando el endpoint ADO existente (`apiAdoCreateWorkItem`). NO acopla el ciclo de vida (la creación en Axiom es idéntica con o sin plugin); si no está configurado se muestra sólo una nota informativa sin red. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y [manuales/12_Plugin_Azure_DevOps.md](manuales/12_Plugin_Azure_DevOps.md).
+
+### RF-AXM-033 Manuales de operación en la spec (`INC-20260715-spec-manuales`)
+
+La spec incluye `specs/manuales/`: guías de usuario cruzadas (qué es cada cosa, configuración, actualización de versiones, generación de spec/contexto técnico, incrementos, bugs, planes, implementación, revisiones, archivado, launcher visual y plugin de Azure DevOps), pensadas para un equipo recién instalado. Ver [manuales/README.md](manuales/README.md) y [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
+
+## Requisitos funcionales de la tanda INC-20260715-* (alineación con sistemas role-specialized, cerrado)
+
+Tras una revisión comparativa contra un sistema SDD role-specialized (KVP25 `.github`), esta tanda cierra los huecos reales del set que Axiom INSTALA en un proyecto — manteniendo la genericidad adapter-agnóstica (lo específico de stack se inyecta por proyecto, RF-AXM-039). Catálogo tras la tanda: 18 skills / 14 agents.
+
+### RF-AXM-034 Disciplinas transversales como skills reutilizables (`INC-20260715-reusable-discipline-skills`)
+
+Axiom expone como skills de catálogo independientes las 4 disciplinas transversales antes sólo embebidas: `axiom-structured-doubts` (parada y consulta con opciones cerradas), `axiom-functional-checklist-coverage` (cobertura `CF-xx` como contrato entre fases), `axiom-plan-drift-alignment` (reconciliación spec↔plan por versión, impacto por rol) y `axiom-role-close-doc` (cierre documental técnico por rol). Son citables/evolucionables y las referencian los flujos. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+
+### RF-AXM-035 Gate de revisión por fase instalado (`INC-20260715-phase-reviewer`)
+
+`axiom-phase-reviewer` (skill+agent+superficie en el repo `sdd`) revisa spec/plan/código con lentes dedicadas, devuelve **VEREDICTO OK|KO** y aplica un barrido exhaustivo *loop-until-dry* con ledger de hallazgos; de solo lectura. La revisión se expone además como acciones del launcher (`review-spec`/`review-plan`/`review-code`, prompt-only) reusando `buildReviewPrompt`. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) y [manuales/09_Revisiones.md](manuales/09_Revisiones.md).
+
+### RF-AXM-036 Superficies de consolidación y contexto técnico (`INC-20260715-consolidation-surfaces`)
+
+`axiom-spec-integrator` consolida el conocimiento estable de un incremento/bug implementado en la spec canónica del proyecto y lo archiva (atómico, confirm-gated); `axiom-tech-context` autorea/mantiene el contexto técnico (verificable contra código) y detecta **spec-drift** criterio-a-criterio. Ambos en el repo `spec`. Ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
+
+### RF-AXM-037 Gates de QA y seguridad (`INC-20260715-quality-gates`)
+
+`axiom-qa-validator` genera un plan de pruebas derivado de los criterios de aceptación con trazabilidad 1:N y marca `⚠️ SIN COBERTURA` (nunca inventa escenarios, nunca valida con huecos). `axiom-security-reviewer` pasa de stub a cuerpo real (checklist de 10 familias de riesgo + severidad, solo-lectura/defensivo, gate opcional no bloqueante). Ver [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md).
+
+### RF-AXM-038 Análisis de alcance opcional en el planner (`INC-20260715-planner-analysis-fanout`)
+
+`axiom-role-planner` gana un análisis de alcance opcional, guiado por señales de complejidad: alcance simple → planifica directo; multi-capa con señales fuertes → análisis por dimensión (backend/frontend/qa/transversal) antes de escribir los planes de rol, con bloqueo-si-insuficiente. Portable y adapter-agnóstico (nunca exige spawnear subagentes). Ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
+
+### RF-AXM-039 Canal de inyección por proyecto documentado (`INC-20260715-install-injection-guide`)
+
+Manual `manuales/13_Skills_Agentes_y_Roles.md`: qué instala Axiom por rol de repo y cómo un proyecto inyecta su profundidad de stack (patrones, permisos, build/test) vía `axiom.config/skills-index/<role>.yaml`, el contexto técnico y las skills de rol — sin tocar el producto. Es la clave de "genérico sin perder funcionalidad". Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).

@@ -153,3 +153,18 @@ El flujo de actualización del runtime (`axiom upgrade`) es **rollback-first** (
 
 - **Rollback invocable por operador** (`INC-20260714-op-rollback-restore`): `axiom rollback <checkpointId>` restaura el `ManagedState` desde un checkpoint conocido (antes el restore sólo ocurría automático ante fallo; `--from-checkpoint` sólo migra hacia adelante). Acción de recuperación no gateada; `--dry-run`/`--list` para inspeccionar. Superficie en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
 - **Fan-out cross-repo** (`INC-20260714-cross-repo-upgrade-fanout`): en un proyecto **multi-repo**, `axiom upgrade` desde el repo de control migra/checkpointea **todos** los repos de la topología (cada uno con su propio `ManagedState`/checkpoint bajo su `.axiom-state`), con `sync`+`doctor` una sola vez a nivel workspace y reporte por-repo. `--repo-only` conserva el modo per-repo; single-repo byte-idéntico.
+
+## Onboarding guiado desde el launcher (2026-07-15) — tanda INC-20260715-*
+
+El ciclo de vida ahora tiene una **puerta de entrada visual** que no requiere terminal ni TUI (`INC-20260715-launcher-onboarding`): desde el launcher web, un miembro (a) instala Axiom en un proyecto nuevo — eligiendo si el repo es `sdd`/`spec`/`code`, perfil/overlay/target/layout, y la ruta con un explorador de carpetas — vía `runInit`; (b) se une a un proyecto Axiom existente vía `runProjectsJoin`; y (c) da de alta roles y los asocia a repos vía `runRolesRegister`/`runRolesAssign`. Todas las acciones son confirm-gated (preview→confirmar) y best-effort, y reusan los mismos run-functions del CLI (sin duplicar lógica). Antes de lanzar cualquier acción, el launcher corre el **doctor** del proyecto y muestra lo que falta (`INC-20260715-launcher-doctor-gate`), y presenta el **prompt pregenerado para el adapter seleccionado** con el tuning del agente aplicado (`INC-20260715-adapter-agent-tuning`). Superficies en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md); guía de usuario en [manuales/11_Launcher_Visual.md](manuales/11_Launcher_Visual.md).
+
+## Ciclo con gates de calidad instaladas (2026-07-15) — tanda INC-20260715-*
+
+El ciclo instalado (no sólo el dogfooding) incorpora ahora las puertas de calidad que antes faltaban, todas de solo lectura y opcionales/no bloqueantes salvo donde el proyecto las exija:
+
+1. **Analista** (`axiom-spec-author`) redacta la spec + checklist `CF-xx` → **revisión de spec** (`axiom-phase-reviewer`, lente spec, OK/KO).
+2. **Arquitecto** (`axiom-role-planner`) con **análisis de alcance opcional** (por dimensión backend/frontend/qa/transversal según señales de complejidad; `INC-20260715-planner-analysis-fanout`) → **revisión de plan** (phase-reviewer, lente plan).
+3. **Implementador** (`axiom-role-implementer`) dentro del `allowedWriteScope` → **revisión de código** (phase-reviewer, lente code) + **QA-validation** (`axiom-qa-validator`: plan de pruebas desde criterios, 1:N, `SIN COBERTURA`) + **revisión de seguridad** opcional (`axiom-security-reviewer`).
+4. **Cierre**: `axiom-tech-context` actualiza contexto técnico y detecta spec-drift; `axiom-spec-integrator` consolida el conocimiento estable en la spec canónica y **archiva** el incremento (atómico, confirm-gated).
+
+Las disciplinas transversales (`axiom-structured-doubts`, `axiom-functional-checklist-coverage`, `axiom-plan-drift-alignment`, `axiom-role-close-doc`) atraviesan todas las fases. Detalle de superficies por rol en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
