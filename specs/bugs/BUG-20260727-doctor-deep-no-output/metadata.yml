@@ -1,0 +1,9 @@
+id: BUG-20260727-doctor-deep-no-output
+kind: bug
+title: axiom doctor --deep produces no output and exits 0
+status: closed
+createdAt: '2026-07-27'
+updatedAt: '2026-07-27'
+externalRefs: []
+links:
+  planId: null
