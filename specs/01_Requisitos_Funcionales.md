@@ -66,7 +66,7 @@ El CLI debe exponer catálogo, instalación/desinstalación con checkpoint (`axi
 
 ### RF-AXM-016 Generación de surfaces por adapter target
 
-El runtime debe poder generar configuración específica para al menos 6 targets con adapter dedicado (`opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `litellm`) mediante una función `generate<Target>Config` de firma común (`Promise<Result<GeneratorResult, AdapterGeneratorError>>`), y declarar 3 targets adicionales sin adapter dedicado que caen a `fallback-only` (`copilot-vscode`, `antigravity`, `visual-studio-2026`).
+El runtime debe poder generar configuración específica por adapter target mediante una función `generate<Target>Config` de firma común (`Promise<Result<GeneratorResult, AdapterGeneratorError>>`). Desde la tanda `INC-20260726-*` (ver RF-AXM-049/RF-AXM-050) el vocabulario canónico es de **10** `ADAPTER_TARGETS` y **9** de ellos tienen paquete `@axiom/adapters-<target>` dedicado (`opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `litellm`, `codex`, `antigravity`, `visual-studio-2026`); `copilot-vscode` es el único target declarado en MVP que sigue sin paquete dedicado (usa `writeCopilotInstructions`). El nivel `SupportLevel` de model-routing (`fallback-only` para la mayoría de targets) es un eje SEPARADO de "tiene generador dedicado" y no cambió en esa tanda.
 
 ### RF-AXM-017 Superficie de comandos operativos más amplia que la documentada
 
@@ -213,3 +213,75 @@ Axiom expone como skills de catálogo independientes las 4 disciplinas transvers
 ### RF-AXM-039 Canal de inyección por proyecto documentado (`INC-20260715-install-injection-guide`)
 
 Manual `manuales/13_Skills_Agentes_y_Roles.md`: qué instala Axiom por rol de repo y cómo un proyecto inyecta su profundidad de stack (patrones, permisos, build/test) vía `axiom.config/skills-index/<role>.yaml`, el contexto técnico y las skills de rol — sin tocar el producto. Es la clave de "genérico sin perder funcionalidad". Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
+
+## Requisitos funcionales de la tanda INC-20260724-* (cerrado)
+
+Graduación a *full product lifecycle* para proyectos instalados (los repos propios de Axiom no se migran). Ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md).
+
+### RF-AXM-040 Modelo de repo único gestionado `<project>.axiom` (`INC-20260724-topology-single-axiom-repo` / `-adopt-creates-axiom-repo`)
+
+La topología soporta un único repo gestionado `<project>.axiom` (`schemaVersion: 2`: `axiomRepo`/`codeRepos`/`legacyRepos`, discriminadores `kind`/`mode`), retrocompatible con `sddRepo`/`specRepo` (auto-map + warning `deprecated-legacy-shape`). La adopción CREA un `<project>.axiom` hermano nuevo y migra la spec/context legacy dentro (formato Axiom), dejando los repos legacy byte-for-byte intactos (registrados `legacyRepos[]`, `mode: read-only-source`). Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
+
+### RF-AXM-041 Provenance/lifecycle + manifest de migración (`INC-20260724-provenance-lifecycle-manifest`)
+
+Cada artefacto lleva metadata de origen/ciclo de vida (`origin.source`, `lifecycle.state`, `managedBy`, `exportPolicy.rollbackEligible`); editar un migrado lo transiciona a `migrated-and-modified` automáticamente. Manifest global en `<project>.axiom/migration/migration-manifest.yaml`. Aditivo/retrocompatible.
+
+### RF-AXM-042 Salida de Axiom (`axiom eject`) (`INC-20260724-export-eject-rollback`)
+
+`axiom eject` vuelca los artefactos rollback-eligible (`axiom-native` + `migrated-and-modified`) a una carpeta de export con reporte + manifest, dry-run por defecto, sin escribir jamás en legacy. Ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
+
+### RF-AXM-043 MCP unificado de `<project>.axiom` (`INC-20260724-unified-axiom-mcp`)
+
+Un solo broker `axiom` expone los reads de spec/increment/bug/adr/technical-context + edición de estados (`transitionApply`) + push (`gitCommitSync`) + reads de topología/manifest/adoption-state; los brokers `sdd`/`spec`/`memory` se mantienen por retrocompat; Engram sigue aparte. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+
+### RF-AXM-044 `cmm` como único proveedor estructural de code-intel (`INC-20260724-cmm-replaces-graphify-codegraph`)
+
+`cmm` (ADR-0031) es el único proveedor estructural (`graphify`/`codegraph` retirados); `serena` sigue simbólico; fallback siempre a filesystem; freshness/auto-sync on-demand sin hooks. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+
+### RF-AXM-045 RTK y concisión como skills (`INC-20260724-rtk-skill-invoked` / `-concision-skills-policy`)
+
+RTK es usable solo vía la skill `axiom-terminal-output-efficient` (sin hooks/wrapper global; con exclusiones never-compress). La skill `axiom-concision-discipline` adopta la filosofía de concisión de Caveman sin instalar Caveman. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md).
+
+### RF-AXM-046 Higiene del lock de AutoSkills (`INC-20260724-autoskills-lock-hygiene`)
+
+Las skills instaladas por AutoSkills llevan `provenance: autoskills` + `installedAt` y pasan por un gate de policy allow/deny/licencia opcional (default allow-all). Corre por-code-repo en install-time. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md).
+
+### RF-AXM-047 Ejecución en worktree seleccionable (`INC-20260724-git-worktree-services` … `-worktree-mode-selection` / `-worktree-close-correctness`)
+
+Un incremento/bug/plan puede ejecutarse in-place o en un git worktree dedicado; el default lo elige el arquitecto en la instalación (`executionMode`) y es overridable por run (`axiom-role start --worktree`/`--in-place`). Incluye primitivas git worktree, entidad `Execution` + `ExecutionStore`, provisioning portable, aislamiento de providers/índices por worktree, harvest+cleanup seguro (kill→harvest→teardown→remove, dirty=hard stop) y cierre correcto. Ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
+
+### RF-AXM-048 Freshness de artefactos SDD (`INC-20260724-sdd-artifact-freshness`)
+
+Al leer/editar un increment/bug/plan, un auto-fetch best-effort detecta desfase con el remoto y emite un warning `stale-artifact` (nunca bloquea); el push va acotado a la carpeta del artefacto (nunca `-A`). Sin hook git obligatorio. Ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
+
+## Requisitos funcionales de la tanda INC-20260726-* (paridad de alcance de adapters + front de onboarding del launcher, cerrado)
+
+Tanda de 7 incrementos (spec-first, gate verde por incremento) que lleva el conjunto de adapters a **paridad de primera clase** (registro canónico, generadores, MCP nativo, routing y prompt del launcher), convierte el launcher web en un front de onboarding config-rich y añade probes de runtime opt-in a `doctor`. Ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md) y [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md); no funcionales asociados en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md) (NFR-AXM-020/021).
+
+### RF-AXM-049 Registro canónico de adapter targets (10 ids, fuente única reconciliada) (`INC-20260726-adapter-registry-canonical`)
+
+El vocabulario `AdapterTarget`/`ADAPTER_TARGETS` es ahora exactamente **10 ids**: `opencode, copilot-vscode, claude-code, antigravity, visual-studio-2026, cursor, github-copilot, litellm, vscode, codex` (`DEFAULT_TARGET` sigue `opencode`). `codex` es un target nuevo reconocido; `vscode` pasa a ser un target explícito de primera clase (distinto de `copilot-vscode`, con paquete propio `@axiom/adapters-vscode` y generador real cableado — antes era invisible a `init`/`workspace-adapters`). El vocabulario está alineado a **fuente única** a través de la lista de targets del CLI (`init.ts`), el registro de allowed-targets del composer de install-profiles (`default-profiles.ts` — `allowedTargets` de AMBOS profiles), la lista headline `axiom.yaml#capabilities.adapters` (8 ids: `claude-code, github-copilot, vscode, opencode, cursor, antigravity, visual-studio-2026, codex`; `copilot-vscode`/`litellm` siguen como targets internos, fuera del headline) y el support-matrix de model-routing. El invariante de reconciliación (los 5 sitios que toda alta de target debe tocar) vive en NFR-AXM-021.
+
+### RF-AXM-050 Generadores de adapter dedicados para codex/antigravity/visual-studio-2026 (`INC-20260726-adapter-generators`)
+
+`codex`, `antigravity` y `visual-studio-2026` ganan paquete `@axiom/adapters-<target>` de primera clase (single-file, merge-preserving, mismo contrato `Result<T, AdapterGeneratorError>` + máquina de 6 estados de preservación `TEAM:CUSTOM` que `@axiom/adapters-claude-code`), reemplazando el fallback thin-canonical: `codex` → `.codex/AGENTS.md`, `antigravity` → `.antigravity/AGENTS.md`, `visual-studio-2026` → `.vs/AXIOM.md` (path sin cambios). Los paquetes de adapter dedicados suben de 6 a **9** (verificado por el check `TC-009`/GATE 0031, ver NFR-AXM-010); el único target declarado en MVP que sigue sin paquete dedicado es `copilot-vscode`. El nivel `'fallback-only'` de `SUPPORT_MATRIX` para estos 3 targets es un eje SEPARADO ("proyección de model-routing per-slot") y queda sin cambios. El helper `writeThinCanonicalAgentsMd` y sus constantes quedan en el código, no referenciados, como fallback disponible para un futuro target sin generador dedicado.
+
+### RF-AXM-051 Paridad de MCP nativo + superficie portable `.axiom` incondicional (`INC-20260726-adapter-mcp-parity`)
+
+La proyección de config MCP nativa (`writeNativeMcpConfig`) cubre ahora todo target con un schema nativo verificado o de asunción documentada, y da una nota informativa honesta al resto — **nunca un schema inventado**. `NATIVE_MCP_TARGETS` (gate de "se escribe fichero de proyecto") = **7 ids**: `claude-code, cursor, copilot-vscode, github-copilot, opencode, vscode, visual-studio-2026`. `vscode` → `.vscode/mcp.json` (mismo fichero/shape que `copilot-vscode`/`github-copilot`); `visual-studio-2026` → nuevo `.vs/mcp.json` (mismo shape stdio, path propio para no colisionar nunca con el `.mcp.json` de claude-code; es una **ASUNCIÓN documentada y override-able**, no re-verificada de forma independiente). Un segundo conjunto, `NATIVE_MCP_INFORMATIVE_TARGETS` = `codex`/`antigravity`: su config MCP real es **user-global** (`~/.codex/config.toml` `[mcp_servers]`; `~/.gemini/config/mcp_config.json` `mcpServers`) — Axiom no escribe fichero de proyecto para ellos, solo una nota informativa nombrando la ubicación real + los servers Axiom lanzables (`sdd-mcp-server`/`spec-mcp-broker`). `litellm` (y cualquier target futuro sin schema) mantiene el fallback genérico. Todo caller que despache sobre `NATIVE_MCP_TARGETS` debe además chequear `NATIVE_MCP_INFORMATIVE_TARGETS` o la nota se vuelve código muerto (hueco encontrado y cerrado en `workspace-worktree-provision.ts`). La superficie portable `.axiom/{agents,commands,skills}/` (`materializeProcessSurfaces`) se confirma adapter-agnóstica e **incondicional** (todo repo la recibe con independencia de los adapters seleccionados, probado con `adapters: []`), de modo que cada adapter es descubrible por ella sin necesidad de un formato de skill nativo por-IDE.
+
+### RF-AXM-052 Paridad de routing de adapters del launcher (`INC-20260726-launcher-adapter-routing-parity`)
+
+`AXIOM_ADAPTER_ROUTING.adapters` (`@axiom/launcher`, la tabla que decide qué adapters puede elegir el launcher web al craftear un prompt) lista ahora **9 entradas** — los 8 adapters headline (`claude-code, github-copilot, vscode, opencode, cursor, antigravity, visual-studio-2026, codex`) + `cli` — todas reusando el mismo `skillRoutingMap()`/`cliRoutingMap()`, de modo que cada acción de cada adapter resuelve al id de skill real (`axiom-sdd-orchestrator` o, para `review-*`, `axiom-phase-reviewer`) + el mcpTool `sdd.transitionApply`, NUNCA el fallback genérico `@axiom` de portapapeles (antes solo 3 de esos ids eran ruteables). Es una tabla DISTINTA del registro `ADAPTER_TARGETS` (aquélla gatea `axiom init --target`/materialización; ésta gatea el picker del launcher). El endpoint `apiGetLauncherData` expone los 9 con un `label` legible (`ADAPTER_LABELS`); el front rendea el selector dinámicamente y prefiere `label` sobre el id. Adapter-neutral: solo difieren las cosméticas de cabecera/mención.
+
+### RF-AXM-053 Enriquecimiento de contexto del prompt del launcher (`INC-20260726-launcher-prompt-context-enrichment`)
+
+Todo prompt que el launcher craftea lleva ahora, de forma adapter-neutral: **DÓNDE leer** (las rutas repo-relativas reales de la carpeta/README/metadata del artefacto en la spec, resueltas con `resolveArtifactDir` + `resolveSpecArtifactRelPath` de `@axiom/workflow` — la MISMA resolución que usa el endpoint de registro, sin esquema de path a mano; o, cuando el id aún no existe, una instrucción clara "id no asignado" en vez de una ruta falsa) y un bloque **"Herramientas y ubicacion"** que nombra los MCP servers gestionados (`AXIOM_MANAGED_MCP_SERVERS` = `sdd-mcp-server`/`spec-mcp-broker`, override-able vía `CraftPromptOptions.mcpServers`), el `mcpTool` de mutación confirmada (`sdd.transitionApply`) y la skill a aplicar — derivados del mismo `RoutingTarget` que la capa de routing ya resolvía (dato existente recién superficializado, no un concepto de routing nuevo). El bloque es byte-idéntico entre adapters skill-routed; el adapter `cli` omite solo la línea de skill (target `command`-kind, sin skillId). Sin duplicación: una ruta literal de spec/metadata aparece a lo sumo una vez por prompt.
+
+### RF-AXM-054 Probes de runtime opt-in en doctor (`axiom doctor --deep`) (`INC-20260726-doctor-runtime-probes`)
+
+`axiom doctor` gana un superset asíncrono OPT-IN, `--deep` (`runDoctorChecksDeep`), que añade probes de runtime reales sobre el árbol síncrono de checks de configuración (sin tocarlo): `TC-018-<toolId>` (probe funcional best-effort por tool declarada, reusando el contrato `resolveProbeCommand`/`probeToolInstalled` de `@axiom/toolchain` — `--version` para serena/cmm/engram; hace `skip` honesto de tools sin contrato de binario como `rtk`/`caveman`, nunca fabrica un probe) y `TC-019-<serverId>` (un handshake `initialize` JSON-RPC MCP **real** contra el `command`/`args` de lanzamiento de cada server gestionado, leído de `.axiom/mcp.yml`, reusando `createStdioMcpClient` de `@axiom/providers` y el handler `initialize` de `@axiom/mcp-server`), categoría nueva `runtime-probes`. El endpoint del gate de doctor del launcher (`GET .../launcher/doctor`) admite el mismo opt-in vía `?deep=1`/`?deep=true`, con el path síncrono rápido como default. Disciplina aditiva/never-fail en NFR-AXM-020.
+
+### RF-AXM-055 Front de onboarding config-rich del launcher (`INC-20260726-launcher-onboarding-config-front`)
+
+Las tarjetas install/join del launcher (`axiom app`) cubren ahora la superficie completa de onboarding — `name`, `path`, `profile`, `overlay`, `layout`, rol de este repo, adapter primario + adapters adicionales, tools y execution-mode — con el gate preview→confirm preservado exactamente. Todo parámetro con ruta real invocable queda **realmente cableado**: `runInit` (scaffold base) → `generateWorkspaceAdapters` (adapter primario + adicionales, salida real por-adapter — cierra el hueco de que un install nunca materializaba output por-adapter) → `runConfigure` cuando se da execution-mode (best-effort; el fallo se reporta en `executionMode.warning`, nunca hace rollback de lo ya aplicado). Las **tools** se superficializan honestamente con una nota "pendiente" explícita (`tools.applied: false`, apuntando a `axiom toolchain add --id <id>`) — NO se cablean ni se fingen aplicadas, porque no existe hoy una ruta limpia de instalación de toolchain desde un `init` recién hecho (diferido). La asignación de roles de equipo/código es alcanzable en el flujo de join reusando el endpoint existente `apiLauncherRolesAssign` (auto-select del proyecto recién onboardeado, sin endpoint nuevo). `ADAPTER_LABELS` pasa a un fichero compartido `apps/cli/src/commands/_adapter-labels.ts`, cubriendo la UNIÓN de `ADAPTER_TARGETS` y `AXIOM_ADAPTER_ROUTING`.

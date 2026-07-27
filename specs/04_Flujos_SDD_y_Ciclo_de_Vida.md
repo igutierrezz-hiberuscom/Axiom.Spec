@@ -167,4 +167,43 @@ El ciclo instalado (no sólo el dogfooding) incorpora ahora las puertas de calid
 3. **Implementador** (`axiom-role-implementer`) dentro del `allowedWriteScope` → **revisión de código** (phase-reviewer, lente code) + **QA-validation** (`axiom-qa-validator`: plan de pruebas desde criterios, 1:N, `SIN COBERTURA`) + **revisión de seguridad** opcional (`axiom-security-reviewer`).
 4. **Cierre**: `axiom-tech-context` actualiza contexto técnico y detecta spec-drift; `axiom-spec-integrator` consolida el conocimiento estable en la spec canónica y **archiva** el incremento (atómico, confirm-gated).
 
+## Ciclo de vida del modelo `<project>.axiom` y ejecución en worktree (2026-07-24) — tanda INC-20260724-*
+
+Flujos nuevos de la graduación a *full product lifecycle* (modelo de repo único, worktrees, provenance/rollback). Solo aplican a proyectos **instalados**; los repos propios de Axiom no se migran. Formas de datos en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md); superficies en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
+
+### Adopción → crea `<project>.axiom`, legacy intacto (INC-20260724-adopt-creates-axiom-repo)
+
+`axiom workspace setup --adopt-spec/--adopt-sdd` crea un repo hermano nuevo `../${projectName}.axiom` y migra la spec/context legacy DENTRO de él (formato Axiom); los repos legacy quedan **byte-for-byte intactos** (fuentes read-only registradas en `legacyRepos[]`). El writer de migración y los readers de CLI convergen en la raíz del repo nuevo (sin anidamiento `axiom.spec/`). `--dry-run` = cero escritura; re-run idempotente.
+
+### Transición de lifecycle al editar un migrado (INC-20260724-provenance-lifecycle-manifest)
+
+Cualquier escritura de Axiom sobre un artefacto cuyo `lifecycle.state` es `migrated` lo transiciona automáticamente a `migrated-and-modified` en el choke point `saveArtifactMetadata` (sin comando aparte). Cada run de migración que crea artefactos nuevos actualiza el manifest global `<project>.axiom/migration/migration-manifest.yaml`. Esto es lo que después habilita la salida limpia de Axiom.
+
+### Salida de Axiom: `axiom eject` (INC-20260724-export-eject-rollback)
+
+Como el legacy está intacto, "rollback" desde Axiom NO significa restaurar legacy: significa dejar de usar Axiom llevándote lo que Axiom creó. `axiom eject` selecciona los artefactos rollback-eligible (`axiom-native` + `migrated-and-modified`, los 5 kinds), excluye los `migrated` sin modificar y toda superficie interna (config/state/skills/…), y los vuelca a `<project>.axiom/exports/<exportId>/` con `EXPORT_REPORT.md` + `export-manifest.yaml`. Default `--dry-run` (cero escritura); `--write-export-folder` escribe. **Nunca** escribe en legacy. Distinto del `axiom rollback` preexistente (restore de checkpoint de upgrade) — sin colisión ni código compartido.
+
+### Ejecución en worktree como modo seleccionable (INC-20260724-worktree-mode-selection + W1/W2/W3/W5)
+
+Un incremento/bug/plan puede ejecutarse **in-place** (comportamiento actual, default) o en un **git worktree** dedicado. El default lo elige el arquitecto en la instalación (`executionMode` en `install-profile.json`) y es overridable por run. `axiom-role start` resuelve el modo (install default → override `--worktree`/`--in-place`) vía `runRoleSubcommandAsync` (el `runRoleSubcommand` síncrono queda byte-idéntico para todos los callers existentes: MCP `sdd.transitionApply`, `app-api`, etc.). Flujo worktree:
+
+1. **start**: nombre de rama parametrizado (`role/<id>-<slug>` por defecto, igual que in-place) + path de worktree único por ejecución (bajo `<repoBasename>.worktrees/`) → `worktreeAdd` (`@axiom/workflow`, INC-20260724-git-worktree-services: dry-run/preview, guards de path fuera-del-repo, nunca el repo principal, rechaza worktree sucio salvo `force`, local-only) + `ExecutionStore.create` (compose helper `createExecutionForWorktree`) → `provisionWorktreeExecution` (INC-20260724-worktree-provisioning).
+2. **provisioning**: materializa en el worktree la superficie `.axiom` portable + config MCP del broker unificado `axiom` + config code-intel por-worktree (cmm/serena apuntados al worktree) + el layout `.axiom-state` execution-scoped. Best-effort, no-clobber, created-gated. Portable-only: solo se copian 3 ficheros no-secretos (`init.json`/`install-profile.json`/`workspace.json`); **secretos y `.axiom-state/local/` nunca se copian**.
+3. **complete**: corre las gates y luego `harvestAndCleanupExecution` (INC-20260724-worktree-harvest-cleanup) en orden estricto **kill → harvest → teardown → remove**: matar procesos rastreados (best-effort) → copiar logs/evidence/outputs a la ubicación central que sobrevive al borrado → `teardownWorktreeCodeIntel` (borra `.cmm`/`.serena` derivados) → `worktreeRemove`. Un worktree con trabajo real sin commitear es **hard stop** (nunca `force` por defecto); harvest siempre precede a cualquier borrado; `dryRun` no muta nada.
+
+### Correctitud del cierre en worktree (INC-20260724-worktree-close-correctness)
+
+Fix fast-follow de 2 defectos HIGH que el barrido transversal encontró y reprodujo:
+
+- **FIX 1**: el provisioning reescribe legítimamente ficheros *tracked* del worktree (config MCP nativa, superficie de adapters), lo que hacía que el guard de "worktree sucio" bloqueara todo cierre normal. Ahora el provisioning registra en `Execution.provisionedPaths` exactamente lo que escribió, y el cierre lo **neutraliza** (`resetWorktreeGeneratedFiles`: revierte tracked vía `git checkout --`, borra untracked) justo antes del dirty check — así un worktree normal cierra limpio SIN force, mientras que trabajo genuino (cualquier path fuera de ese set) **sigue bloqueando**. Si el cierre aún hace hard-stop, un **rollback compensatorio** revierte la transición ya persistida `archived → in-progress` (evita el estado archived+huérfano); la `Execution` queda en `harvested` para reintentar.
+- **FIX 2**: en modo worktree las gates de verify/review ahora apuntan a `execution.worktreePath` (no a `projectRoot`) — un worktree cuyos tests fallan ya no pasa la gate por validar el repo fuente.
+
+### Freshness de artefactos SDD (INC-20260724-sdd-artifact-freshness)
+
+Como los worktrees comparten el repo `<project>.axiom` central, al leer/editar un increment/bug/plan se hace un **auto-fetch de solo lectura, best-effort y time-bounded** (acotado a la rama upstream del artefacto, nunca `--all`) y se compara → `fresh | stale | unknown`. Si está `stale` (el remoto tiene commits más nuevos tocando esa carpeta) se emite un **warning** `stale-artifact` — nunca bloquea, nunca da error (todo fallo degrada a `unknown` sin warning). Se superficie en las lecturas MCP (`spec.incrementRead`/`bugRead`/`planRead`) y en la escritura (`sdd.gitCommitSync`). El push va **acotado** a la carpeta del artefacto (`git add -- <paths>`, nunca `-A`). Sin hook git obligatorio (auto-fetch on-demand en read/edit). GIT-level, distinto de la freshness de índices de code-intel (INC-20260724-worktree-provider-isolation).
+
+### Barrido e2e transversal + revisión adversarial (INC-20260724-cross-cutting-e2e-review)
+
+Cierre del batch: una suite e2e encadena la mayor parte del flujo (adopción → `<project>.axiom` → MCP unificado → worktree start/close → eject dry-run → skills RTK/concisión → AutoSkills) y una revisión adversarial busca defectos de integración cruzada. Encontró y reprodujo los 2 defectos HIGH de cierre en worktree, corregidos en INC-20260724-worktree-close-correctness. No cambió código de producto.
+
 Las disciplinas transversales (`axiom-structured-doubts`, `axiom-functional-checklist-coverage`, `axiom-plan-drift-alignment`, `axiom-role-close-doc`) atraviesan todas las fases. Detalle de superficies por rol en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).

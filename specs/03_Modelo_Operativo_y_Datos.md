@@ -363,4 +363,46 @@ El generador de superficies de proceso (`workspace-process-surfaces.ts`, `surfac
 - **`spec`** (repo de especificación): `axiom-spec-author`, `axiom-role-planner`, `axiom-spec-integrator`, `axiom-tech-context` — autoría, planificación, consolidación y contexto técnico.
 - **`code`** (repos de código): `axiom-role-implementer` — parametrizado por `{role}`/`{repoPath}`.
 
+## Modelo de repo único gestionado `<project>.axiom`, provenance y ejecuciones (2026-07-24) — tanda INC-20260724-*
+
+Graduación consciente a *full product lifecycle* (excepción explícita a los "Explicit Bootstrap Limits", ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md)): el modelo objetivo de los proyectos **instalados** deja de ser el par `sddRepo`+`specRepo` y pasa a un único repo gestionado `<project>.axiom` que concentra todo el "cerebro" (spec/increments/bugs/adr/technical-context/logs + skills/adapters/commands/rules). **No** se migran los repos propios de Axiom (`Axiom.SDD`/`Axiom.Spec`) a este modelo (dogfooding diferido al usuario).
+
+### Topología `schemaVersion: 2` — `axiomRepo`/`codeRepos`/`legacyRepos` (INC-20260724-topology-single-axiom-repo)
+
+**Supersede como MODELO OBJETIVO** el `TopologyManifest schemaVersion: 1` (`sddRepo`/`specRepo`/`roleCodeRepositories`) documentado arriba, de forma **aditiva y retrocompatible** (el schema v1 sigue cargando y validando). `@axiom/topology` (`packages/topology/src/types.ts`) añade:
+
+- Discriminadores en `RepoRef`: `kind` (`'axiom' | 'code' | 'legacy'`) y `mode` (`'read-only-source'`).
+- Campos nuevos en `TopologyManifest` (opcionales, aditivos): `axiomRepo?` (kind `axiom` — control + conocimiento en un solo repo), `codeRepos?` (repos de código; el rol se asocia por el mecanismo `assignments[]` existente, sin campo `role` inline), `legacyRepos?` (fuentes preexistentes del proyecto, `mode: 'read-only-source'`, Axiom nunca escribe en ellas).
+- `schemaVersion: 1 | 2`. Un documento v1 (`sddRepo`/`specRepo`) **auto-mapea** a los campos gestionados (normalizador `normalizeTopologyManifest`, ambas formas siempre pobladas) y emite un warning **no bloqueante** `deprecated-legacy-shape`. El `axiomRepo` solo se deriva de un par legacy cuando es lossless (`sddRepo.ref === specRepo.ref`); un par genuinamente separado se deja `undefined` (no se fabrica un path fusionado).
+- Nuevos `TopologyFinding`: `invalid-repo-kind` (error — el `kind` no cuadra con su bucket) y `deprecated-legacy-shape` (warning). `axiom topology show` superficie `schemaVersion`/`axiom-repo`/`legacy-repos` (ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md)).
+
+### Adopción crea un `<project>.axiom` nuevo (INC-20260724-adopt-creates-axiom-repo)
+
+La adopción (`axiom workspace setup --adopt-spec/--adopt-sdd`) deja de migrar **in-place** al repo legacy y pasa a **crear un repo hermano nuevo** `../${projectName}.axiom`, migrando el contenido de spec/context legacy DENTRO de él en formato Axiom. Implicaciones de datos/topología:
+
+- Los repos legacy quedan **byte-for-byte intactos** (nunca se les escribe) y se registran como `legacyRepos[]` (`kind: 'legacy'`, `mode: 'read-only-source'`, `schemaVersion: 2`) en el `topology.yaml` del repo nuevo (ids convencionales `legacy-spec-source`/`legacy-sdd-source`, upsert por id, idempotente).
+- El contenido migrado (increments/bugs/adr/technical-context) aterriza directamente en la RAÍZ del repo nuevo (`role: 'spec'`, **sin** anidamiento `axiom.spec/`), de modo que el writer de migración y los readers de CLI (`axiom-increment`/`axiom-bug list`) convergen en la misma raíz. `--control-path` sobreescribe el destino; `--dry-run` no escribe nada.
+
+### Provenance/lifecycle en `metadata.yml` + manifest de migración (INC-20260724-provenance-lifecycle-manifest)
+
+`metadata.yml` (`@axiom/workflow`, `BaseArtifactMetadataFields`, los 5 `ArtifactKind`: increment/bug/plan/adr/decision) gana 4 campos OPCIONALES y aditivos (retrocompatibles — un `metadata.yml` sin ellos carga, y los readers `resolveArtifactOrigin`/`resolveArtifactLifecycleState` defaultean a axiom-native):
+
+- `origin.source`: `'migrated' | 'axiom-native'` (+ `migrationId`/`repository`/`originalPath`/`migratedAt` solo cuando `migrated`).
+- `managedBy`: `{ tool, since, lastAxiomModificationAt? }`.
+- `lifecycle.state`: `'migrated' | 'migrated-and-modified' | 'axiom-native'`.
+- `exportPolicy`: `{ rollbackEligible, targetLegacyRepo?, targetLegacyPath? }`. `rollbackEligible` derivado: axiom-native → `true`; migrated (intacto) → `false`; migrated-and-modified → `true`.
+
+Editar un artefacto migrado lo **auto-transiciona** `migrated → migrated-and-modified` (y sella `managedBy.lastAxiomModificationAt`) en el único choke point `saveArtifactMetadata`, sin comando aparte; un artefacto axiom-native o pre-existente sin origin nunca se marca migrado. Manifest global **no oculto** en `<project>.axiom/migration/migration-manifest.yaml` (runs de migración con `migrationId` + resumen fresco por artefacto), aditivo al `.migration-provenance.yml` oculto de idempotencia previo.
+
+### Entidad `Execution` + `ExecutionStore` + paths execution-scoped (INC-20260724-worktree-isolation-execution)
+
+Primera entidad de ejecución de primera clase para rastrear runs paralelos (típicamente en worktree). Deliberadamente **NO canónica** (no es un `ArtifactKind`, no se commitea):
+
+- `@axiom/isolation`: entidad `Execution` (`id`, `projectId`, `artifactRef {kind: increment|bug|plan, id}`, `repoId`, `branch`, `worktreePath`, `state`, `agentTarget?`, `capabilities?`, `logsPath`, `evidencePath`, `createdAt`, `updatedAt`) con `ExecutionState` enum cerrado de 7 valores; id `EXE-<YYYYMMDD>-<HHMMSS>-<sufijo>` (clock inyectable). Paths execution-scoped `buildExecutionScopedPaths(executionId, rootPath)` → `.axiom-state/executions/<id>/{config,mcp,outputs,logs,evidence,local}`, disjuntos de los project-scoped y de otras ejecuciones (cubiertos por el `.gitignore` blanket de `.axiom-state/`).
+- `@axiom/persistence`: `ExecutionStore` (create/get/list/update/close, escritura atómica tmp+rename, `list()` tolerante a carpetas huérfanas). `close()` es soft (state → `removed`, nunca borra ficheros). El store se ancla al repo FUENTE, así `logsPath`/`evidencePath` sobreviven al borrado del worktree (necesario para harvest). `UpdateExecutionPatch` gana `provisionedPaths?` (INC-20260724-worktree-close-correctness): el set exacto de ficheros que el provisioning escribió/reescribió, persistido para que el cierre los pueda neutralizar sin re-derivarlos.
+
+### `executionMode` en `install-profile.json` (INC-20260724-worktree-mode-selection)
+
+`ResolvedInstallProfile` (`@axiom/install-profiles`) gana `executionMode: 'in-place' | 'worktree'` (`DEFAULT_EXECUTION_MODE = 'in-place'`), persistido en `.axiom-state/<projectId>/install-profile.json` por `axiom configure --execution-mode`. Es el default elegido por el arquitecto en la instalación; se preserva a través de re-configuraciones no relacionadas (se relee el valor previo cuando el flag se omite) y es overridable por run (ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md)).
+
 **Canal de inyección por proyecto** (dónde va lo específico de cada stack, manteniendo el producto genérico): (i) `axiom.config/skills-index/<role>.yaml` — índice de skills por rol que leen las superficies (`sdd.skillIndexRead`); (ii) el contexto técnico del proyecto, propiedad de `axiom-tech-context`; (iii) las skills de rol del proyecto. Las superficies del producto se mantienen adapter/stack-agnósticas y parametrizables; a diferencia de un sistema role-specialized que hornea las reglas de stack en agentes por rol, Axiom las deja como DATO del proyecto para funcionar en cualquier adapter/stack sin perder profundidad. Guía operable en [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
