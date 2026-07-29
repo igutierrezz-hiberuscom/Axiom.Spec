@@ -9,11 +9,19 @@ Modelo mental del producto (`Axiom/docs/overview.md`):
 - la configuración (YAML por proyecto) define cómo se activa ese contrato en un proyecto concreto;
 - el CLI materializa, valida y opera sobre ese contrato.
 
-## Estado real (verificado en el código, 2026-07-02)
+## Registro histórico: snapshot del runtime (verificado en el código, 2026-07-02)
 
 Axiom NO está en fase de diseño: tiene un monorepo npm workspaces (`Axiom/`) con `apps/cli` + 28 packages bajo `packages/*` (ver [context/references/01-inventario-de-packages.md](../context/references/01-inventario-de-packages.md)), 36 ficheros de comandos en `apps/cli/src/commands/` y un histórico de al menos 40 commits (2026-06-05 a 2026-07-02) e incrementos numerados (0008 a 0039+) que fueron cerrando MVP y post-MVP en oleadas.
 
 Según `Axiom/README.md` (2026-06-25/30), todas las capas declaradas están "implementadas y testeadas": dominio, aplicación (CLI), adapters (6 reales), telemetría, orquestación y persistencia.
+
+Este bloque conserva una fotografía inicial del repositorio y no es el contrato cuantitativo vigente. La baseline actual de adapters, providers y MCP se consolida en la sección siguiente y en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+
+## Estado vigente del runtime
+
+El runtime actual reconoce 10 adapter targets, con 9 paquetes de adapter dedicados y `copilot-vscode` atendido por el writer compartido de instrucciones. El launcher mantiene 9 entradas de routing (8 adapters headline más `cli`). La selección project-scoped ofrece `cmm`, `serena` y `engram`; el registry canónico contiene 6 ids.
+
+El server MCP ejecutable admite los kinds `sdd`, `spec`, `memory` y `axiom`, con un registro global de 25 capability ids. La configuración MCP nativa escribe superficies de proyecto para los targets soportados, emite notas user-globales para `codex` y `antigravity`, y deja `litellm` como warning sin schema verificado.
 
 ## Qué hace el producto hoy
 
@@ -25,7 +33,7 @@ Para un proyecto que adopta Axiom, el ciclo de vida real es:
 axiom init → axiom join → axiom configure → axiom sync → axiom start → axiom audit → axiom doctor → axiom upgrade
 ```
 
-Cada comando lee/escribe un conjunto concreto de artefactos (`axiom.yaml`, `.axiom-state/<project>/*.json`, `.axiom-state/local/*`) y, según el profile activo, genera surfaces para el IDE/CLI de destino (`.opencode/`, `.claude/`, `.github/copilot-instructions.md`, `.cursor/`, `.vscode/`, `litellm.config.json`). El detalle completo vive en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y en `context/architecture/`.
+Cada comando lee/escribe un conjunto concreto de artefactos (`axiom.yaml`, `.axiom-state/<project>/*.json`, `.axiom-state/local/*`) y, según el profile y los adapters seleccionados, genera la superficie portable `.axiom/{agents,commands,skills}/`, salidas específicas como `.opencode/`, `.claude/`, `.codex/`, `.antigravity/`, `.vs/`, `.cursor/`, `.vscode/`, `.github/copilot-instructions.md` y `litellm.config.json`, además de `.axiom/mcp.yml` y la configuración MCP nativa aplicable (`opencode.json`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` o `.vs/mcp.json`). `codex` y `antigravity` reciben notas sobre su configuración user-global y `litellm` un warning sin schema verificado. El detalle completo vive en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y en `context/architecture/`.
 
 ## Dos modelos distintos que conviven bajo el nombre "Axiom" (evitar confundirlos)
 

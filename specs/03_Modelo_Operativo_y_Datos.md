@@ -13,7 +13,7 @@ Cada proyecto que adopta Axiom tiene un único `axiom.yaml` en su raíz. Campos 
 - `lifecycle_commands`;
 - `initial_capabilities`.
 
-Se genera con `axiom init` y encapsula el **profile triple**: `functionalProfile` (`builder` | `product-owner`) + `operationalOverlay` (`local-only` | `standard` | `enterprise`) + `adapterTarget` (uno de 8 targets declarados). El triple recomendado para primer proyecto es `builder` + `local-only` + `opencode` (`Axiom/docs/first-project-readiness.md`).
+Se genera con `axiom init` y encapsula el **profile triple**: `functionalProfile` (`builder` | `product-owner`) + `operationalOverlay` (`local-only` | `standard` | `enterprise`) + `adapterTarget` (uno de 10 targets declarados). El triple recomendado para primer proyecto es `builder` + `local-only` + `opencode` (`Axiom/docs/first-project-readiness.md`).
 
 ## Estado project-scoped: `.axiom-state/`
 
@@ -44,7 +44,7 @@ No todos se consumen hoy con el mismo nivel de profundidad en runtime, pero form
 
 ### `profiles.yaml`: dato producto canónico con default bundleado (no scaffoldeado)
 
-> `BUG-20260703-configure-needs-bundled-profiles`. A diferencia del resto del catálogo (que documenta política del proyecto adoptante), `profiles.yaml` (functional profiles, operational overlays, adapter targets, profile bindings, `roleAliases`) es dato **producto** — idéntico entre proyectos, no específico de cada uno. `axiom init` **no** lo scaffoldea (mantiene bajo el conteo de archivos generados). En su lugar, `@axiom/install-profiles` exporta `DEFAULT_PROFILES: ProfilesYaml`, un catálogo canónico bundleado que cubre ambos perfiles funcionales, los 3 overlays, los 8 adapter targets soportados por el CLI (en `allowedTargets` de ambos perfiles) y los aliases `analista → product-owner` / `arquitecto → builder`.
+> `BUG-20260703-configure-needs-bundled-profiles`. A diferencia del resto del catálogo (que documenta política del proyecto adoptante), `profiles.yaml` (functional profiles, operational overlays, adapter targets, profile bindings, `roleAliases`) es dato **producto** — idéntico entre proyectos, no específico de cada uno. `axiom init` **no** lo scaffoldea (mantiene bajo el conteo de archivos generados). En su lugar, `@axiom/install-profiles` exporta `DEFAULT_PROFILES: ProfilesYaml`, un catálogo canónico bundleado que cubre ambos perfiles funcionales, los 3 overlays, los 10 adapter targets soportados por el CLI (en `allowedTargets` de ambos perfiles) y los aliases `analista → product-owner` / `arquitecto → builder`.
 >
 > - `installProfile` (`@axiom/installer`) usa `axiom.config/profiles.yaml` del proyecto cuando existe y es legible (override); si no, cae a `DEFAULT_PROFILES`. Nunca falla sólo porque el proyecto no tiene el archivo.
 > - `axiom init --profile analista|arquitecto` resuelve el alias contra `DEFAULT_PROFILES` cuando no hay ningún `profiles.yaml` de proyecto o de producto disponible.
@@ -198,7 +198,7 @@ La segunda tanda de incrementos de workspace añade cuatro clases de artefacto p
   }
   ```
 
-  El campo `providers` (`INC-20260708-wizard-configure-provider-selection`) persiste la SELECCIÓN de providers LOCALES habilitados del proyecto (subconjunto de `codegraph`/`serena`/`graphify`/`engram`; `[]` = ninguno, solo `filesystem` always-on). Es la ÚNICA fuente de verdad de "qué providers habilitó este proyecto" — distinta del MODELO cerrado de 7 ids de `axiom.config/providers.yaml` (schema-locked, nunca recortado). Lo escriben tanto el step `providers` del wizard como `axiom configure --providers <csv>` (merge-write) y las operaciones incrementales `provider add`. Lo lee `buildProjectProviderRegistry` (`@axiom/providers`) para registrar exactamente los clientes code-intel habilitados. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+  El campo `providers` (`INC-20260708-wizard-configure-provider-selection`) persiste la SELECCIÓN de providers LOCALES habilitados del proyecto (subconjunto de `cmm`/`serena`/`engram`; `[]` = ninguno, solo `filesystem` always-on). Es la ÚNICA fuente de verdad de "qué providers habilitó este proyecto" — distinta del REGISTRY canónico de 6 ids de `axiom.config/providers.yaml` (schema-locked, nunca recortado). Lo escriben tanto el step `providers` del wizard como `axiom configure --providers <csv>` (merge-write) y las operaciones incrementales `provider add`. Lo lee `buildProjectProviderRegistry` (`@axiom/providers`) para registrar exactamente los clientes code-intel habilitados. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 
 - **`install-profile.json` por repo** — `generateWorkspaceAdapters` resuelve un `ResolvedInstallProfile` por repo del workspace (vía `installProfile`, un solo call por repo con `adapters[0]` como primario), persistido en el `.axiom-state/<projectId>/` de ese repo, con el mismo shape que ya escribe `axiom configure` (ver "Ficheros generados por comando"). Los ficheros de adapter derivados (`.opencode/AGENTS.md`, `.claude/AGENTS.md`, `.antigravity/AGENTS.md`, `.vs/AXIOM.md`, etc.) se escriben en **cada** repo por adapter seleccionado, según la tabla de despacho `target -> generador` de [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 
