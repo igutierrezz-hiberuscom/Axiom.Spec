@@ -13,7 +13,7 @@ Axiom es un CLI Node/TypeScript (`axiom`) que coordina, para un proyecto adoptan
 ## Tres espacios dentro del repo `Axiom/` (según overview.md)
 
 1. **Builder tooling** (`_builder/`): herramientas de construcción, no parte del runtime — no presente en este checkout (ver riesgos conocidos).
-2. **Especificación del producto** (`axiom.spec/`, minúsculas): fuente de verdad documental interna al producto — no presente en este checkout.
+2. **Especificación del producto** (`axiom.spec/`, minúsculas): fuente de verdad documental interna al producto — presente en este checkout con `increments/`, `plans/`, `target-axiom-agents/`, `target-axiom-skills/` y `templates/`; la carpeta `_builder/` sigue siendo el único hueco menor relevante de la readiness.
 3. **Runtime del producto** (`apps/` + `packages/`): implementación ejecutable real, sí presente y operativa.
 
 ## Capas por responsabilidad (43 packages + `apps/cli`)

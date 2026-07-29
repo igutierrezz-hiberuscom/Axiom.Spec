@@ -1,8 +1,9 @@
-# Archive — 2026-07-02/03 Axiom redesign roadmap
+# Archive — integrated and closed Axiom increments
 
-This folder holds the completed increment chains from the Axiom
-architecture redesign roadmap (`INC-20260702-*`), which reconciled
-Axiom's product architecture against two external decision documents
+This folder holds completed increment chains from the Axiom architecture
+redesign roadmap (`INC-20260702-*`) and later consolidation passes. The
+roadmap reconciled Axiom's product architecture against two external
+decision documents
 (`axiom_decisiones_sesion_prompt_implementacion.md` and
 `axiom_decisiones_sesion_addendum_revision.md`), plus the D3 side-quest
 (`axiom.yaml schemaVersion: 2` re-enablement).
@@ -33,20 +34,19 @@ Axiom's product architecture against two external decision documents
   the workspace at the time each chain closed and is left as historical
   record, not corrected retroactively.
 - The parent roadmap index,
-  `Axiom.Spec/specs/increments/INC-20260702-axiom-redesign-roadmap/README.md`,
-  was intentionally **not** archived — it remains at the top level as the
-  master index and closing summary for the whole roadmap, with pointers to
-  both the 8 topic files and this archive.
+  `Axiom.Spec/specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/README.md`,
+  is archived here with the other increment records. It remains the master
+  index and closing summary for the whole roadmap, with pointers to both the
+  8 topic files and this archive.
 
 ## Contents
 
-71 folders, each a chain step (audit / design / impl / validator / other
-role-specific suffix) for one of the roadmap's 23 increments or the D3
-side-quest. Every chain closed with a `Status: closed` terminal
-validator-reviewer pass, confirmed by direct inspection before archiving.
-One exception, also archived here for record-keeping rather than left
-loose at the top level: `INC-20260702-tui-menu-promote-inventory-screens`,
-a genuinely **not-started, deferred placeholder** increment (not a closed
+The archive contains the roadmap's chain steps (audit / design / impl /
+validator / other role-specific suffix) and later closed increments. Every
+closed chain was confirmed by direct inspection before archiving. One
+exception, also archived here for record-keeping rather than left loose at
+the top level: `INC-20260702-tui-menu-promote-inventory-screens`, a
+genuinely **not-started, deferred placeholder** increment (not a closed
 chain) — see `Axiom.Spec/specs/05_Interfaces_Operativas.md`'s TUI section
 for its current status.
 

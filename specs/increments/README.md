@@ -15,3 +15,9 @@ Cada incremento de Axiom debe vivir en su propia carpeta.
 2. `04_Interacciones_UI.md`
 3. `context/`
 4. planes asociados por rol o por fase cuando aplique.
+
+## Archivado
+
+Cuando un incremento se cierra, su carpeta se mueve físicamente a
+`increments/_archive/<ID>/`. No se mantiene una copia activa ni se elimina
+el registro histórico.

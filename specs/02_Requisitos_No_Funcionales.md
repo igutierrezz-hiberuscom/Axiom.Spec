@@ -54,7 +54,7 @@ Ningún subsistema debe introducir una caché persistente en disco (p. ej. un í
 
 ## NFR-AXM-013 Disciplina de alcance mínimo primero
 
-Toda extensión del producto debe auditar primero el paquete existente que ya cubre parcialmente la necesidad, y extenderlo de forma aditiva, en vez de construir una infraestructura paralela. Principio aplicado de forma sistemática por el roadmap de rediseño de 23 incrementos (cada incremento llevó un migration-engineer como primer subagente, con la tarea explícita de auditar antes de escribir contrato nuevo) — ver `specs/increments/INC-20260702-axiom-redesign-roadmap/README.md`.
+Toda extensión del producto debe auditar primero el paquete existente que ya cubre parcialmente la necesidad, y extenderlo de forma aditiva, en vez de construir una infraestructura paralela. Principio aplicado de forma sistemática por el roadmap de rediseño de 23 incrementos (cada incremento llevó un migration-engineer como primer subagente, con la tarea explícita de auditar antes de escribir contrato nuevo) — ver `specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/README.md`.
 
 ## NFR-AXM-014 Aislamiento por construcción
 

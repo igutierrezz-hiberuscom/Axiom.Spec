@@ -18,7 +18,7 @@ Esta carpeta contiene la spec general del producto y los artefactos funcionales 
 
 1. `increments/`: incrementos en formato carpeta.
 2. `bugs/`: bugs en formato carpeta.
-3. `archive/`: histórico integrado o cerrado cuando siga aportando valor.
+3. `increments/_archive/`: histórico de incrementos integrado o cerrado.
 4. `manuales/`: guías de usuario / manuales de operación de Axiom — ver [manuales/README.md](manuales/README.md).
 
 ## Regla

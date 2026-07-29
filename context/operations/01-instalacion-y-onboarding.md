@@ -86,4 +86,4 @@ Ambos flujos de `workspace setup`/`adopt` siembran, best-effort y no-clobber, lo
 
 ## Fuera de la baseline inicial (no-goals explícitos del MVP)
 
-Overlays `standard`/`enterprise` como camino inicial obligatorio; `visual-studio-2026` como baseline de primer arranque; providers post-MVP (`engram`, `codegraph`, `graphify` — nota: `codegraph`/`graphify` fueron removidos y reemplazados por `cmm`, ver `../integrations/01-capabilities-providers-y-toolchain.md`) como requisito de entrada; bridges externos/plugins/lanes paralelos avanzados; instalación user-level del binario como paso obligatorio.
+Overlays `standard`/`enterprise` como camino inicial obligatorio; `visual-studio-2026` como baseline de primer arranque; providers post-MVP (`engram`, `cmm`) como requisito de entrada; `cmm` es el reemplazo vigente de `codegraph`/`graphify` (ver `../integrations/01-capabilities-providers-y-toolchain.md`); bridges externos/plugins/lanes paralelos avanzados; instalación user-level del binario como paso obligatorio.

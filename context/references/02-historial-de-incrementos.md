@@ -2,6 +2,12 @@
 
 Fuente: `Axiom/docs/0015-cavekit-discipline-post-mvp.md` a `0030-operator-app-plugins-and-external-bridge.md`. El MVP (incrementos previos a 0015, incluyendo 0008/0010/0018) cerró el 2026-06-25; este documento cubre la ola post-MVP cerrada el 2026-06-30.
 
+Las rutas y nombres de toolchain que aparecen en las entradas históricas
+(`axiom.spec/config/`, `.sdd/`, `CodeGraph` y `Graphify`) describen el estado
+del runtime en el momento de aquellos incrementos. El estado actual usa
+`axiom.config/`, `.axiom-state/` y `cmm`, como se documenta en los documentos
+de arquitectura e integraciones reconciliados el 2026-07-29.
+
 ## 0015 — Cavekit Discipline and Optional GGA Adoption
 
 Adopta contratos de capacidad nativos (disciplina Cavekit) en vez de copiar tooling externo: predicados puros con invariantes (`Invariants<T>`: `id`, `level`, `message`, `predicate`), workflow declarativo de backprop (clasifica fallos por severidad: critical/high → `bug-create`, medium/low → `spec-update`, vacío → `noop`), check workflow read-only, GGA opcional (`advisory-first` o `strict`, rollback configurable). Sin comandos nuevos (runtime interno). Package nuevo: `@axiom/cavekit-discipline`. Métricas: 1029/1029 tests verdes, `tsc -b` verde. Archivado 2026-06-30.

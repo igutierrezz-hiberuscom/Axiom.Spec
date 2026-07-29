@@ -2,18 +2,31 @@
 
 Este documento existe para que la spec general no maquille el estado real. Cada punto fue verificado directamente contra el filesystem del repo, no inferido de la documentación.
 
-## Estado de resolución (actualizado 2026-07-10)
+## Estado de resolución (actualizado 2026-07-29)
 
-Varias brechas de este documento (redactado el 2026-07-02) ya están resueltas. Resumen:
+Varias brechas de este documento (redactado el 2026-07-02) ya están resueltas; las que siguen abiertas se han vuelto a medir contra el árbol real:
 
-- **Brecha 1 — RESUELTA** (`INC-20260708-product-repo-self-bootstrap`): `Axiom/axiom.spec/`, `AGENTS.md`, `axiom.skills.lock` y `axiom.config/` (con sus YAML canónicos) existen hoy en la raíz de `Axiom/`; `npm run doctor` y `readiness:first-project` pasan contra el propio repo.
-- **Brecha 4 — RESUELTA**: el roadmap de rediseño quedó cerrado (23/24 incrementos; INC-24 Workbench diferido).
+- **Brecha 1 — RESUELTA** (`INC-20260708-product-repo-self-bootstrap`): `Axiom/axiom.spec/`, `AGENTS.md`, `axiom.skills.lock` y `axiom.config/` (con sus YAML canónicos) existen hoy en la raíz de `Axiom/`; `_builder/` sigue ausente, pero el script de readiness lo crea vacío en el proyecto temporal.
+- **Brecha 4 — RESUELTA**: el roadmap de rediseño quedó cerrado y archivado (23/24 incrementos ejecutados; INC-24 Workbench sigue diferido).
 - **Ola 2026-07-10 (10 incrementos)** — resolvió además: drift de schemas en `mcp-manifest.yaml`/`integrations.yaml` (CLI `mcp`/`toolchain` ya funcionan contra los artefactos reales; con tests que los cargan de verdad, no fixtures); ausencia de `workflows.yaml`/`topology.yaml` en el propio repo (dogfooding); roles fijos → registro dinámico de roles de equipo (1..N) con validador reconciliado; planes sin separación por rol; contexto técnico que el MCP servía como `null` (ahora indexado y servido); paridad de comandos del wizard TUI; separación arquitecto↔miembro (compartido/committeado vs personal/gitignored) con `member install`/`bindings`; y correctitud (`archive` mueve carpeta, `self-update`, estados reales de toolchain, código muerto del orchestrator). Ver [../../specs/00_Resumen_Ejecutivo.md](../../specs/00_Resumen_Ejecutivo.md) §"Ola de endurecimiento 2026-07-10".
-- **Brechas 2, 3 y 5 — VIGENTES (parcial)**: aún hay comandos CLI sin página de doc dedicada (aunque menos), packages sin README, y persiste la ambigüedad de nombres `Axiom.Spec/` vs `axiom.spec/`.
+- **Brecha 2 — VIGENTE**: hay 81 ficheros de comando CLI y solo una minoría tiene página operativa dedicada.
+- **Brecha 3 — VIGENTE**: la mayoría de los 43 packages no tiene README propio y su descripción requiere contrastar `src/` y `package.json`.
+- **Brecha 5 — VIGENTE**: persiste la ambigüedad de nombres `Axiom.Spec/` vs `axiom.spec/`.
 
-El texto original de cada brecha se conserva abajo como registro histórico; contrastar siempre contra el filesystem actual antes de citarlo.
+Las secciones siguientes describen el estado actual y conservan el origen del
+baseline solo cuando ayuda a explicar la brecha. No deben citarse como
+contratos actuales sin volver a comprobar las fuentes indicadas.
 
-## 1. `axiom.spec/`, `AGENTS.md` y `axiom.skills.lock` faltan en la raíz de `Axiom/`
+## 1. Artefactos de la raíz de `Axiom/` (resuelto; baseline histórico)
+
+La observación original quedó resuelta: el listado actual de `Axiom/` contiene
+`axiom.spec/`, `axiom.config/`, `AGENTS.md` y `axiom.skills.lock`. La carpeta
+`axiom.spec/` contiene `increments/`, `plans/`, `target-axiom-agents/`,
+`target-axiom-skills/` y `templates/`; no contiene `scripts/`, y `_builder/`
+continúa siendo el único hueco menor de la readiness. La fuente de la
+configuración runtime actual es `axiom.config/`, no `axiom.spec/config/`.
+
+### Registro original del baseline 2026-07-02
 
 `Axiom/README.md`, `Axiom/docs/first-project-readiness.md`, `Axiom/docs/cli/*.md` y `Axiom/scripts/verify-first-project-readiness.mjs` (función `seedCanonicalBaseline`) asumen que la raíz del propio repo `Axiom/` contiene:
 
@@ -31,30 +44,51 @@ El texto original de cada brecha se conserva abajo como registro histórico; con
 
 **Hipótesis razonable, no confirmada**: el `git log` de `Axiom/` muestra un commit `"Remove obsolete templates and example files from the Axiom product specification, including increment, plan, and UI interaction templates..."` — es plausible que esa carpeta existiera antes y fue removida en una limpieza, sin actualizar en consecuencia los scripts/docs que la referencian. No se confirmó el commit exacto que la eliminó; no inventar esa causalidad como hecho verificado, solo como hipótesis a investigar.
 
-**Impacto en esta spec**: cualquier afirmación sobre el "contrato de `axiom.spec/config/*.yaml`" (ver `../architecture/02-modelo-de-datos-y-configuracion.md`) describe lo que el producto ESPERA de un proyecto adoptante en general — no se pudo verificar contra una instancia real materializada en este workspace, porque ni el propio `Axiom/` la tiene.
+**Resolución actual**: las afirmaciones históricas sobre el contrato de
+`axiom.spec/config/*.yaml` describían lo que el producto esperaba de un
+proyecto adoptante en general. La instancia materializada actual se verifica
+en `Axiom/axiom.config/`; la arquitectura vigente se documenta en
+`../architecture/02-modelo-de-datos-y-configuracion.md`.
 
 ## 2. Brecha de documentación operativa de comandos CLI
 
-`apps/cli/src/commands/` contiene 36 ficheros (~16.400 líneas). `Axiom/docs/cli/` documenta en profundidad 12: `init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `tui`, `model`, `components`, `skills`.
+`apps/cli/src/commands/` contiene **81 ficheros**; 10 son helpers internos con
+prefijo `_` y no comandos invocables por sí mismos. `Axiom/docs/cli/`
+documenta en profundidad los 12 comandos del baseline (`init`, `join`,
+`configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `tui`, `model`,
+`components`, `skills`), pero la cobertura no alcanza a la mayoría de las
+superficies añadidas después.
 
-Sin página propia: `app`, `app-api`, `app-plugins`, `app-plugins-azure-devops`, `axiom-bug`, `axiom-increment`, `axiom-plan`, `axiom-qa-e2e`, `axiom-role`, `capability`, `context`, `gateway`, `intent`, `mcp`, `memory`, `projects`, `qa-archive-gate`, `repo`, `roles`, `self-update`, `toolchain`, `topology`. Varios de estos se pueden reconstruir parcialmente desde los documentos de incremento 0019-0030 y desde `Axiom/README.md`, pero no tienen el mismo nivel de detalle (flags, contrato de lectura/escritura) que los 12 documentados.
+Persisten comandos sin página propia o con cobertura parcial, entre ellos las
+familias `workspace*`, `app*`/launcher, `member-install`, `native-mcp-config`,
+`external-sync` y varias superficies de workflow y tracker. La lista exacta
+debe reconstruirse desde `apps/cli/src/commands/` antes de afirmar cobertura
+para un comando concreto.
 
-**Recomendación operativa**: antes de citar el comportamiento de cualquiera de estos 24 comandos como contrato estable en un incremento nuevo, verificar directamente en el código (`apps/cli/src/commands/<comando>.ts`), no asumir paridad con los documentados.
+**Recomendación operativa**: antes de citar el comportamiento de cualquier comando no documentado como contrato estable en un incremento nuevo, verificar directamente en el código (`apps/cli/src/commands/<comando>.ts`), no asumir paridad con los documentados.
 
 ## 3. Inferencia de responsabilidad en packages sin README
 
-De los 28 packages bajo `packages/`, solo `core`, `persistence`, `installer`, `orchestrator`, `agents`, `install-profiles`, `isolation`, `cli-commands`, `doctor` (9 de 28, aproximadamente) tienen README propio consultado. El resto (`capability-model`, `config-validation`, `filesystem-truth`, `project-resolution`, `memory`, `versioning`, `toolchain`, `topology`, `workflow`, `model-routing`, `tool-routing`, `skills`, `components`, `tui`, `document-bootstrap`, `cavekit-discipline`, `user-workspace`) fue caracterizado a partir de nombres de ficheros en `src/` y su `package.json` — es una inferencia razonable de un agente de exploración, no una lectura de documentación propia del package.
+El runtime actual tiene **43 packages**: 34 packages de primer nivel y 9
+sub-packages bajo `packages/adapters/`. Algunos tienen README propio, pero la
+mayoría sigue caracterizándose a partir de `src/` y `package.json`. Las tablas
+de `../references/01-inventario-de-packages.md` son una aproximación técnica
+trazable, no un contrato firmado por cada package.
 
-**Impacto**: tratar las descripciones de esos packages en `../references/01-inventario-de-packages.md` como buena aproximación, sujeta a corrección si se audita el código fuente completo.
+**Impacto**: tratar las descripciones de esos packages como buena
+aproximación, sujeta a corrección si se audita el código fuente completo.
 
-## 4. Roadmap de rediseño sin fecha de inicio ni stack decidido
+## 4. Roadmap de rediseño (resuelto; INC-24 diferido)
 
-`specs/increments/INC-20260702-axiom-redesign-roadmap/README.md` (fechado el mismo día que esta spec, 2026-07-02) es planificación pura: 24 incrementos secuenciados (INC-01 a INC-24), sin código implementado. Dos preguntas quedan explícitamente abiertas y bloqueantes antes de que INC-01 pueda arrancar:
+`specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/README.md`
+conserva el índice histórico de 24 incrementos. INC-01 a INC-23 y el
+side-quest D3 se cerraron y su conocimiento estable se consolidó en
+`specs/00_Resumen_Ejecutivo.md` a `specs/08_Glosario.md`; INC-24 Workbench
+permanece diferido porque no fue solicitado.
 
-- **Q1**: si `Axiom.SDD`/`Axiom.Spec` deben reestructurarse hacia el shape `project.sdd`/`project.spec` (con `.axiom/` manifests, `technical-context/` bajo spec) que el propio roadmap describe.
-- **Q2**: stack de implementación objetivo para Axiom Core/CLI/TUI/MCP (Node/TS ya es el stack real hoy verificado en `Axiom/`, pero el roadmap no lo da por cerrado formalmente para la fase de rediseño).
-
-Ese roadmap describe una topología (`~/.axiom/projects.yml`, `axiom.yml` por repo con roles `sdd`/`spec`/`code`) que es **incompatible en nombre y forma** con el modelo real hoy implementado (`axiom.yaml` único + `.sdd/<project>/` + profile triple). No fusionar ambos modelos al leer `specs/03_Modelo_Operativo_y_Datos.md`.
+No tratar las preguntas Q1/Q2/Q5 del documento histórico como dudas abiertas
+del runtime actual. Para el estado vigente, leer los ocho documentos
+canónicos de `specs/` y el contexto técnico reconciliado.
 
 ## 5. Ambigüedad de nombres `Axiom.Spec/` vs `axiom.spec/`
 
@@ -62,4 +96,9 @@ Ver `specs/08_Glosario.md`, sección "Aviso de ambigüedad de nombres". Es una f
 
 ## Cómo mantener este documento
 
-Al cerrar cada incremento nuevo en `Axiom.SDD`, si se resuelve alguno de estos puntos (p. ej. se crea `axiom.spec/` en la raíz de `Axiom/`, o se documenta un comando antes huérfano), actualizar esta lista quitando o marcando como resuelto el punto correspondiente, con fecha y referencia al incremento que lo cerró.
+Al cerrar cada incremento nuevo en `Axiom.SDD`, si se resuelve alguno de
+estos puntos (por ejemplo, se documenta un comando antes huérfano o se
+reduce la inferencia sobre un package), actualizar esta lista quitando o
+marcando como resuelto el punto correspondiente, con fecha y referencia al
+incremento que lo cerró. Si cambia el árbol real de `Axiom/`, volver a
+verificar primero los conteos y las rutas citadas.
