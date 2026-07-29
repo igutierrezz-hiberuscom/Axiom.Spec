@@ -328,6 +328,10 @@ Axiom puede ahora ADOPTAR un proyecto que precede a Axiom, convirtiéndolo a for
 
 Las cuatro **garantías preservadas** en toda ruta de adopción: no-clobber (nunca sobrescribe un artefacto / `axiom.yaml` / doc de contexto existente), provenance (`AXIOM:MIGRATED` nombrando la fuente), dry-run (cero escrituras, reporta qué crearía y a qué estado) y collision-skip (una entrada mala se salta con motivo, nunca aborta el lote).
 
+**Refinamientos 2026-07-27 (validados end-to-end contra KVP25 real — ver `manuales/E2E-20260727-kvp25-adoption.md`):**
+- **Migración de contexto técnico POR DEFECTO** (INC-20260727-adopt-context-default): la adopción ya no exige `--ingest-context`. Si el operador no lo pasa, `runWorkspaceAdopt` auto-detecta una carpeta de contexto convencional dentro del repo legacy adoptado — `autoDetectContextSource` prefiere `technical-context/` y luego `context/`, spec-repo antes que sdd-repo, y NUNCA la raíz del repo (ingeriría por error las carpetas de artefactos de spec). `--ingest-context` explícito siempre gana; sin carpeta de contexto, la adopción procede sin ingest (comportamiento previo). Verificado: adoptar KVP25 (`Kvp.Spec/context`, 164 `.md`) migra los 164 a `technical-context/{architecture,operations,references,testing}` sin flag.
+- **Ruido de telemetría eliminado** (BUG-20260727-adopt-telemetry-sinks-warn): un `axiom.config/telemetry-sinks.yaml` AUSENTE es el default local-only (nada lo scaffoldea), no un defecto — los callers (`index.ts` bus global por comando + `sync.ts`) ya no emiten WARN cuando `loadEnabledSinks` devuelve `missing-file`; sólo ante error de config REAL (`invalid-yaml`/`malformed-shape`).
+
 ## Epic sdd-launcher-port: entregado y archivado (2026-07-11)
 
 Ya no queda ningún incremento `INC-20260711-*` ACTIVO en `specs/increments/`: todos están archivados. El epic umbrella del sdd-launcher-port quedó **totalmente entregado y archivado** (su `integrationMap` apuntaba a esta sección y a `04`/`05`), igual que el plan de migración foránea `INC-20260711-spec-sdd-migration-plan` (ver "Adopción/migración de repos foráneos" arriba):
@@ -477,3 +481,41 @@ El endpoint del gate de doctor del launcher admite el mismo opt-in vía `?deep=1
 | asignación de rol equipo/código (join) | `apiLauncherRolesAssign` vía auto-select del front | Sí (endpoint pre-existente, reachability nueva) |
 
 Las tools se superficializan pero no se cablean porque `runToolchainAdd` exige un `axiom.config/toolchain-catalog.yaml` que `runInit` no scaffoldea — no hay ruta limpia de instalación desde un init recién hecho (diferido, nunca fingido como aplicado). `ADAPTER_LABELS` pasa a un fichero compartido `apps/cli/src/commands/_adapter-labels.ts` (unión de `ADAPTER_TARGETS` + `AXIOM_ADAPTER_ROUTING`); reconfirma la convención single-ownership (`configure.ts` importado desde `@axiom/cli-commands`, nunca por path relativo, o falla en runtime aunque `tsc -b` pase).
+### Plugin ADO en el launcher — cierre de bucle spec↔work-item + doctor unificado (INC-20260727-*)
+
+Consolida las capacidades del plugin Azure DevOps del launcher (sobre `@axiom/tracker` +
+`@axiom/tracker-ado`), verificadas end-to-end contra ADO real (org KVPHiberus / proyecto KVP25):
+
+- **Peripherals de formulario** (`GET /launcher/ado-peripherals?kinds=sprints,features,tags`):
+  pobla los desplegables/datalist de crear-incremento/bug desde ADO — sprints
+  (`sprints.listIterations()`), feature-padre (`listWorkItems({type:'Feature'})`) y tags (nueva
+  capacidad `ITrackerTags.listTags()` → `GET /_apis/wit/tags`). Config-gated: si el tracker no es
+  `ado`, devuelve listas vacías y el front degrada a texto libre. Verificado real: 18 sprints /
+  80 features / 31 tags de KVP25.
+- **Mapeo de campos al work item**: la creación de work item desde el launcher envía el work item
+  completo (tags → System.Tags, sprint → System.IterationPath con el centinela `__BACKLOG__`
+  omitido, feature-padre/parent → parentId, priority/severity/assignedTo/description/repro), no
+  sólo `{type,title}`.
+- **Cierre de bucle spec↔ADO** (INC-20260727-launcher-ado-external-ref-link): al crear el work
+  item desde la tracker-suggestion, su id + url se **persisten** en el `metadata.yml` local del
+  artefacto (`externalRefs: [{provider,type,id,url}]`), reusando `runExternalRefAdd`. Antes el id/url
+  sólo se devolvían al front; el `create` de increment/bug sigue emitiendo `externalRefs: []` y el
+  enlace ocurre en este paso post-creación (o vía el endpoint explícito `link-axiom` / el subcomando
+  `external-ref add`). Best-effort: un fallo de enlace no aborta la creación.
+- **Check de conectividad ADO en doctor** (INC-20260727-cli-doctor-ado-check): el probe real
+  (`tags.listTags()` autenticado) vive en un helper compartido `runAdoConnectivityDoctorCheck` que
+  usan TANTO el panel Doctor del launcher COMO el CLI `axiom doctor`. Devuelve `null` (sin check,
+  sin red) para proyectos local-only; `pass`/`fail` con evidencia cuando ADO es el tracker activo.
+  `@axiom/doctor` NO gana dependencia de tracker — la inyección es en la capa CLI/app. Verificado
+  real: `axiom doctor --deep` → `ado-connectivity: pass` contra KVP25.
+
+### Scaffolding de config de adopción en `runWorkspaceSetup` (PC-001/PC-002/TC-011/GC-001/GC-002) — INC-20260727-adoption-config-scaffolding
+
+`runWorkspaceSetup` (el motor puro tras `axiom workspace setup` Y `axiom workspace adopt`) scaffoldea ahora, best-effort y no-clobber, los 4 artefactos de config que un proyecto recién adoptado/seteado no tenía y que hacían fallar 5 checks de doctor out-of-the-box. Reusa los dos precedentes ya establecidos (`scaffoldArchitectDeclarations` para ficheros de sola-existencia; `scaffoldSddSkills`/`scaffoldCodeRepoSkills` para artefactos con `bundleHash`), sin inventar un patrón nuevo. Es el complemento automático, para cualquier proyecto adoptado, de lo que `INC-20260708-product-repo-self-bootstrap` hizo a mano solo para el propio repo `Axiom/` (ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)):
+
+- **`scaffoldPolicyDeclarations(control.path)`** (`apps/cli/src/commands/workspace-config-scaffold.ts`, step 2c-bis, junto a `scaffoldArchitectDeclarations`): siembra `axiom.config/integrations.yaml` (**PC-001**) y `axiom.config/policy-as-code.yaml` (**PC-002**). Ambas checks solo validan EXISTENCIA (sin hash), así que el contenido semilla no lleva datos por-proyecto. Función SEPARADA de `scaffoldArchitectDeclarations` para no tocar el `filesCreated` de una función ya testeada.
+- **`scaffoldProcessSurfaceCatalogs(control.path)`** (`apps/cli/src/commands/workspace-catalog-scaffold.ts`, step 7b-ter, INMEDIATAMENTE tras el loop `materializeProcessSurfaces` — el orden importa: los escáneres leen los `.axiom/agents/*`/`.axiom/skills/*` de disco):
+  - `axiom.config/agents-catalog.yaml` (**TC-011**): una entrada por cada `.axiom/agents/<id>.md` realmente materializado, con `source` = ruta repo-relativa de ese fichero y `bundleHash = computeAgentBundleHash(<contenido de ese mismo fichero>)` (`@axiom/agents`). NO se escribe (queda ausente) si no hay ningún `.axiom/agents/*.md` — TC-011 falla ante un `agents: []` vacío, así que un catálogo vacío sería peor que ninguno. En un `runWorkspaceSetup` real el repo de control siempre recibe sus 3 process-surfaces (`surfaceIdsForRole('sdd')`), así que ese path ausente es teórico.
+  - `axiom.skills.lock` raíz (**GC-001/GC-002/GC-007**): una entrada por cada `.axiom/skills/<id>/SKILL.md` materializado, `bundleHash = computeSkillBundleHash(...)` (`@axiom/skills`); `source: 'axiom-process-surfaces'` (tag de provenance, deliberadamente ≠ `'product-registry'` para que GC-013 no lo considere). SIEMPRE escribe un lockfile válido (`schemaVersion: 1`, `installed: []` si aún no hay nada) porque GC-001/GC-002 solo exigen que exista/sea válido una vez `.axiom/*` tiene CUALQUIER contenido gestionado (agents/commands/skills), no específicamente skills.
+- **Garantía de hash**: cada scaffolder hashea el MISMO fichero que referencia como `source`/`installedTo`, con el mismo algoritmo (`sha256:<hex>`) que el recompute del doctor (`runAgentsCatalogCoverageCheck` para TC-011, `checkGC007` para GC-007) — mismo fichero + mismo algoritmo, leídos una sola vez en memoria, sin re-render intermedio → match garantizado.
+- **Alcance**: cableado solo en `runWorkspaceSetup` (compartido por adopt + setup no-adopt). `member install`/`workspace-incremental` NO se tocaron (un miembro recién unido ya hereda estos ficheros del `runWorkspaceSetup` inicial del arquitecto); extenderlos queda como follow-up si se detecta un hueco. Probado end-to-end (`apps/cli/tests/inc-20260727-adoption-config-scaffolding.test.ts`): un proyecto scaffoldeado de cero pasa PC-001/PC-002/TC-011/GC-001/GC-002 (y GC-007) cuando corren las funciones reales del doctor contra él, y un segundo run es idempotente.

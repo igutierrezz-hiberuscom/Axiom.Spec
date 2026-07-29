@@ -1,6 +1,8 @@
 # Capabilities, providers y toolchain externo
 
-Fuente: `Axiom/docs/configuration/providers-and-capabilities.md`, `Axiom/docs/configuration/files/{capabilities,providers}.md`, informe de incrementos 0015-0030.
+Fuente: `Axiom/docs/configuration/providers-and-capabilities.md`, `Axiom/docs/configuration/files/{capabilities,providers}.md`, informe de incrementos 0015-0030, `Axiom/packages/toolchain/src/probe.ts`, `Axiom/axiom.config/toolchain-catalog.yaml`, `Axiom/docs/0031-adr-cmm-replaces-graphify-and-codegraph.md`, `Axiom/packages/mcp-server/src/`, `Axiom/packages/mcp-tools/src/`, `Axiom/packages/isolation/src/p0.ts`.
+
+> Reconciliado 2026-07-29: la sección de toolchain y la de MCP de este documento describían un estado superado. `codegraph`/`graphify` fueron removidos (ADR-0031, `cmm` los reemplaza); Axiom ya tiene servidor MCP propio (`@axiom/mcp-server` + `@axiom/mcp-tools`), contrario a lo que decía el baseline 2026-07-02.
 
 ## Modelo de capabilities
 
@@ -18,16 +20,25 @@ Impacta directamente a: `configure` (compone install profile), `start` (resuelve
 
 Manifest `toolchain.yaml`: npm/pnpm/yarn/bun, Node, git, python — con detección dinámica (`detect.ts`), loader, validador y repair idempotente.
 
-Tools P1 añadidas en el incremento 0027, todas con `mvp: true`, `detectionPaths`, `mcpServer`, `gitignoreEntries`: **CodeGraph**, **Graphify**, **Headroom/RTK**, **Caveman**, **Autoskills**. Bug corregido en ese incremento: `resolveDetectionPath` calculaba rutas relativas al `cwd` en vez de a `projectRoot`.
+> **Catálogo reconciliado 2026-07-29 (ADR-0031, `docs/0031-adr-cmm-replaces-graphify-and-codegraph.md`)**: las tools P1 del baseline (`CodeGraph`, `Graphify`, añadidas en el incremento 0027) fueron **removidas y reemplazadas por `cmm`** (`codebase-memory-mcp`). El catálogo real vigente, verificado en `axiom.config/toolchain-catalog.yaml` (self-bootstrap del propio repo `Axiom/`) y en `packages/toolchain/src/probe.ts`, es: **`serena`** (code-intelligence), **`cmm`** (code-intelligence, reemplaza codegraph/graphify), **`engram`** (library-context), **`context7`** (library-context), **`rtk`** (input-optimizer), **`caveman`** (output-optimizer), **`autoskills`** (skill-surface) — 7 tools, todas `mvp: false` (catálogo permitido/opcional, no requerido por defecto; el operador las agrega vía `axiom toolchain add --id <id>`). `cmm` tiene evidencia de fallback específica: un fichero `.cmm/sync-state.json` en el proyecto se trata como prueba de instalación funcionando (`packages/toolchain/src/probe.ts`).
+
+Bug corregido en el incremento 0027: `resolveDetectionPath` calculaba rutas relativas al `cwd` en vez de a `projectRoot`.
 
 Comandos: `axiom toolchain repair [--id <id>]` (idempotente), `axiom toolchain add --id <id> --path <repoId>` (selección por repo), `axiom toolchain gitignore [--write <file>]` (output ordenado y deduplicado).
 
-## MCP (Model Context Protocol) — estado actual, no un server genérico propio
+## MCP (Model Context Protocol) — Axiom YA expone servidor propio
 
-Axiom no expone hoy un servidor MCP propio y genérico de proyecto (eso pertenece al roadmap futuro, `INC-13`/`INC-14` en `specs/increments/INC-20260702-axiom-redesign-roadmap/`). Lo que existe hoy:
-- catálogo de MCP permitidos vía `@axiom/isolation` (`DEFAULT_ALLOWED_MCP_SERVERS`, 28 servidores MVP por defecto);
-- comando `axiom mcp repair --id <mcpId>` (repair de binding, incremento 0029) y `axiom mcp inventory` (total, required, optional, readonly, por installMode);
+> **Corrección 2026-07-29**: el baseline 2026-07-02 afirmaba "Axiom no expone hoy un servidor MCP propio y genérico" — esa afirmación es **stale**. Desde entonces se añadieron `@axiom/mcp-server` y `@axiom/mcp-tools`.
+
+- **`@axiom/mcp-server`** (`packages/mcp-server/src/`): dispatcher JSON-RPC 2.0 **hand-rolled** (deliberadamente sin `@modelcontextprotocol/sdk`), transporte-agnóstico (`createMcpServer`), más un transporte stdio newline-delimited (`runStdioServer`), sobre los handlers de `@axiom/mcp-tools`.
+- **`@axiom/mcp-tools`** (`packages/mcp-tools/src/`): handlers agrupados por dominio (`sdd.*`, `spec.*`, `memory.*`, `axiom.*`) — cada `McpToolRegistryEntry` declara su `domain`, que determina a qué "server kind" pertenece.
+- **Server kinds** (`packages/mcp-server/src/tool-sets.ts`): `sdd` (server `sdd-mcp-server`, expone `sdd.*`), `spec` (server `spec-mcp-broker`, expone `spec.*`), `memory` (server `memory-mcp-server`, expone `memory.*`, único kind async — puede spawnear un subproceso `engram mcp` local), y `axiom` (broker unificado `axiom-mcp-broker`, `INC-20260724-unified-axiom-mcp`: UNIÓN de todo `spec.*` + el subset de escritura `sdd.transitionApply`/`sdd.gitCommitSync` + los 3 reads nuevos `axiom.topologyRead`/`axiom.migrationManifestRead`/`axiom.adoptionStateRead`).
+- **Proyección a config nativa** (`apps/cli/src/commands/native-mcp-config.ts`, `writeNativeMcpConfig`): hoy solo proyecta los **dos** servers managed `sdd-mcp-server`/`spec-mcp-broker` (no `memory`/`axiom` todavía) al schema nativo VERIFICADO de cada tool (`.mcp.json` claude-code, `.cursor/mcp.json` cursor, `.vscode/mcp.json` vscode/copilot-vscode/github-copilot, `opencode.json` opencode, `.vs/mcp.json` visual-studio-2026 como asunción documentada); `codex`/`antigravity` reciben solo una nota informativa (config user-global, no project-scoped); `litellm` no tiene schema nativo verificado. Ver `../architecture/04-adapters-y-model-routing.md` para la tabla completa.
+- **`.axiom/mcp.yml`**: fichero leído por el probe `TC-019` (MCP liveness) de `axiom doctor --deep` — contiene el `command`/`args` de lanzamiento real de los servers managed.
+- Catálogo de MCP servers permitidos vía `@axiom/isolation` (`DEFAULT_ALLOWED_MCP_SERVERS`, verificado en `packages/isolation/src/p0.ts`): **3 por defecto** — `sdd` (solo lectura), `spec` (escritura brokerizada), `serena` (navegación semántica, MVP baseline). Corrige la cifra "28 servidores" del baseline 2026-07-02, que era errónea/no verificada.
+- Comando `axiom mcp repair --id <mcpId>` (repair de binding, incremento 0029) y `axiom mcp inventory` (total, required, optional, readonly, por installMode); comando adicional nuevo `mcp-serve.ts` (arranque directo de un server MCP, verificar en código antes de tratarlo como contrato estable).
 - `backend-mcp`/`frontend-mcp` bloqueados explícitamente en MVP (verificado por `doctor`).
+- Ejemplo real de allowlist auto-adoptada (`Axiom/axiom.config/integrations.yaml`, self-bootstrap del propio repo): declara `sdd-mcp-server` (7 capabilities `sdd.*`) y `spec-mcp-broker` (10 capabilities `spec.*`, read-only) bajo `mcp_servers`, y `serena` en `allowed_tools`.
 
 ## Memoria y recall (`@axiom/memory`)
 
@@ -35,4 +46,4 @@ Curación auto/manual por `MemoryKind` (`decision`, `bug`, `learning`, `pattern`
 
 ## Extensiones opcionales: app plugins y bridge externo
 
-`@axiom/app` (incremento 0030) implementa un sistema de plugins project-scoped con discovery en `.sdd/<project>/app-plugins/*.json` (schema guard tolerante: malformados → warnings, no abort; IDs únicos por proyecto) y un bridge declarativo hacia Azure DevOps (mutación externa exige `confirmed: true`). Los plugins no introducen lógica de negocio paralela — el bridge solo declara contrato. No hay integración con Jira/Confluence implementada; se menciona únicamente como extensión posible del roadmap futuro.
+`@axiom/app` (incremento 0030) implementa un sistema de plugins project-scoped con discovery en `.axiom-state/<project>/app-plugins/*.json` (renombrado desde el prefijo antiguo, `INC-20260703-config-folder-renames`; schema guard tolerante: malformados → warnings, no abort; IDs únicos por proyecto) y un bridge declarativo hacia Azure DevOps (mutación externa exige `confirmed: true`). Los plugins no introducen lógica de negocio paralela — el bridge solo declara contrato. Desde entonces se sumó un bridge real de tracker (`@axiom/tracker`/`@axiom/tracker-ado`, comandos `app-launcher-ado.ts`/`external-sync.ts`/`_tracker-status.ts`) — no confundir con este sistema de plugins del incremento 0030, son superficies distintas; verificar en código antes de asumir que comparten implementación. No hay integración con Jira/Confluence implementada.

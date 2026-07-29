@@ -1,10 +1,41 @@
 # Doctor, troubleshooting y telemetría
 
-Fuente: `Axiom/docs/cli/doctor.md`, `Axiom/docs/troubleshooting.md`, `Axiom/docs/configuration/telemetry-and-isolation.md`, `Axiom/docs/configuration/files/telemetry-sinks.md`.
+Fuente: `Axiom/docs/cli/doctor.md`, `Axiom/docs/troubleshooting.md`, `Axiom/docs/configuration/telemetry-and-isolation.md`, `Axiom/docs/configuration/files/telemetry-sinks.md`, `Axiom/packages/doctor/src/{checks,governance-checks,deep-checks,write-scope}.ts`.
+
+> Reconciliado 2026-07-29: `@axiom/doctor` creció mucho desde el baseline 2026-07-02 (6 familias → ~19 categorías con IDs propios, más un modo `--deep` opt-in nuevo). Conteo de familias/IDs verificado por grep directo sobre `packages/doctor/src/*.ts`; no inventar IDs no encontrados en el código.
 
 ## `axiom doctor`
 
-Familias de checks: boundaries (separación entre scopes documentales y runtime), policies (`integrations.yaml`, `policy-as-code.yaml` presentes), manifests (`axiom.yaml` válido, `.sdd/local/` protegida), isolation (invariantes project-scoped, restricciones MCP), capability model (consistencia del modelo declarativo), gateway (`gateway-state.json` vs drift contra `providers.yaml`/`profiles.yaml`/`install-profile.json`). Salida `--json` disponible. No muta nada.
+Familias de checks verificadas (prefijo de check ID entre paréntesis; el prefijo `TC-` NO es específico de una sola categoría — se reutiliza entre topology/toolchain/memory/adapters/skills/agents/workflow-config/deep-probes, ver tabla):
+
+| Categoría | Prefijo(s) de ID | Qué valida |
+|---|---|---|
+| boundaries | `BC-001..003` | separación entre scopes documentales y runtime |
+| policies | `PC-001/002` | `axiom.config/integrations.yaml`, `axiom.config/policy-as-code.yaml` presentes |
+| manifests | `MC-001/002` | `axiom.yaml` válido, `.axiom-state/local/` protegida por `.gitignore` |
+| isolation | `IC-001..003` | invariantes project-scoped, restricciones MCP |
+| capability-model | `CC-001..006` | consistencia del modelo declarativo de capabilities |
+| install-profiles | `IP-001..004` | consistencia del profile triple resuelto |
+| gateway | `GW-001` | `gateway-state.json` vs drift contra `providers.yaml`/`profiles.yaml`/`install-profile.json` |
+| tool-routing | `TR-001..004` | consistencia del dispatcher de `ToolCall` |
+| topology | `TC-001..003` | `axiom.config/topology.yaml` (o su derivación por fallback) |
+| toolchain | `TC-004..006` | `toolchain-catalog.yaml`, detección/registro de tools |
+| memory | `TC-007/008` | backend de memoria, invariantes de recall |
+| adapters | `TC-009` | los 9 packages `@axiom/adapters-<target>` tienen `src/generator.ts` + `dist/index.js` materializados |
+| skills | `TC-010/012/013` | `skills-catalog.yaml`, lockfile, `bundleHash` |
+| agents | `TC-011` | `axiom.config/agents-catalog.yaml`, cada entry con agent válido |
+| workflow-config | `TC-014/015` | config de workflow/lifecycle |
+| artifact-index | `IX-001` | índices de increment/bug/adr/decision |
+| write-scope | `WS-001` | scope de escritura permitido por un plan |
+| dogfooding-boundary | `DF-001` | el propio repo `Axiom/` no se auto-referencia de forma inconsistente |
+| provider-selection | `PS-001` | selección de provider efectivo consistente con `providers.yaml` |
+| gobernanza | `GC-001..013` | lockfile de skills, `AGENTS.md`, `repo.manifest`/`product.manifest`, contenido materializado en `.axiom/*` |
+
+Salida `--json` disponible. No muta nada en el modo síncrono. Detalle de MRC-001..004 (drift de model routing) en `../architecture/04-adapters-y-model-routing.md` — corren vía `axiom model validate`, NO como parte del `axiom doctor` síncrono (viven en el package separado `@axiom/model-routing`, no en `@axiom/doctor`).
+
+### `axiom doctor --deep` (probes opt-in de runtime)
+
+`runDoctorChecksDeep` (`packages/doctor/src/deep-checks.ts`) añade probes reales que **nunca** pueden fallar (solo `pass`/`warn`/`skip`): **TC-018** (tool functional: `--version` real para `serena`/`cmm`/`engram`; `skip` honesto para `rtk`/`caveman`) y **TC-019** (MCP liveness: handshake `initialize` JSON-RPC real contra `sdd-mcp-server`/`spec-mcp-broker`, leyendo `.axiom/mcp.yml`). Ver `../architecture/04-adapters-y-model-routing.md` para el detalle completo.
 
 ## Troubleshooting por comando (categorías documentadas)
 
@@ -51,4 +82,4 @@ Impacta: `sync` (valida gate antes de regenerar outputs), `audit` (usa mirror de
 
 ## Gobernanza mínima verificada por doctor
 
-`integrations.yaml` existe; `policy-as-code.yaml` existe; `axiom.yaml` es válido; `.sdd/local/` no queda expuesta accidentalmente al versionado.
+`integrations.yaml` existe; `policy-as-code.yaml` existe; `axiom.yaml` es válido; `.axiom-state/local/` no queda expuesta accidentalmente al versionado. Ver también la fila "gobernanza" (`GC-001..013`) de la tabla arriba para las verificaciones de gobernanza más amplias (lockfile de skills, `AGENTS.md`, manifests) añadidas desde el baseline.

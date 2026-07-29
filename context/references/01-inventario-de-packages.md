@@ -1,6 +1,8 @@
 # Inventario de packages
 
-Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `src/` cuando no. Fecha de relevamiento: 2026-07-02.
+Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `src/` cuando no. Fecha de relevamiento inicial: 2026-07-02; reconciliado 2026-07-29 (conteos y packages nuevos verificados por `ls`/grep directo, ver nota de conteo abajo).
+
+> **Conteo verificado 2026-07-29**: `ls packages/*/package.json | wc -l` → **34** top-level (`packages/adapters/` es solo un directorio contenedor, sin `package.json` propio, no cuenta como package) + `ls packages/adapters/*/package.json | wc -l` → **9** adapters = **43 packages totales**. El baseline documentaba 28. Packages nuevos verificados por `ls packages/`: `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado` (8 nuevos — la nota original del incremento mencionaba 7, pero `telemetry` también es nuevo y no estaba en el inventario 2026-07-02).
 
 ## Capa dominio/core
 
@@ -14,9 +16,9 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 
 | Package | Responsabilidad | Exports/tipos clave | Tests | Notas |
 |---|---|---|---|---|
-| `@axiom/filesystem-truth` | Descubrimiento read-only del árbol Axiom (`axiom.yaml`, `.sdd/`), path validation | `discoverAxiomRoot`, `readFileContent`, `buildScopeInfo`, `getLocalOverlayPath` | No documentados | Sin escritura |
+| `@axiom/filesystem-truth` | Descubrimiento read-only del árbol Axiom (`axiom.yaml`, `.axiom-state/`), path validation; exporta también `LOCAL_OVERLAY_DIRNAME`/`AXIOM_CONFIG_DIRNAME` | `discoverAxiomRoot`, `readFileContent`, `buildScopeInfo`, `getLocalOverlayPath` | No documentados | Sin escritura |
 | `@axiom/project-resolution` | Resolución de proyecto único/ambiguo | `resolveProject`, `assertUnambiguous`, `ProjectResolution`, `ProjectStatus`, `ProjectMode` | No documentados | Package minimal |
-| `@axiom/isolation` | Contexto de aislamiento por proyecto, path-guard, MCP permitidos (28 por defecto) | `buildProjectScopedPaths`, `checkMcpAllowed`, `assertProjectIsolation`, `DEFAULT_ALLOWED_MCP_SERVERS` | No documentados | README disponible (no citado en detalle) |
+| `@axiom/isolation` | Contexto de aislamiento por proyecto, path-guard, MCP permitidos (**3 por defecto**, verificado en `src/p0.ts`: `sdd`, `spec`, `serena` — corrige la cifra "28" del baseline, que era incorrecta) | `buildProjectScopedPaths`, `checkMcpAllowed`, `assertProjectIsolation`, `DEFAULT_ALLOWED_MCP_SERVERS` | No documentados | README disponible (no citado en detalle) |
 
 ## Capa persistencia
 
@@ -33,7 +35,9 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 | `@axiom/install-profiles` | Compositor puro del profile triple → `ResolvedInstallProfile` | `resolveInstallProfile`, `loadProfilesData`, `FUNCTIONAL_PROFILES`, `OPERATIONAL_OVERLAYS` | No documentados | README disponible (spec 0018-A4) |
 | `@axiom/installer` | Materializa el perfil resuelto, persiste `install-profile.json` | `installProfile`, `GENERATED_FILES_BY_TARGET`, `EXTERNAL_DEPS_BY_CAPABILITY` | Sí | README disponible (spec 0018-A4) |
 
-## Capa adapters (6 sub-packages de `packages/adapters/`)
+## Capa adapters (9 sub-packages de `packages/adapters/`, verificado 2026-07-29)
+
+> Baseline documentaba 6; `codex`, `antigravity`, `visual-studio-2026` se añadieron en `INC-20260726-adapter-mcp-parity`. Detalle completo y vigente en `../architecture/04-adapters-y-model-routing.md` (9 packages / 10 targets canónicos / 8 headline).
 
 | Package | Target | Nivel de soporte | Notas |
 |---|---|---|---|
@@ -43,6 +47,9 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 | `@axiom/adapters-vscode` | `vscode` | `fallback-only` | Operativo 0031/C |
 | `@axiom/adapters-cursor` | `cursor` | `fallback-only` | Operativo 0031/D.1; integración profunda P1 pendiente |
 | `@axiom/adapters-litellm` | `litellm` | `fallback-only` | Operativo 0031/D.2; router P1 pendiente |
+| `@axiom/adapters-codex` | `codex` | `fallback-only` | `.codex/AGENTS.md`; generador de primera clase desde `INC-20260726-adapter-mcp-parity` |
+| `@axiom/adapters-antigravity` | `antigravity` | `fallback-only` | `.antigravity/AGENTS.md`; ídem |
+| `@axiom/adapters-visual-studio-2026` | `visual-studio-2026` | `fallback-only` | `.vs/AXIOM.md`; ídem |
 
 Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResult, AdapterGeneratorError>>`.
 
@@ -50,11 +57,19 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 
 | Package | Responsabilidad | Exports/tipos clave | Notas |
 |---|---|---|---|
-| `@axiom/toolchain` | Manifest `toolchain.yaml`, detección, repair | `ToolchainManifest`, `detectAllTools`, `repairToolchain` | Spec 0023/0027 |
-| `@axiom/topology` | Manifest `topology.yaml` (multi-repo, roles, QA lanes) | `TopologyManifest`, `RepoRef`, `RoleAssignment` | Spec 0021/0022 |
+| `@axiom/toolchain` | Manifest `toolchain.yaml`, detección, repair | `ToolchainManifest`, `detectAllTools`, `repairToolchain` | Spec 0023/0027; catálogo real reconciliado en ADR-0031 (`cmm` reemplaza codegraph/graphify) |
+| `@axiom/topology` | Manifest `axiom.config/topology.yaml` (multi-repo, roles, QA lanes); ahora opt-in/derivado-en-lectura | `TopologyManifest`, `RepoRef`, `RoleAssignment`, `loadTopology` | Spec 0021/0022; `INC-20260703-config-dedup` (cerrado) — `init` ya no lo escribe, `loadTopology` deriva fallback desde `axiom.yaml` |
 | `@axiom/workflow` | State machine SDD, hooks, branch naming | `WorkflowState`, `applyTransition`, `createHookEngine` | Spec 0022 |
-| `@axiom/model-routing` | Routing de modelo por slot, assignments, projection a opencode | `ModelRoutingPolicy`, `resolveSlot`, `SUPPORT_MATRIX` | Ver `../architecture/04-adapters-y-model-routing.md` |
+| `@axiom/model-routing` | Routing de modelo por slot, assignments, projection a opencode, checks de drift MRC-001..004 | `ModelRoutingPolicy`, `resolveSlot`, `SUPPORT_MATRIX` | Ver `../architecture/04-adapters-y-model-routing.md`. Sus checks corren vía `axiom model validate`, NO como parte de `@axiom/doctor` |
 | `@axiom/tool-routing` | Dispatcher de `ToolCall`, fallback chain, telemetría | `routeTool`, `resolveToolDispatch` | Spec 0008 (ADR-0008/0013/0020) |
+
+## Capa MCP (nueva desde el baseline 2026-07-02)
+
+| Package | Responsabilidad | Exports/tipos clave | Notas |
+|---|---|---|---|
+| `@axiom/mcp-server` | Dispatcher JSON-RPC 2.0 hand-rolled (sin SDK externo) + transporte stdio | `createMcpServer`, `runStdioServer`, `toolDescriptorsForKind` | `INC-20260708-mcp-runnable-server`; kinds `sdd`/`spec`/`memory`/`axiom` |
+| `@axiom/mcp-tools` | Handlers de capability agrupados por dominio (`sdd.*`, `spec.*`, `memory.*`, `axiom.*`) | `MCP_TOOL_HANDLERS`, tipos de registry | Consumido por `@axiom/mcp-server` y por `native-mcp-config.ts` |
+| `@axiom/providers` | Registry/discovery de providers, cliente MCP stdio, code-intel | `createStdioMcpClient`, registry de providers | Usado por `axiom doctor --deep` (TC-019) |
 
 ## Capa catálogos (materialización idempotente)
 
@@ -62,17 +77,18 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 |---|---|---|---|---|
 | `@axiom/skills` | `skills-catalog.yaml` → `.opencode/skills/<id>/SKILL.md`, drift, apply | `materializeSkillSet`, `refreshSkillRegistry`, `applySkillSet` | Sí | Spec 0032 (D3/A). Byte-exact idempotente |
 | `@axiom/components` | Catálogo de components, install/uninstall con checkpoint | `installComponent`, `uninstallComponent`, `restoreComponentsState` | No documentados | Spec 0019 (D1/D2) |
-| `@axiom/agents` | `agents-catalog.yaml` → `.opencode/agents/<id>/AGENT.md`, verificación SHA-256 | `materializeAgentSet`, `AGENT_MANIFEST_FILENAME` | Sí (4+5+extra escenarios) | README disponible (spec 0033) |
+| `@axiom/agents` | `agents-catalog.yaml` → `.opencode/agents/<id>/AGENT.md`, verificación SHA-256 | `materializeAgentSet`, `AGENT_MANIFEST_FILENAME` | Sí (4+5+extra escenarios) | README disponible (spec 0033). **No confundir** con la superficie portable adapter-agnóstica `.axiom/agents/<id>.md` (+ `.axiom/commands/<id>.md`, `.axiom/skills/<id>/SKILL.md`) que escribe SIEMPRE `materializeProcessSurfaces` (`apps/cli/src/commands/workspace-process-surfaces.ts`) — son dos materializaciones distintas y coexistentes: esta fila es la nativa de opencode, la portable es adapter-agnóstica y existe para todo adapter (incl. codex/antigravity/vs2026) |
 
 ## Capa operación
 
 | Package | Responsabilidad | Exports/tipos clave | Tests | Notas |
 |---|---|---|---|---|
-| `@axiom/doctor` | Suite de health checks, GATEs 0010/0031/0011 | `runAllChecks`, `generateReport` | No documentados | README disponible |
-| `@axiom/orchestrator` | State machine 7 lifecycle + 15 intent commands, gates, rollback | `gateFor`, `runCommand`, `CommandContext` | Sí (smoke E2E por comando) | README disponible |
+| `@axiom/doctor` | Suite de health checks (~19 categorías con IDs propios; ver `../operations/02-doctor-troubleshooting-y-telemetria.md`), modo opt-in `--deep` | `runDoctorChecks`, `runDoctorChecksDeep`, `formatReport` | No documentados | README disponible; creció mucho desde el baseline (6 familias → ~19) |
+| `@axiom/orchestrator` | State machine **8 lifecycle + 19 intent commands** (verificado en README propio, corrige "7+15" del baseline), gates, rollback; solo 7 de los 8 lifecycle pasan realmente por el gate desde `apps/cli` (`doctor-command` es la excepción documentada) | `gateFor`, `runCommand`, `CommandContext` | Sí (smoke E2E por comando) | README disponible |
 | `@axiom/cli-commands` | Barrel de re-export de `runX` desde `apps/cli/src/commands/*` | `runConfigure`, `runSync`, `runModel`, etc. | No documentados | README disponible; re-export trivial |
-| `@axiom/tui` | Router puro (menú), screens, previews, post-run summaries | `initialState`, `reduce`, `buildPostRunSummary` | No documentados | Spec 0019 (B1-B3) |
-| `apps/cli` | Entry point, 36 ficheros de comando (~16.400 líneas) | `axiom <comando>` | Sí (31 test files, 201 tests) | README disponible |
+| `@axiom/tui` | Router puro (menú), screens, previews, post-run summaries; incluye desde `INC-20260703-tui-init-wizard` un wizard genérico (`wizard-select`/`wizard-text`) para el flujo de `init` sin proyecto | `initialState`, `reduce`, `buildPostRunSummary` | No documentados | Spec 0019 (B1-B3) + INC-20260703 |
+| `@axiom/launcher` | Front web operador (default de `axiom app`), routing de adapters a skill/mcp-tool, prompt-builder | `AXIOM_ADAPTER_ROUTING`, `apiGetLauncherData`, prompt-builder | No documentados | Nuevo desde el baseline; ver `../architecture/04-adapters-y-model-routing.md` |
+| `apps/cli` | Entry point, **81 ficheros** de comando (verificado: `ls apps/cli/src/commands/*.ts \| wc -l`; 10 de ellos son helpers `_`-prefixed sin comando propio; **129 ficheros `*.test.ts`** verificados bajo `apps/cli/` — el conteo "31 test files, 201 tests" del baseline no se pudo re-verificar exactamente y se trata como stale/no confiable) | `axiom <comando>` | Sí | README disponible; el propio README interno del package aún cita "31 test files/201 tests", no actualizado en este pase (fuera de alcance: ese README vive en `Axiom/`, no en `Axiom.Spec/`) |
 
 ## Capa documentación/disciplina
 
@@ -82,10 +98,19 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 | `@axiom/cavekit-discipline` | Invariantes puros, backprop de fallos, drift check, gate GGA opcional | `evaluateInvariant`, `backpropFromFailure`, `applyGgaGate` | Spec 0015 |
 | `@axiom/user-workspace` | Registry de proyectos user-level, self-update | `loadRegistry`, `addProject`, `loadInstallManifest` | Spec 0020 (A1/B1) |
 
+## Capa contexto/telemetría/tracking (nueva desde el baseline 2026-07-02)
+
+| Package | Responsabilidad | Notas |
+|---|---|---|
+| `@axiom/technical-context` | Índice de contexto técnico (generación + lectura) servible por MCP (`spec.technicalContextIndexRead`) | `src/`: `generate-index.ts`, `technical-context-index.ts` |
+| `@axiom/telemetry` | Bus de eventos, sinks (`null`/`log`/`remote`/`audit-trail`), verificación de audit trail | `src/`: `bus.ts`, `sink.ts`, `sinks/`, `audit-trail-verify.ts` |
+| `@axiom/tracker` | Puertos/tipos genéricos de tracker externo (agnóstico de proveedor) + `null-tracker` | `src/`: `ports.ts`, `types.ts`, `null-tracker.ts` |
+| `@axiom/tracker-ado` | Implementación concreta para Azure DevOps (config, git, sprints, builds, adjuntos, normalizadores) | `src/`: `ado-config.ts`, `ado-git.ts`, `ado-sprints.ts`, `ado-build.ts`, `ado-attachments.ts` |
+
 ## Patrón arquitectónico dominante (observado en todos los packages)
 
 `Result<T,E>` sin excepciones; escritura atómica (tmp+rename); configuración YAML declarativa; interfaces duck-typed (memory backend, hook engine); GATEs explícitas numeradas; diseño spec-first (60+ incrementos referenciados en el código).
 
 ## Cobertura de tests (agregada, según README/estructura)
 
-E2E smoke en `apps/cli` (31 files, 201 tests); tests por escenario en `orchestrator`, `persistence`, `agents`, `skills`; tests de validación en `config-validation`. La mayoría de los 28 packages **no documentan** su conteo de tests en README — no asumir cobertura sin verificarlo en el repo real antes de decisiones críticas.
+E2E smoke en `apps/cli` (**129 ficheros `*.test.ts` verificados 2026-07-29** vía `find apps/cli -name "*.test.ts" | wc -l`; el conteo "31 files, 201 tests" del baseline quedó muy desactualizado y no se re-verificó al nivel de número de tests individuales — no citarlo como cifra actual); tests por escenario en `orchestrator`, `persistence`, `agents`, `skills`; tests de validación en `config-validation`. La mayoría de los 43 packages **no documentan** su conteo de tests en README — no asumir cobertura sin verificarlo en el repo real antes de decisiones críticas.

@@ -1,6 +1,8 @@
 # Instalación y onboarding
 
-Fuente: `Axiom/docs/installation.md`, `Axiom/docs/first-project-readiness.md`, `Axiom/docs/configuration/files/onboarding.md`.
+Fuente: `Axiom/docs/installation.md`, `Axiom/docs/first-project-readiness.md`, `Axiom/docs/configuration/files/onboarding.md`, `Axiom/scripts/verify-first-project-readiness.mjs`, `Axiom/apps/cli/src/commands/workspace-setup.ts`, `workspace-adopt.ts`, `member-install.ts`.
+
+> Reconciliado 2026-07-29: sección "Nota crítica de estado real" (más abajo) actualizada — la brecha que describía está RESUELTA — y se añadió el flujo de onboarding multi-repo (`axiom workspace setup`/`adopt` + `member install`) que no existía en el baseline 2026-07-02.
 
 ## Instalación user-level del binario
 
@@ -51,7 +53,7 @@ npx axiom doctor
 
 La readiness inicial no es solo "compila y pasan los tests unitarios": valida la secuencia operativa completa.
 
-Script ejecutable: `npm run readiness:first-project` (`Axiom/scripts/verify-first-project-readiness.mjs`). Siembra un proyecto temporal con la baseline canónica copiada desde `axiom.spec/config/`, `axiom.spec/templates/`, `axiom.spec/target-axiom-skills/`, `axiom.spec/target-axiom-agents/`, más `_builder/`, `AGENTS.md` y `axiom.skills.lock` del propio repo `Axiom/`, y ejecuta:
+Script ejecutable: `npm run readiness:first-project` (`Axiom/scripts/verify-first-project-readiness.mjs`). Siembra un proyecto temporal con la baseline canónica copiada, vía `seedCanonicalBaseline()`, desde `axiom.config/` (renombrado; antes `axiom.spec` + subcarpeta `config`), `axiom.spec/templates/`, `axiom.spec/target-axiom-skills/`, `axiom.spec/target-axiom-agents/`, `AGENTS.md` y `axiom.skills.lock` del propio repo `Axiom/` (`_builder/` se crea vacío, no se copia), y ejecuta:
 
 ```
 init → configure → toolchain repair → sync → start → gateway start → gateway status → audit → doctor
@@ -59,7 +61,7 @@ init → configure → toolchain repair → sync → start → gateway start →
 
 Falla si algún paso devuelve exit code ≠ 0, falta un artefacto esperado, o `gateway status` no reporta `state: active`.
 
-**Nota crítica de estado real**: este script asume que `axiom.spec/config/`, `axiom.spec/templates/`, `axiom.spec/target-axiom-skills/`, `axiom.spec/target-axiom-agents/`, `AGENTS.md` y `axiom.skills.lock` existen en la raíz de `Axiom/`. Verificado: ninguno existe en este checkout → el script fallaría hoy con `ENOENT` en `seedCanonicalBaseline()`. Detalle en [../references/03-riesgos-y-brechas-conocidas.md](../references/03-riesgos-y-brechas-conocidas.md).
+**Nota de estado real (RESUELTA, actualizada 2026-07-29)**: el baseline 2026-07-02 de este documento advertía que `axiom.config/`, `axiom.spec/templates/`, `axiom.spec/target-axiom-skills/`, `axiom.spec/target-axiom-agents/`, `AGENTS.md` y `axiom.skills.lock` no existían en la raíz de `Axiom/` y que el script fallaría con `ENOENT`. Verificado por listado directo 2026-07-29: `Axiom/axiom.config/`, `Axiom/axiom.spec/`, `Axiom/AGENTS.md` y `Axiom/axiom.skills.lock` **ya existen** (`INC-20260708-product-repo-self-bootstrap` + reconciliaciones posteriores). Único gap residual menor: `Axiom/_builder/` sigue sin existir (el script lo crea vacío en el proyecto temporal, no depende de que exista en `Axiom/`). Detalle en [../references/03-riesgos-y-brechas-conocidas.md](../references/03-riesgos-y-brechas-conocidas.md).
 
 ## Baseline recomendada y checklist manual
 
@@ -68,10 +70,20 @@ Triple recomendado: `functionalProfile: builder`, `operationalOverlay: local-onl
 Checklist manual de equipo:
 1. `npm run build` verde en `Axiom/`.
 2. `npm test` verde en `Axiom/`.
-3. `node ../axiom.spec/scripts/doctor-validate-contracts.mjs` verde desde la raíz del repo (mismo riesgo de ausencia que arriba).
+3. `node ../axiom.spec/scripts/doctor-validate-contracts.mjs` verde desde la raíz del repo. **Gap residual verificado 2026-07-29**: `Axiom/axiom.spec/` ya existe (contiene `increments/`, `plans/`, `target-axiom-agents/`, `target-axiom-skills/`, `templates/`), pero NO tiene subcarpeta `scripts/` — este paso del checklist sigue sin script real que ejecutar; no confundir con la brecha más amplia ya resuelta del punto anterior.
 4. `npm run readiness:first-project` en `PASS`.
 5. Documentación operativa navegable (instalación, uso diario, CLI, troubleshooting, esta guía).
 
+## Onboarding multi-repo (`axiom workspace setup` / `axiom workspace adopt` / `member install`)
+
+Añadido desde el baseline 2026-07-02 (varias oleadas post-0030, consolidadas por `INC-20260727-adoption-config-scaffolding` y anteriores). `runWorkspaceSetup` (`apps/cli/src/commands/workspace-setup.ts`) es el motor CORE compartido, sin TUI ni MCP, detrás de dos flujos:
+
+- **`axiom workspace setup`**: scaffolding aditivo de un proyecto/repo de control ya existente (no requiere legacy repos previos).
+- **`axiom workspace adopt`** (`workspace-adopt.ts`): adopción de un repo/proyecto legacy hacia el modelo Axiom; llama a `runWorkspaceSetup` tras confirmación explícita para la parte de scaffolding (Subject B), y añade por separado la migración basada en detectores (Subject A) — no cambia la firma de `runWorkspaceSetup` (parametrización puramente aditiva).
+- **`member install`** (`member-install.ts`): instalación por miembro de equipo en un repo multi-rol ya adoptado/configurado.
+
+Ambos flujos de `workspace setup`/`adopt` siembran, best-effort y no-clobber, los 4 artefactos de config que antes ningún comando producía automáticamente: `axiom.config/integrations.yaml` (PC-001), `axiom.config/policy-as-code.yaml` (PC-002), `axiom.config/agents-catalog.yaml` (TC-011) y el `axiom.skills.lock` raíz (GC-001/GC-002/GC-007) — ver `../architecture/02-modelo-de-datos-y-configuracion.md`.
+
 ## Fuera de la baseline inicial (no-goals explícitos del MVP)
 
-Overlays `standard`/`enterprise` como camino inicial obligatorio; `visual-studio-2026` como baseline de primer arranque; providers post-MVP (`engram`, `codegraph`, `graphify`) como requisito de entrada; bridges externos/plugins/lanes paralelos avanzados; instalación user-level del binario como paso obligatorio.
+Overlays `standard`/`enterprise` como camino inicial obligatorio; `visual-studio-2026` como baseline de primer arranque; providers post-MVP (`engram`, `codegraph`, `graphify` — nota: `codegraph`/`graphify` fueron removidos y reemplazados por `cmm`, ver `../integrations/01-capabilities-providers-y-toolchain.md`) como requisito de entrada; bridges externos/plugins/lanes paralelos avanzados; instalación user-level del binario como paso obligatorio.

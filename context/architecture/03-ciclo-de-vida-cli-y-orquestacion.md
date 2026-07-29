@@ -1,6 +1,6 @@
 # Ciclo de vida CLI y orquestación
 
-Fuente: `Axiom/docs/cli/*.md`, `@axiom/orchestrator`, `@axiom/cli-commands`, `Axiom/apps/cli/src/commands/`.
+Fuente: `Axiom/docs/cli/*.md`, `@axiom/orchestrator` (README + `src/`), `@axiom/cli-commands`, `Axiom/apps/cli/src/commands/`.
 
 ## Secuencia de lifecycle (7 comandos base + upgrade)
 
@@ -10,7 +10,9 @@ init → join → configure → sync → start → audit → doctor
                                           upgrade
 ```
 
-`@axiom/orchestrator` implementa una state machine con 7 comandos de lifecycle + 15 "intent commands" (comandos de intención de más alto nivel que en MVP devuelven `not-implemented`), un predicado `gateFor` por comando y un `runCommand` que corre con telemetría y hooks.
+`@axiom/orchestrator` implementa una state machine con **8 comandos de lifecycle** (`init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`) **+ 19 "intent commands"** (`axiom-*-command`, stubs que siempre devuelven `not-implemented`), un predicado `gateFor` por comando y un `runCommand` que corre con telemetría y hooks (verificado: `packages/orchestrator/README.md`, actualiza el conteo "7+15" del baseline 2026-07-02).
+
+**Matiz de honestidad documentado por el propio package** (`INC-20260710-honesty-and-toolchain-states`): de los 8 lifecycle commands declarados, solo **7 pasan realmente por este gate** desde `apps/cli` (vía `runOrchestrated` en `init.ts`/`join.ts`/`configure.ts`/`sync.ts`/`start.ts`/`audit.ts`/`upgrade.ts`). `doctor-command` está declarado en la matriz pero el comando real `axiom doctor` NO invoca este gate — llama directo a `@axiom/doctor`. Los 19 intent ids son stubs reservados: hoy solo los ejercitan los tests propios de `@axiom/orchestrator`, ningún caller real de `apps/cli` los invoca — no son la vía de ejecución real del workflow SDD (esa vive en `@axiom/workflow`, ejercitada directamente por `axiom-increment`/`axiom-bug`/`axiom-plan`/`axiom-role`).
 
 ## Detalle por comando (contrato lee/escribe)
 
@@ -18,8 +20,8 @@ init → join → configure → sync → start → audit → doctor
 1. Valida nombre (`^[a-z0-9][a-z0-9-]{0,62}$`).
 2. Determina layout: `self-hosted` (si detecta markers `_builder/`, `Axiom/`) o `installed-multi-repo` (default).
 3. Genera `axiom.yaml` con profile triple.
-4. Crea `.sdd/local/` y `.sdd/<projectName>/`, `.gitignore`.
-5. Si layout `installed-multi-repo`, resuelve `topology.yaml`.
+4. Crea `.axiom-state/local/` y `.axiom-state/<projectName>/`, `.gitignore` (renombrado desde el prefijo antiguo por `INC-20260703-config-folder-renames`, cerrado).
+5. Si layout `installed-multi-repo`, ya **no** escribe `topology.yaml` (`INC-20260703-config-dedup`, cerrado): `@axiom/topology#loadTopology` deriva un manifest de fallback desde `axiom.yaml` cuando el fichero está ausente; `topology.yaml` se materializa perezosamente solo cuando el proyecto corre `axiom roles assign`.
 6. Persiste `init.json`.
 Flags: `--name`, `--profile`, `--overlay`, `--layout`, `--target`, `--path`, `--yes`, `--force`.
 
@@ -39,7 +41,7 @@ Resuelve modo de discovery según overlay + flags `--gateway`/`--no-gateway` (`l
 Solo lectura. Calcula SHA-256 del audit trail, cuenta líneas, valida retención, detecta rewrite externo. Estados: `compliant` (exit 0), `absent` (exit 0), `violation` (exit 1).
 
 ### `axiom doctor`
-Ejecuta familias de checks: boundaries, policies, manifests, isolation, capability model, gateway. Soporta `--json`. No escribe nada.
+Ejecuta familias de checks (creció bastante desde el baseline 2026-07-02: boundaries, policies, manifests, isolation, capability model, install-profiles, gateway, tool-routing, topology, workflow-config, toolchain, memory, adapters, skills, agents, artifact-index, write-scope, dogfooding, provider-selection, más gobernanza GC-00x). Soporta `--json` y, opt-in, `--deep` (probes reales de tool/MCP, ver `../architecture/04-adapters-y-model-routing.md`). No muta nada (los probes `--deep` solo `pass`/`warn`/`skip`, nunca `fail`). Detalle completo en `../operations/02-doctor-troubleshooting-y-telemetria.md`.
 
 ### `axiom upgrade`
 `--dry-run` | `--from-checkpoint <id>` | `--target-version <v>` | `--no-sync` | `--no-doctor`. Calcula migraciones aplicables, crea checkpoint pre-upgrade (`init.json`, `install-profile.json`, `managed-state.json`), aplica migraciones en orden con rollback automático si alguna falla, persiste nuevo `ManagedState`, y por defecto encadena `sync` + `doctor` post-upgrade.
@@ -48,10 +50,12 @@ Ejecuta familias de checks: boundaries, policies, manifests, isolation, capabili
 
 Requiere TTY. Menú de 6 items: configurar, sincronizar, diagnóstico, upgrade, model routing, salir. Para mutaciones (configure/sync/upgrade): preview read-only → confirmación (Y/n) → ejecución real vía `@axiom/cli-commands` → post-run summary con restore point y follow-ups. Doctor corre directo (read-only). Model routing tiene submenú por slot (teclas 1-4 = clases, 0 = unset).
 
+**Wizard genérico de `init` (`INC-20260703-tui-init-wizard`, cerrado)**: cuando no hay proyecto detectado, la pantalla `setup` de la TUI ya no es un formulario fijo — lanza un wizard guiado de 6 steps (nombre, rol, layout, profile, overlay, target) con una pantalla de confirmación/resumen antes de invocar `runInit`. Las screens genéricas reutilizables (`wizard-select`, `wizard-text`) viven en `@axiom/tui` (`packages/tui/src/screens/wizard-select.ts`/`wizard-text.ts`, driver en `packages/tui/src/driver.ts`); el step-builder consciente de los enums concretos de Axiom (profile/overlay/target) vive en `apps/cli/src/commands/tui.ts`.
+
 ## `axiom model` (routing de modelos por slot)
 
 - `show [--target] [--slot]`: routing efectivo por slot (read-only).
-- `set <slot> <class>` / `unset <slot>` / `reset`: mutación de `.sdd/config/<projectName>/model-assignments.json`.
+- `set <slot> <class>` / `unset <slot>` / `reset`: mutación de `.axiom-state/config/<projectName>/model-assignments.json`.
 - `validate [--target]`: corre 4 checks de drift (MRC-001 a MRC-004) y proyecta a `.opencode/model-routing.json` si el target es `opencode`.
 
 Slots: `increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archive`. Clases: `cheap`, `medium`, `strong`, `local`.
@@ -63,7 +67,16 @@ Slots: `increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archiv
 
 ## Comandos reales sin documentación operativa dedicada
 
-`apps/cli/src/commands/` tiene 36 ficheros. Además de los 12 documentados arriba (incluyendo `model`/`components`/`skills`/`tui`), existen: `app`, `app-api`, `app-plugins`, `app-plugins-azure-devops`, `axiom-bug`, `axiom-increment`, `axiom-plan`, `axiom-qa-e2e`, `axiom-role`, `capability`, `context`, `gateway`, `intent`, `mcp`, `memory`, `projects`, `qa-archive-gate`, `repo`, `roles`, `self-update`, `toolchain`, `topology`. Se mencionan de forma dispersa en documentos de incremento (`0019`-`0030`) pero carecen de página propia en `docs/cli/`. Antes de tratarlos como contrato estable, verificar en código.
+`apps/cli/src/commands/` tiene **81 ficheros** (verificado: `ls apps/cli/src/commands/*.ts | wc -l` → 81; de esos, 10 son helpers internos con prefijo `_` — `_adapter-labels.ts`, `_cross-repo-plan.ts`, `_execution-mode.ts`, `_functional-verify.ts`, `_repo-affinity.ts`, `_role-review.ts`, `_shared.ts`, `_spec-scope.ts`, `_tracker-status.ts`, `_worktree-execution.ts` — no comandos invocables por sí mismos). Muy por encima del baseline 2026-07-02 (36). Familias completas que no existían entonces:
+
+- `workspace*` (16 ficheros): `workspace.ts`, `workspace-setup.ts`, `workspace-adopt.ts`, `workspace-adapters.ts`, `workspace-adapter-templates.ts`, `workspace-autoskills.ts`, `workspace-catalog-scaffold.ts`, `workspace-code-intel.ts`, `workspace-config-scaffold.ts`, `workspace-incremental.ts`, `workspace-mcp.ts`, `workspace-process-surfaces.ts`, `workspace-rules.ts`, `workspace-skills.ts`, `workspace-spec-base.ts`, `workspace-worktree-provision.ts`.
+- `app*` / launcher: `app.ts` (abre el launcher como front por defecto, ver más abajo), `app-api.ts`, `app-onboarding.ts`, `app-launcher.ts`, `app-launcher-panels.ts`, `app-launcher-ado.ts`, `app-plugins.ts`, `app-plugins-azure-devops.ts`.
+- `member-install.ts` (instalación multi-repo por miembro de equipo).
+- `native-mcp-config.ts` (proyección de los servers MCP gestionados a la config nativa de cada tool).
+- Comandos backed por `@axiom/tracker`/`@axiom/tracker-ado`: `_tracker-status.ts`, `external-sync.ts`, además de `app-launcher-ado.ts`.
+- Otros ficheros nuevos desde el baseline: `axiom-adr.ts`, `axiom-decision.ts`, `artifact-metadata-cli.ts`, `bindings.ts`, `bootstrap.ts`, `eject.ts`, `external-sync.ts`, `index-cmd.ts`, `integrate.ts`, `learn.ts`, `mcp-serve.ts`, `normalize-cmd.ts`, `rollback.ts`, `scaffold.ts`, `state-cmd.ts`, `validate-changes.ts`.
+
+Los 12 comandos documentados en el baseline (`init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `tui`, `model`, `components`, `skills`) siguen siendo los únicos con página dedicada de nivel similar en `docs/cli/`; el resto (ya ~70 ficheros de comando real) sigue sin ella. **`axiom app`** merece mención aparte: desde `INC-20260727-launcher-default-and-old-ui-removal` (cerrado) abre `${url}/launcher/` por defecto (el viejo operator UI raíz — `static/index.html`/`app.js`/`style.css`/`sw.js`/`manifest.json` — se eliminó junto a 6 endpoints exclusivos que solo él usaba); `GET /` y `GET /index.html` redirigen 302 a `/launcher/` (verificado: `apps/cli/src/commands/app.ts`, comentarios junto a la constante `launcherUrl`). Antes de tratar el comportamiento de cualquiera de estos comandos como contrato estable, verificar directamente en el código.
 
 ## `@axiom/cli-commands` (barrel)
 
