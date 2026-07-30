@@ -22,6 +22,16 @@ Manifest `toolchain.yaml`: npm/pnpm/yarn/bun, Node, git, python — con detecci�
 
 > **Catálogo reconciliado 2026-07-29 (ADR-0031, `docs/0031-adr-cmm-replaces-graphify-and-codegraph.md`)**: las tools P1 del baseline (`CodeGraph`, `Graphify`, añadidas en el incremento 0027) fueron **removidas y reemplazadas por `cmm`** (`codebase-memory-mcp`). El catálogo real vigente, verificado en `axiom.config/toolchain-catalog.yaml` (self-bootstrap del propio repo `Axiom/`) y en `packages/toolchain/src/probe.ts`, es: **`serena`** (code-intelligence), **`cmm`** (code-intelligence, reemplaza codegraph/graphify), **`engram`** (library-context), **`context7`** (library-context), **`rtk`** (input-optimizer), **`caveman`** (output-optimizer), **`autoskills`** (skill-surface) — 7 tools, todas `mvp: false` (catálogo permitido/opcional, no requerido por defecto; el operador las agrega vía `axiom toolchain add --id <id>`). `cmm` tiene evidencia de fallback específica: un fichero `.cmm/sync-state.json` en el proyecto se trata como prueba de instalación funcionando (`packages/toolchain/src/probe.ts`).
 
+### Versionado reproducible del toolchain (`INC-20260730-toolchain-versioning`)
+
+`axiom.config/toolchain-catalog.yaml` usa `schemaVersion: 2`. Cada entrada puede declarar `versionExtractor`, versiones de política por canal (`stable`, `candidate`, `edge`) y `compatibility.axiomMinVersion`. El catálogo es una allowlist/política: no implica que todas las tools estén habilitadas en `axiom.config/toolchain.yaml` ni que deban instalarse.
+
+El estado de versiones fijadas vive en `.axiom-state/<project>/toolchain.lock`, un YAML `schemaVersion: 1` ignorado junto con `.axiom-state/`. El lock contiene `projectId`, `lockedAt` y `tools`; cada entrada registra `id`, `version`, `channel` y, opcionalmente, `probeCommand`, `probeOutput` y `probedAt`. `loadToolchainLock` devuelve un lock vacío para proyectos que aún no han fijado versiones y valida schema, IDs, versiones y canales; `saveToolchainLock` persiste mediante `tmp` + `rename` (`packages/toolchain/src/lockfile.ts`).
+
+`probeAllToolVersions` solo ejecuta un contrato local conocido y extrae la versión con la regex `versionExtractor`; hoy conoce probes para `serena`, `cmm` y `engram`. `context7`, `rtk`, `caveman` y `autoskills` no reciben un comando supuesto. Las observaciones fallidas se omiten y no elevan por sí mismas el estado a `installed-working`.
+
+`axiom toolchain plan` es read-only y compara el lockfile con el canal solicitado; `--id` restringe el conjunto. La función pura no da de alta implícitamente todas las entradas del catálogo cuando no recibe IDs explícitos. `axiom toolchain upgrade` solo actualiza el lockfile: requiere `--yes` para persistir, `--dry-run` mantiene el preview, y usa checkpoint/rollback. Ninguna de las dos operaciones descarga, instala o reemplaza binarios externos.
+
 Bug corregido en el incremento 0027: `resolveDetectionPath` calculaba rutas relativas al `cwd` en vez de a `projectRoot`.
 
 Comandos: `axiom toolchain repair [--id <id>]` (idempotente), `axiom toolchain add --id <id> --path <repoId>` (selección por repo), `axiom toolchain gitignore [--write <file>]` (output ordenado y deduplicado).

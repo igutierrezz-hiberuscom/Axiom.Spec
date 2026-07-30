@@ -23,7 +23,7 @@ Se genera con `axiom init` y encapsula el **profile triple**: `functionalProfile
 > Axiom.
 
 - `.axiom-state/local/`: overlay no versionada (overrides locales, markers como `last-sync.json`). Regida por `local-overlay-policy.yaml`.
-- `.axiom-state/<projectName>/`: estado persistido del proyecto resuelto: `init.json`, `members.yaml`, `install-profile.json`, `last-start.json`.
+- `.axiom-state/<projectName>/`: estado persistido del proyecto resuelto: `init.json`, `members.yaml`, `install-profile.json`, `last-start.json` y, cuando el proyecto fija versiones, `toolchain.lock`.
   - `init.json` **no** lleva un campo `projectName` propio (`INC-20260703-config-dedup`, dedup #1): el nombre ya está codificado en el nombre del directorio que lo contiene, que a su vez viene de `resolveProject(axiom.yaml).name` — `axiom.yaml` es la única fuente de verdad para el nombre del proyecto. `init.json` sólo persiste `profileTriple` (la elección inicial del usuario en `axiom init`), `createdAt` y `version`.
 - `.axiom-state/config/<projectName>/`: estado de mutación de subsistemas (namespace interno del persistence-store, distinto de `axiom.config/` — ver más abajo): `managed-state.json` (versionado), `model-assignments.json`, `components-state.json`, `gateway-state.json`.
 - `.axiom-state/<projectName>/checkpoints/<id>/`: snapshots pre-mutación (upgrade, uninstall de components); se conservan los últimos 5.
@@ -40,7 +40,7 @@ El runtime espera, dentro del proyecto adoptante, una carpeta `axiom.config/` en
 
 `axiom.workspace.yaml`, `branch-policy.yaml`, `capabilities.yaml`, `clarification-policy.yaml`, `command-protocol.yaml`, `external-work-items.yaml`, `id-policy.yaml`, `integrations.yaml`, `lifecycle-policy.yaml`, `local-overlay-policy.yaml`, `model-routing-policy.yaml`, `onboarding.yaml`, `orchestration-policy.yaml`, `policy-as-code.yaml`, `profiles.yaml`, `providers.yaml`, `repositories.yaml`, `scaffolding-contract.yaml`, `skills.yaml`, `telemetry-sinks.yaml`, `tool-routing-policy.yaml`.
 
-No todos se consumen hoy con el mismo nivel de profundidad en runtime, pero forman el mapa documental y de control declarado. Ver discrepancia real: esta carpeta **no existe hoy** en la raíz del propio repo `Axiom/` (detalle en `context/references/03-riesgos-y-brechas-conocidas.md`).
+No todos se consumen hoy con el mismo nivel de profundidad en runtime, pero forman el mapa documental y de control declarado. Verificado el 2026-07-30: `axiom.config/` y `axiom.spec/` existen en la raíz del propio repo `Axiom/`; `_builder/` sigue siendo un hueco menor que el script de readiness crea vacío en el proyecto temporal. Los riesgos históricos se conservan en `context/references/03-riesgos-y-brechas-conocidas.md`.
 
 ### `profiles.yaml`: dato producto canónico con default bundleado (no scaffoldeado)
 
@@ -65,6 +65,7 @@ No todos se consumen hoy con el mismo nivel de profundidad en runtime, pero form
 | `sync` | `.axiom-state/local/last-sync.json` (+ regeneración de outputs del adapter) |
 | `start` | `.axiom-state/<projectName>/last-start.json` |
 | `upgrade` | `.axiom-state/config/<projectName>/managed-state.json`, checkpoints |
+| `toolchain upgrade` | `.axiom-state/<projectName>/toolchain.lock` (schema 1), con checkpoint/rollback |
 | `model set/unset/reset` | `.axiom-state/config/<projectName>/model-assignments.json` (+ `.opencode/model-routing.json` si target es opencode) |
 | `components install/uninstall` | `.axiom-state/config/<projectName>/components-state.json` |
 
@@ -232,9 +233,15 @@ Formas de datos añadidas por esta tanda (el comportamiento vive en [06_Integrac
 
 - **Adiciones al modelo de memoria** (`INC-20260708-memory-real-local-backend`): `MemoryEntry` gana `topicKey?`/`sessionId?` (aditivos); nuevo tipo `MemorySessionSummary`; `MemoryBackend` gana `saveSessionSummary?` opcional. El UPSERT topic-keyed (misma `(projectId, topicKey)` reemplaza en sitio) aplica a AMBOS backends: `createInMemoryBackend` (JSON, `.axiom-state/local/memory/<projectId>.json`, find-and-replace) y el nuevo `createEngramBackend` (nativo vía `topic_key` de engram). `resolveMemoryBackend` selecciona entre ambos (probe de `engram mcp`, fallback JSON, nunca lanza). Las **lecciones** (`INC-20260708-continuous-learning`) NO añaden un `MemoryKind` nuevo: se almacenan como `MemoryEntry` `kind: 'pattern'` tag `'lesson'`, con `topicKey` derivado (`learning/<capabilityId>` para lecciones de audit, `learning/manual/<slug>` para texto explícito). Métricas de delegación opcionales en `.axiom-state/<project>/session-metrics.json` (shape `DelegationMetrics`, consumidor-only — Axiom no lo produce; ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)).
 
+- **Metadata de fase en `MemoryEntry`** (`INC-20260729-knowledge-phase-metadata`): 7 campos opcionales aditivos para trazabilidad SDD — `increment?` (ID del incremento/bug/plan), `phase?` (`SddPhase`: `analysis`|`architecture`|`frontend`|`backend`|`qa`|`validator`|`archive`), `actorRole?` (`ActorRole`: `analyst`|`architect`|`frontend`|`backend`|`qa`|`validator`|`orchestrator`), `knowledgeKind?` (`KnowledgeKind`: `decision`|`constraint`|`discovery`|`bugfix`|`gotcha`|`pattern`|`risk`|`open-question`|`workaround`|`convention`), `stability?` (`Stability`: `temporary`|`candidate-project-context`|`candidate-skill`|`historical-only`), `visibility?` (`Visibility`: `project-shared`|`private`), `sourceArtifact?` (path al artefacto fuente). Back-compat total: una entrada sin estos campos sigue siendo válida. En el backend engram, la metadata se codifica como frontmatter YAML-like (`---\n...\n---\n`) al inicio del `content` y se decodifica en lectura vía `mem_get_observation` (contenido completo). El backend in-memory preserva los campos automáticamente vía serialización JSON. Módulo nuevo `phase-metadata.ts` con helpers `encodePhaseMetadata`/`decodePhaseMetadata`.
+
+- **Comando `axiom knowledge harvest`** (`INC-20260729-knowledge-harvest-command`): nuevo subcomando `axiom knowledge harvest --increment <id> [--spec-repo <path>] [--dry-run]` que lee memorias del proyecto activo, filtra por `entry.increment`, clasifica por `stability` (`candidate-project-context` → propuesta de contexto técnico, `candidate-skill` → propuesta de skill, resto → histórico), y genera `knowledge-harvest.md` en `<specRepo>/specs/increments/<id>/`. Read-only (nunca muta contexto ni skills). `--dry-run` imprime en stdout. No-clobber: error si el archivo ya existe. Sin memorias → harvest vacío con nota explícita. Usa `resolveMemoryBackend` (compatible con engram y JSON fallback).
+
+- **Comandos `axiom knowledge sync` y `axiom knowledge pull`** (`INC-20260729-knowledge-sync-command`): `sync --increment <id> --phase <phase>` exporta memorias del incremento a `.engram/chunks/<hash>.json` (JSON versionable, append-only) + actualiza `.engram/manifest.json` y hace git add/commit/push en `<project>.axiom`. `pull --increment <id>` hace git pull --rebase e importa chunks nuevos a la BD local de Engram vía `saveMemory`. `.engram/engram.db` está gitignored. Incluye validación anti-secretos (8 patrones: private keys, API keys, tokens GitHub/Slack/AWS, JWTs) y filtro de `visibility: 'private'`. Sin memorias nuevas → OK sin commits vacíos. Conflicto de Git → reportado sin ocultar. `--dry-run` en ambos.
+
 - **Artefactos de la capa de reglas** (`INC-20260708-rules-layer`): `axiom.config/rules/<scope>.md` — `common.md` (siempre) + `<language>.md` por lenguaje inferido (`typescript`/`python`/`csharp`/`angular`). Ubicación canónica análoga a `axiom.config/skills-*`, escrita por `scaffoldRules` best-effort no-clobber por fichero. El `AGENTS.md` canónico gana un campo `CanonicalAgentsMdIdentity.ruleScopes?` (poblado por el caller leyendo disco en tiempo de render) que lista los scopes presentes. Proyección nativa opcional: `.cursor/rules/axiom-common.mdc` (solo `common`, no-clobber).
 
-- **Scaffold canónico del propio repo `Axiom/`** (`INC-20260708-product-repo-self-bootstrap`): el repo de producto ganó en su raíz el set canónico que su runtime/tests esperaban — `axiom.config/` con contenido schema-válido real (`skills-catalog.yaml`, `agents-catalog.yaml`, `model-routing-policy.yaml`, `profiles.yaml`, `providers.yaml`, `capabilities.yaml`, `integrations.yaml`, `policy-as-code.yaml`, `mcp-manifest.yaml`, `telemetry-sinks.yaml`), `axiom.spec/target-axiom-skills/*.md` (7), `axiom.spec/target-axiom-agents/*.md` (3, ampliados a 7 por el roster de delegación de `INC-20260708-delegation-triggers`), `axiom.spec/templates/` (copiadas de `Axiom.Spec/templates/`), `AGENTS.md` y `axiom.skills.lock`. Con esto `readiness:first-project` y `doctor` pasan contra la raíz del propio repo (ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)). `profiles.yaml#allowedTargets` se recortó a los 5 `MVP_TARGETS` para satisfacer el check estricto `IP-003`, mientras `adapterTargets` sigue declarando los 8 (5 `mvp:true` + 3 `mvp:false`).
+- **Scaffold canónico del propio repo `Axiom/`** (`INC-20260708-product-repo-self-bootstrap`): el repo de producto ganó en su raíz el set canónico que su runtime/tests esperaban — `axiom.config/` con contenido schema-válido real (`skills-catalog.yaml`, `agents-catalog.yaml`, `model-routing-policy.yaml`, `profiles.yaml`, `providers.yaml`, `capabilities.yaml`, `integrations.yaml`, `policy-as-code.yaml`, `mcp-manifest.yaml`, `telemetry-sinks.yaml`), `axiom.spec/target-axiom-skills/*.md` (7), `axiom.spec/target-axiom-agents/*.md` (3, ampliados a 7 por el roster de delegación de `INC-20260708-delegation-triggers`), `axiom.spec/templates/` (copiadas de `Axiom.Spec/templates/`), `AGENTS.md` y `axiom.skills.lock`. El cierre de aquella tanda registró `readiness:first-project` y `doctor` verdes; la verificación del 2026-07-30 falla en `TC-011` por un `bundleHash` stale de `axiom-reviewer` (ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)). `profiles.yaml#allowedTargets` se recortó a los 5 `MVP_TARGETS` para satisfacer el check estricto `IP-003`, mientras `adapterTargets` sigue declarando los 8 (5 `mvp:true` + 3 `mvp:false`).
 
 - **Idempotencia de las operaciones incrementales** (`INC-20260708-incremental-operations`): `axiom repo/adapter/provider/role add` mutan los MISMOS artefactos del modelo multi-repo reusando los helpers exportados de `workspace-setup.ts` (`buildRoleAwareAxiomYaml`, `writeOneRepo`, `buildTopologyManifest`/`writeTopologyManifest`, `relativeRef`, `axiomYamlPathFor`, `tryReadExistingProjectId` — ampliados de module-private a exportados, sin cambio de comportamiento en `runWorkspaceSetup`). `repo add` re-deriva el bloque `paths` de CADA repo del proyecto (recíproco), actualiza `topology.yaml`, hace `upsertProjectReposV2` y genera adapters/MCP/skills/rules solo para el repo nuevo; `adapter add` hace append-dedup en `workspace.json#adapters` y regenera ese adapter en todos los repos; `provider add` hace append-dedup en `workspace.json#providers`. Re-ejecutar con los mismos args es no-op/merge (sin entradas duplicadas, sin clobber). Si no existe `workspace.json`, `adapter add`/`provider add` crean uno mínimo (schemaVersion 1, arrays vacíos) en vez de fallar.
 
@@ -328,8 +335,8 @@ requerida sin ningún binario real instalado. El modelo se corrigió a
   (incorrectamente) `present`.
 - `installed-working` — un probe real, best-effort y nunca-lanzante
   (`@axiom/toolchain`'s `probe.ts`: `<tool> --version` por spawn, o
-  para `codegraph` la evidencia alternativa de una
-  `.codegraph/codegraph.db` real no vacía) confirmó positivamente que
+  para `cmm` la evidencia alternativa de un
+  `.cmm/sync-state.json` real no vacío) confirmó positivamente que
   la tool está instalada y responde.
 
 `axiom toolchain show`/`validate` (y sus `--json`) corren ese probe
@@ -342,6 +349,17 @@ no corre el probe). El punto 5's "no-op si ya present" de la
 descripción de `axiom member install` (arriba) debe leerse hoy como
 "no-op si ya tiene `marker`" — `repairTool` nunca corre el probe real,
 así que su output se queda siempre en `declared`/`absent`/`marker`.
+
+### Versionado reproducible del toolchain (`INC-20260730-toolchain-versioning`)
+
+El modelo de toolchain separa el catálogo permitido, el subset habilitado y el estado fijado:
+
+- `axiom.config/toolchain-catalog.yaml` es el catálogo global. En schema 2, cada entrada puede declarar `versionExtractor`, versiones por canal (`stable`, `candidate`, `edge`) y `compatibility.axiomMinVersion`. Las tools sin extractor o sin comando local conocido permanecen declaradas/instruction-only y no reciben un probe inventado.
+- `axiom.config/toolchain.yaml` sigue siendo el manifest del subset que el proyecto habilitó. El catálogo no implica que todas sus entradas deban aparecer en este fichero ni en el lockfile.
+- `.axiom-state/<project>/toolchain.lock` es un YAML schema 1 local, generado e ignorado por Git junto con el resto de `.axiom-state/`. Su forma es `{ schemaVersion, projectId, lockedAt, tools }`; cada entrada de `tools` se indexa por el ID y contiene `id`, `version`, `channel` y, opcionalmente, `probeCommand`, `probeOutput` y `probedAt`. Si no existe, el loader devuelve un lock vacío para permitir una primera planificación.
+- `axiom toolchain show` combina observación instalada, versión locked y canal en la misma tabla. `ToolEntry` admite además `version`, `channel`, `probeOutput` y `probedAt` como campos opcionales derivados del estado fijado/probado.
+- `axiom toolchain plan` compara el lockfile contra la versión del canal solicitado y produce acciones `add`, `remove`, `upgrade`, `downgrade` o `none` sin escribir. En la CLI, el conjunto por defecto reúne tools declaradas y lockeadas; `--id` permite limitarlo. En la función pura, omitir el conjunto explícito solo revisa las tools ya lockeadas: una entrada adicional del catálogo no se convierte por sí sola en una instalación pendiente.
+- `axiom toolchain upgrade --yes` escribe únicamente el lockfile. Antes guarda un checkpoint; si falla la escritura o el probe de verificación, restaura los bytes anteriores o elimina el lockfile recién creado. Sin `--yes`, o con `--dry-run`, solo imprime la vista previa. No descarga ni reemplaza binarios externos.
 
 ### `axiom member install` y `axiom bindings` (nuevos comandos)
 

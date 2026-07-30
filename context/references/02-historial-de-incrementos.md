@@ -51,3 +51,9 @@ Bloques por categoría: Control Plane (0019, 0026, 0027) · Workflows & UX (0028
 ## Nota de alcance
 
 Este documento cubre 0015-0030. El git log real de `Axiom/` llega hasta commits posteriores a 0030 (menciones a 0031-0039 aparecen en `Axiom/README.md` y en el listado de comandos de `apps/cli/src/commands/`, p. ej. adapters 0031, skills registry 0032, agents 0033, capability/repo/context/gateway 0034). Esos incrementos no tenían documento `00XX-*.md` propio en `Axiom/docs/` al momento de este relevamiento — su detalle vive solo en el código y en el resumen de `Axiom/README.md`.
+
+## Evolución posterior — `INC-20260730-toolchain-versioning`
+
+Este incremento extiende el toolchain posterior a la ventana histórica 0015–0030. El catálogo dedicado `axiom.config/toolchain-catalog.yaml` pasa a schema 2 con `versionExtractor`, canales `stable`/`candidate`/`edge` y compatibilidad opcional. El estado de versiones fijadas se persiste como `toolchain.lock` schema 1 bajo `.axiom-state/<project>/`; `axiom toolchain plan` es read-only y `axiom toolchain upgrade` solo escribe el lockfile con `--yes`, checkpoint y rollback. El catálogo funciona como allowlist/política y no ordena instalar todas sus tools.
+
+La implementación también añade observaciones best-effort de versión, checks TC-020..TC-023 y drift profundo en `axiom doctor --deep`. No instala binarios, no descubre releases upstream y no trata las versiones del catálogo como releases upstream verificadas. Los probes locales conocen `serena`, `cmm` y `engram`; `context7`, `rtk`, `caveman` y `autoskills` permanecen sin contrato local de probe. La validación focalizada del paquete de toolchain cubre 10 tests; el estado global y los fallos preexistentes se documentan en el README del incremento.

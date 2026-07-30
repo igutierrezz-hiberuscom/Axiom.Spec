@@ -56,6 +56,17 @@ El CLI debe ejecutar checks de boundaries, policies, manifests, aislamiento, mod
 
 El CLI debe calcular migraciones aplicables entre versiones, crear un checkpoint pre-upgrade, aplicar migraciones en orden y hacer rollback automático si alguna falla, con soporte `--dry-run` y `--from-checkpoint`. Fuente: `Axiom/docs/cli/upgrade.md`, package `@axiom/versioning`.
 
+### RF-AXM-056 Versionado reproducible de herramientas externas (`INC-20260730-toolchain-versioning`)
+
+El runtime debe permitir fijar y revisar versiones de tools externas sin convertir el catálogo en una orden implícita de instalación:
+
+- `axiom.config/toolchain-catalog.yaml` debe aceptar schema 2 con `versionExtractor`, canales `stable`/`candidate`/`edge` y restricciones opcionales de compatibilidad; el loader mantiene compatibilidad de lectura con schema 1.
+- `.axiom-state/<project>/toolchain.lock` debe usar schema 1 y registrar, por tool, `id`, `version` y `channel`, con metadatos opcionales del probe (`probeCommand`, `probeOutput`, `probedAt`). Su escritura debe ser atómica y project-scoped.
+- `extractVersion()` debe extraer la versión desde la salida del probe usando la regex declarada por la entrada del catálogo. Las tools sin contrato local de probe no deben recibir una ejecución inventada.
+- `axiom toolchain show` debe exponer versión instalada, versión locked y canal; `axiom toolchain plan` debe mostrar el diff sin escribir y admitir `--channel` y `--id` repetido; `axiom toolchain upgrade` debe admitir `--dry-run` y exigir `--yes` para persistir.
+- `upgrade` solo debe modificar el lockfile. Debe crear checkpoint y restaurarlo, eliminando el nuevo lockfile si no existía uno previo, ante un fallo de escritura o de verificación posterior.
+- Doctor debe exponer TC-020 (lockfile), TC-021 (compatibilidad), TC-022 (drift) y TC-023 (canal). La ruta síncrona conserva semántica no bloqueante; la comparación real de versiones queda en `doctor --deep` y sus probes solo pueden producir `pass`, `warn` o `skip`.
+
 ### RF-AXM-014 Model routing por slot (`axiom model`)
 
 El CLI debe permitir ver, fijar, quitar y resetear el modelo asignado a cada slot operativo (`increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archive`), con fallback declarado por `SupportLevel` del target (`multi-mode`, `single-mode`, `fallback-only`) y proyección opcional a `.opencode/model-routing.json`. Fuente: `Axiom/docs/cli/model.md`, package `@axiom/model-routing`.

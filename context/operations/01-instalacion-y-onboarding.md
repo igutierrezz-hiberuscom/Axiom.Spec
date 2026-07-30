@@ -71,8 +71,13 @@ Checklist manual de equipo:
 1. `npm run build` verde en `Axiom/`.
 2. `npm test` verde en `Axiom/`.
 3. `node ../axiom.spec/scripts/doctor-validate-contracts.mjs` verde desde la raíz del repo. **Gap residual verificado 2026-07-29**: `Axiom/axiom.spec/` ya existe (contiene `increments/`, `plans/`, `target-axiom-agents/`, `target-axiom-skills/`, `templates/`), pero NO tiene subcarpeta `scripts/` — este paso del checklist sigue sin script real que ejecutar; no confundir con la brecha más amplia ya resuelta del punto anterior.
-4. `npm run readiness:first-project` en `PASS`.
+4. `npm run readiness:first-project` en `PASS` como criterio de aceptación del flujo.
 5. Documentación operativa navegable (instalación, uso diario, CLI, troubleshooting, esta guía).
+
+**Última ejecución verificada el 2026-07-30:** el flujo no alcanzó `PASS` porque
+su paso `doctor` falló en `TC-011` por un `bundleHash` stale de `axiom-reviewer`.
+La causa es ajena al versionado de toolchain; los checks TC-020..TC-023 no
+fallaron por el incremento.
 
 ## Onboarding multi-repo (`axiom workspace setup` / `axiom workspace adopt` / `member install`)
 

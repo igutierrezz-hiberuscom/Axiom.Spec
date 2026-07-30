@@ -2,7 +2,7 @@
 
 Este documento existe para que la spec general no maquille el estado real. Cada punto fue verificado directamente contra el filesystem del repo, no inferido de la documentación.
 
-## Estado de resolución (actualizado 2026-07-29)
+## Estado de resolución (actualizado 2026-07-30)
 
 Varias brechas de este documento (redactado el 2026-07-02) ya están resueltas; las que siguen abiertas se han vuelto a medir contra el árbol real:
 
@@ -12,6 +12,15 @@ Varias brechas de este documento (redactado el 2026-07-02) ya están resueltas; 
 - **Brecha 2 — VIGENTE**: hay 81 ficheros de comando CLI y solo una minoría tiene página operativa dedicada.
 - **Brecha 3 — VIGENTE**: la mayoría de los 43 packages no tiene README propio y su descripción requiere contrastar `src/` y `package.json`.
 - **Brecha 5 — VIGENTE**: persiste la ambigüedad de nombres `Axiom.Spec/` vs `axiom.spec/`.
+
+### Límites vigentes del versionado de toolchain (`INC-20260730-toolchain-versioning`)
+
+- El lockfile (`.axiom-state/<project>/toolchain.lock`) es local, project-scoped e ignorado junto con `.axiom-state/`; no es un mecanismo de distribución compartida ni una instalación global.
+- `axiom toolchain plan` y `axiom toolchain upgrade` no descargan, instalan, sustituyen ni revierten binarios externos. El upgrade solo actualiza el lockfile y sus checkpoints.
+- Los probes de versión no están disponibles para todas las tools del catálogo: el contrato local actual cubre `serena`, `cmm` y `engram`; `context7`, `rtk`, `caveman` y `autoskills` no reciben un comando inventado y pueden quedar sin versión observable.
+- Las versiones `stable`/`candidate`/`edge` del catálogo son baselines de política de Axiom, no evidencia por sí mismas de releases upstream, mirrors ni provenance firmada.
+
+Estos límites son decisiones explícitas del incremento y no deben convertirse en bugs ficticios ni ocultarse como si ya estuvieran resueltos.
 
 Las secciones siguientes describen el estado actual y conservan el origen del
 baseline solo cuando ayuda a explicar la brecha. No deben citarse como

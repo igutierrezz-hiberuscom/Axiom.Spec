@@ -64,6 +64,16 @@ Dos rutas mecánicas de alcance mínimo (no las cadenas literales de 7 subagente
 
 Ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) (RF-AXM-021) para el detalle completo de ambas rutas.
 
+### Versionado de herramientas externas: `plan` y `upgrade`
+
+El versionado de toolchain es un flujo project-scoped distinto de `axiom upgrade`, que continúa gestionando migraciones de `ManagedState` del runtime:
+
+1. El operador declara el subset de tools en `axiom.config/toolchain.yaml`; el catálogo global `axiom.config/toolchain-catalog.yaml` aporta las versiones de política, los canales y los extractores.
+2. `axiom toolchain plan --channel <stable|candidate|edge>` compara el lockfile local con el canal solicitado y muestra el diff sin mutar. `--id <id>` repetido limita la operación; el catálogo por sí solo no ordena instalar todas sus entradas.
+3. `axiom toolchain upgrade` funciona como preview por defecto. Solo `--yes` persiste la actualización en `.axiom-state/<project>/toolchain.lock`; `--dry-run` fuerza explícitamente la vista previa.
+4. La persistencia se protege con checkpoint y rollback. Si la escritura o la comprobación posterior por probe falla, el estado previo se conserva; no se ejecuta instalación, descarga ni sustitución de binarios externos.
+5. `axiom doctor` ejecuta TC-020, TC-021 y TC-023 en su recorrido síncrono y deja TC-022 como indicación de que hace falta probe real. `axiom doctor --deep` sustituye esa indicación por la comparación instalada-versus-locked, manteniendo la regla never-fail de los probes.
+
 ## Flujos operativos de `configure`/`upgrade`/`repair` sobre instalaciones existentes
 
 - `axiom configure`: re-aplica el perfil persistido completo (single-shot, sin flags incrementales). No cubre añadir/quitar repo, rol, adapter o tool/MCP — ver el hueco de 7 operaciones (NFR-AXM-015) documentado en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md). Desde `INC-20260708-incremental-operations` las 4 operaciones ADD (`axiom repo/adapter/provider/role add`, idempotentes y no-clobber) cubren la mitad aditiva de ese hueco; los REMOVE quedan diferidos.
@@ -207,3 +217,85 @@ Como los worktrees comparten el repo `<project>.axiom` central, al leer/editar u
 Cierre del batch: una suite e2e encadena la mayor parte del flujo (adopción → `<project>.axiom` → MCP unificado → worktree start/close → eject dry-run → skills RTK/concisión → AutoSkills) y una revisión adversarial busca defectos de integración cruzada. Encontró y reprodujo los 2 defectos HIGH de cierre en worktree, corregidos en INC-20260724-worktree-close-correctness. No cambió código de producto.
 
 Las disciplinas transversales (`axiom-structured-doubts`, `axiom-functional-checklist-coverage`, `axiom-plan-drift-alignment`, `axiom-role-close-doc`) atraviesan todas las fases. Detalle de superficies por rol en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
+
+## Memoria viva entre fases y Knowledge Harvest (2026-07-29) — tanda INC-20260729-knowledge-*
+
+El ciclo de vida gana una capa de **memoria viva compartida entre fases** usando Engram como backend (`@axiom/memory` + `engram-backend.ts`, ya existente). Cada fase guarda conocimiento útil con metadata de fase trazable; las fases posteriores lo consultan antes de actuar. Al archivar el incremento, `axiom knowledge harvest` clasifica las memorias y propone promociones a contexto técnico y skills.
+
+### Flujo de memoria entre fases
+
+```text
+Fase A (analysis)
+  → resolveMemoryBackend (Engram/JSON)
+  → save memoria con metadata: increment, phase=analysis, actorRole=analyst, stability, knowledgeKind
+  → la memoria queda persistida localmente (SQLite vía Engram, o JSON fallback)
+
+Fase B (architecture)
+  → resolveMemoryBackend
+  → query memorias filtradas por increment=<id> y phase=analysis
+  → usa lo aprendido por el analista
+  → save sus propias memorias con phase=architecture
+
+Fase C (frontend/backend/QA/validator)
+  → repiten el patrón: query fases anteriores → actuar → save
+```
+
+La memoria compartida se logra a través de la superficie MCP de Engram (mismo proceso local, mismo `--project`), sin requerir sincronización Git de `.engram/` ni base de datos centralizada. El backend JSON de fallback también funciona para proyectos sin Engram instalado.
+
+### Metadata de fase en MemoryEntry
+
+Cada memoria guardada por una fase lleva 7 campos opcionales (`INC-20260729-knowledge-phase-metadata`):
+
+- `increment`: ID del incremento/bug/plan
+- `phase`: `analysis` | `architecture` | `frontend` | `backend` | `qa` | `validator` | `archive`
+- `actorRole`: `analyst` | `architect` | `frontend` | `backend` | `qa` | `validator` | `orchestrator`
+- `knowledgeKind`: `decision` | `constraint` | `discovery` | `bugfix` | `gotcha` | `pattern` | `risk` | `open-question` | `workaround` | `convention`
+- `stability`: `temporary` | `candidate-project-context` | `candidate-skill` | `historical-only`
+- `visibility`: `project-shared` | `private`
+- `sourceArtifact`: path al artefacto fuente
+
+En el backend engram, la metadata se codifica como frontmatter YAML-like al inicio del `content` y se decodifica en lectura vía `mem_get_observation`. El backend in-memory la preserva vía serialización JSON.
+
+### Contrato de memoria por fase
+
+Ver [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md) §"Contrato de memoria Engram por fase" para las reglas detalladas de qué guardar y qué NO guardar en cada fase.
+
+### Knowledge Harvest al archivar
+
+Al finalizar un incremento, `axiom knowledge harvest --increment <id>` (`INC-20260729-knowledge-harvest-command`):
+
+1. Lee todas las memorias del proyecto activo (`resolveMemoryBackend`)
+2. Filtra client-side por `entry.increment === <id>`
+3. Clasifica por `stability`:
+   - `candidate-project-context` → propuesta de promoción a `context/technical/`
+   - `candidate-skill` → propuesta de creación/actualización de skill
+   - `temporary` / `historical-only` → solo memoria histórica del incremento
+   - Sin metadata de fase → descartada (ruido)
+4. Genera `knowledge-harvest.md` en `<specRepo>/specs/increments/<id>/`
+
+El harvest es **read-only**: nunca muta contexto técnico ni skills. La promoción real requiere revisión humana o `axiom knowledge promote` (follow-up diferido). `--dry-run` imprime el reporte en stdout sin escribir archivo.
+
+### Relación con el harvest de worktree
+
+El harvest de worktree (`harvestAndCleanupExecution`, INC-20260724-worktree-harvest-cleanup) copia logs/evidence/outputs del worktree a una ubicación central que sobrevive al borrado. El Knowledge Harvest (`axiom knowledge harvest`) es un concepto distinto: clasifica la memoria semántica del incremento para proponer promociones a contexto técnico y skills. Ambos coexisten sin solaparse: el harvest de worktree es operacional (archivos), el Knowledge Harvest es de conocimiento (memoria).
+
+### Sync de memoria entre miembros del equipo
+
+`axiom knowledge sync` y `axiom knowledge pull` (`INC-20260729-knowledge-sync-command`) permiten compartir la memoria de Engram entre miembros del equipo vía Git en `<project>.axiom`:
+
+**Al cerrar una fase** (`axiom knowledge sync --increment <id> --phase <phase>`):
+1. Lee todas las memorias del incremento vía `resolveMemoryBackend` + `queryMemory`
+2. Filtra: solo `visibility: 'project-shared'` (o sin visibility = default), sin secretos
+3. Serializa como chunk JSON en `.engram/chunks/<hash>.json`
+4. Actualiza `.engram/manifest.json` (append-only)
+5. `git add .engram/ && git commit -m "knowledge: sync <id> <phase>" && git push`
+6. Si no hay memorias nuevas, termina OK sin crear commits vacíos
+
+**Al iniciar una fase** (`axiom knowledge pull --increment <id>`):
+1. `git pull --rebase` en `<project>.axiom`
+2. Lee `.engram/manifest.json`, filtra chunks no importados
+3. Para cada chunk nuevo, lee el JSON e importa cada memoria vía `saveMemory`
+4. Actualiza `.engram/.imported` (tracking de chunks ya importados)
+5. Si hay conflicto de Git, reporta sin ocultar
+
+El diseño de chunks append-only (nunca se modifican chunks viejos) + `manifest.json` pequeño y mergeable evita conflictos de Git en el caso común. `.engram/engram.db` está gitignored (solo se versionan chunks + manifest).

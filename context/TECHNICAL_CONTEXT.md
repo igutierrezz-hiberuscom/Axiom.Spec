@@ -1,6 +1,6 @@
 # TECHNICAL_CONTEXT
 
-Puerta de entrada obligatoria al conocimiento técnico estable del producto Axiom, tal como existe en el código real de `Axiom/`. Baseline original: 2026-07-02; reconciliado el 2026-07-29 (ver "Fuentes auditadas y última validación" abajo). Cada documento enlazado aquí cita su fuente (código, README de package, o `Axiom/docs/`) y distingue explícitamente entre estado verificado y planificación futura.
+Puerta de entrada obligatoria al conocimiento técnico estable del producto Axiom, tal como existe en el código real de `Axiom/`. Baseline original: 2026-07-02; reconciliado el 2026-07-30 (ver "Fuentes auditadas y última validación" abajo). Cada documento enlazado aquí cita su fuente (código, README de package, o `Axiom/docs/`) y distingue explícitamente entre estado verificado y planificación futura.
 
 ## Propósito del contexto técnico
 
@@ -15,6 +15,7 @@ Para QUÉ debe hacer el producto (requisitos, alcance, principios), ver `specs/0
 - CLI real con **81 ficheros** en `apps/cli/src/commands/*.ts` (verificado: `ls apps/cli/src/commands/*.ts | wc -l` → 81; de esos, 10 son helpers compartidos con prefijo `_` — p. ej. `_shared.ts`, `_tracker-status.ts` — no comandos por sí mismos), de los cuales solo una minoría tiene página de documentación operativa dedicada en `Axiom/docs/cli/`. Familias nuevas relevantes: `workspace*` (16 ficheros, incl. `workspace-setup.ts`/`workspace-adopt.ts`), `app*`/`app-launcher*` (front operador = launcher), `member-install.ts`, `native-mcp-config.ts`, `tracker`-backed commands (`_tracker-status.ts`, `app-launcher-ado.ts`, `external-sync.ts`).
 - Renombres de carpetas de estado/config ya cerrados y verificados en código: `.sdd/` → **`.axiom-state/`** y `axiom.spec/config/` → **`axiom.config/`** (`packages/filesystem-truth/src/discovery.ts#LOCAL_OVERLAY_DIRNAME`/`AXIOM_CONFIG_DIRNAME`, re-exportado vía `@axiom/core`). Cualquier mención a `.sdd/` o `axiom.spec/config/` como ruta actual en este contexto es un residuo del baseline 2026-07-02 y fue corregida en la reconciliación 2026-07-29.
 - Axiom ya no carece de servidor MCP propio: existen `@axiom/mcp-server` (dispatcher JSON-RPC 2.0 hand-rolled, sin SDK) y `@axiom/mcp-tools` (handlers), proyectados a config nativa de cada tool por `apps/cli/src/commands/native-mcp-config.ts` (servers gestionados `sdd-mcp-server` / `spec-mcp-broker`). Ver `integrations/01-capabilities-providers-y-toolchain.md`.
+- El toolchain versionado usa `axiom.config/toolchain-catalog.yaml` schema 2 y `.axiom-state/<project>/toolchain.lock` schema 1. `@axiom/toolchain` carga/escribe el lockfile de forma atómica, extrae versiones con regex declaradas y expone planner/upgrade; `@axiom/doctor` añade TC-020..TC-023, con drift real opt-in en `doctor --deep`. Ver `integrations/01-capabilities-providers-y-toolchain.md`, `operations/02-doctor-troubleshooting-y-telemetria.md` y `architecture/02-modelo-de-datos-y-configuracion.md`.
 - El repo `Axiom/` ya se auto-adoptó (`INC-20260708-product-repo-self-bootstrap` + reconciliaciones posteriores): `axiom.spec/`, `AGENTS.md`, `axiom.skills.lock` y `axiom.config/` existen hoy en su raíz (falta solo `_builder/`). Ver `references/03-riesgos-y-brechas-conocidas.md`.
 
 ## Estructura de `context/`
@@ -61,12 +62,15 @@ Ver detalle completo en [references/03-riesgos-y-brechas-conocidas.md](reference
 2. Persiste, a mayor escala: la mayoría de los ~81 ficheros de comando CLI reales no tienen documentación operativa dedicada propia en `Axiom/docs/cli/`.
 3. Los packages sin `README.md` (mayoría de los 43) siguen caracterizados a partir de su estructura de `src/`, no de documentación propia — tratar como inferencia razonable, no como contrato firmado.
 4. **RESUELTA** — el roadmap de rediseño de topología de repos (INC-01 a INC-24) cerró y está archivado en `specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/`.
+5. **VIGENTE — validación 2026-07-30**: `npm run doctor` y `npm run readiness:first-project` fallan en `TC-011` por un `bundleHash` stale de `axiom-reviewer`; la ejecución global independiente del review reportó 3425/3427 tests, con dos fallos fuera del alcance de `INC-20260730-toolchain-versioning`; después se añadió una prueba focalizada de `extractVersion()` y ambos fallos se reprodujeron aisladamente.
 
 ## Fuentes auditadas y última validación
 
 - Fuentes (baseline 2026-07-02): `Axiom/README.md`, `Axiom/package.json`, `Axiom/docs/**/*.md` (40+ ficheros), `Axiom/packages/**/README.md`, estructura de `Axiom/packages/**/src`, `Axiom/apps/cli/src/commands/*.ts` (listado), `Axiom/scripts/verify-first-project-readiness.mjs`, `Axiom.SDD/AGENTS.md`, `git log` de `Axiom/`.
 - Pase de reconciliación 2026-07-29 (`INC-20260729-technical-context-reconciliation`): re-verificó contra código real conteos de packages/comandos/adapters, los renames `.axiom-state`/`axiom.config`, el dedup de `init.json`/`topology.yaml`, el wizard TUI de `init`, el launcher como front por defecto, el scaffolding de adopción, los servidores MCP propios (`mcp-server`/`mcp-tools`), el reemplazo `codegraph`/`graphify`→`cmm` (ADR-0031), y el estado ampliado de `@axiom/doctor`. Cubrió `architecture/01-03`, `operations/01-02`, `integrations/01`, `references/01-03` (`architecture/04` ya estaba vigente desde 2026-07-26 y solo se revisó, no se reescribió).
-- Última validación: 2026-07-29.
+- Pase de integración 2026-07-30 (`INC-20260730-toolchain-versioning`): verificó catálogo schema 2, lockfile schema 1, probes y planner/upgrade en `@axiom/toolchain`, checks TC-020..TC-023 en `@axiom/doctor`, comandos `axiom toolchain plan/upgrade` y la corrección de no dar de alta implícitamente todas las tools del catálogo. Actualizó `architecture/02`, `operations/02`, `integrations/01` y `references/02-03`.
+- Validación global 2026-07-30: `npm run build` y los tests focalizados de toolchain, doctor y CLI pasan; doctor/readiness quedan bloqueados por `TC-011` y la suite global conserva dos fallos fuera del alcance del incremento.
+- Última validación: 2026-07-30.
 - Responsable humano: pendiente de asignar por el equipo (no declarado en el momento de esta redacción).
 
 ## Regla crítica

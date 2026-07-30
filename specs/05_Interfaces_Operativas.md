@@ -15,6 +15,15 @@
 
 La superficie adicional de `apps/cli/src/commands/` incluye las rutas de aplicación/launcher, workflow, workspace multi-repo, repos y roles, contexto, MCP, memoria, toolchain, bootstrap, adopción, aprendizaje, actualización y diagnóstico. No se conserva aquí un conteo de ficheros o líneas como dato normativo: el registro efectivo está en `apps/cli/src/index.ts` y el contrato de cada familia se describe en las secciones siguientes. Un comando sin documentación propia debe tratarse como capacidad verificable en código y tests, no como contrato estable solo por existir un archivo.
 
+### `axiom toolchain`: catálogo, lockfile y canales (`INC-20260730-toolchain-versioning`)
+
+- `axiom toolchain show [--path <path>] [--json]` muestra las tools del manifest con `ID`, `KIND`, `SUPPORT`, `MVP`, versión observada, versión locked, canal y estado real. El probe de versión es best-effort; una tool sin contrato local no se presenta como instalada.
+- `axiom toolchain validate [--path <path>] [--json]` conserva la validación del manifest y de la detección real. La ausencia de una tool opcional o un estado no verificado se reportan honestamente sin convertirlos en un error bloqueante salvo las reglas de tools requeridas existentes.
+- `axiom toolchain plan [--path <path>] [--channel <stable|candidate|edge>] [--id <id>]... [--json]` calcula el diff entre el lockfile y el catálogo sin escribir. Por defecto considera las tools declaradas o lockeadas del proyecto; una tool que solo aparece en el catálogo no se añade implícitamente.
+- `axiom toolchain upgrade [--path <path>] [--channel <stable|candidate|edge>] [--id <id>]... [--dry-run] [--yes] [--json]` actualiza únicamente `.axiom-state/<project>/toolchain.lock`. Sin `--yes`, o con `--dry-run`, es preview; con `--yes` crea checkpoint y hace rollback si falla la persistencia o el probe posterior. No instala binarios externos.
+
+El catálogo dedicado (`axiom.config/toolchain-catalog.yaml`) usa schema 2 y declara `versionExtractor`, canales y compatibilidad opcional. El lockfile usa schema 1, queda bajo `.axiom-state/<project>/` y se escribe de forma atómica. `TC-020..TC-023` son las checks síncronas asociadas; el drift real de versión se comprueba mediante `axiom doctor --deep`.
+
 ## TUI (`axiom` / `axiom tui`)
 
 Punto de entrada: `axiom` sin subcomando abre la TUI (acción por defecto de Commander en `apps/cli/src/index.ts`, reusa `runTuiCli`); `axiom tui` es equivalente. Los subcomandos, `--help` y `--version` matchean antes y quedan sin cambios.

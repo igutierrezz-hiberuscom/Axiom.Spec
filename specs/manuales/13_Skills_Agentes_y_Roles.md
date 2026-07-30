@@ -186,3 +186,137 @@ review de write-scope y el flujo `axiom-review`.
 - [02_Configuracion.md](02_Configuracion.md)
 - [04_Generar_Spec_y_Contexto_Tecnico.md](04_Generar_Spec_y_Contexto_Tecnico.md)
 - [../05_Interfaces_Operativas.md](../05_Interfaces_Operativas.md)
+
+## Contrato de memoria Engram por fase
+
+Cada fase del ciclo SDD debe guardar memoria útil en Engram para
+transferir conocimiento a fases posteriores del mismo incremento. Esta
+sección define el contrato mínimo que toda skill de fase debe cumplir.
+
+### Metadata obligatoria
+
+Toda memoria guardada por una fase debe incluir:
+
+| Campo | Tipo | Descripción |
+| ----- | ---- | ----------- |
+| `increment` | `string` | ID del incremento/bug/plan (ej. `INC-20260729-knowledge-harvest-command`) |
+| `phase` | `SddPhase` | Fase que la genera: `analysis`, `architecture`, `frontend`, `backend`, `qa`, `validator`, `archive` |
+| `actorRole` | `ActorRole` | Rol del actor: `analyst`, `architect`, `frontend`, `backend`, `qa`, `validator`, `orchestrator` |
+| `knowledgeKind` | `KnowledgeKind` | Tipo de conocimiento: `decision`, `constraint`, `discovery`, `bugfix`, `gotcha`, `pattern`, `risk`, `open-question`, `workaround`, `convention` |
+| `stability` | `Stability` | `temporary` (solo este incremento), `candidate-project-context` (promovible a contexto técnico), `candidate-skill` (promovible a skill), `historical-only` (solo trazabilidad) |
+| `visibility` | `Visibility` | `project-shared` (default) o `private` |
+| `sourceArtifact` | `string` | Path al artefacto fuente (spec, plan, código) que originó la memoria |
+
+### Reglas generales (todas las fases)
+
+**Guardar cuando**:
+- Se descubre una decisión útil para fases posteriores
+- Se identifica una restricción no obvia de la spec
+- Se encuentra un gotcha que puede hacer fallar la implementación
+- Se detecta un patrón reutilizable
+- Se observa un error repetido
+- Se identifica un riesgo o asunción que los agentes downstream deben conocer
+
+**NO guardar**:
+- Logs crudos
+- Texto duplicado de la spec sin aprendizaje adicional
+- Razonamiento de bajo valor
+- Preferencias personales
+- Notas temporales sin valor downstream
+- Secretos, tokens, credenciales, PII, datos sensibles de cliente
+
+### Por fase: qué guardar
+
+#### Analysis / Functional refinement
+
+**Guardar**:
+- Restricciones funcionales descubiertas (`knowledgeKind: constraint`)
+- Reglas de negocio ambiguas (`knowledgeKind: open-question`)
+- Dependencias externas (`knowledgeKind: constraint`)
+- Riesgos de alcance (`knowledgeKind: risk`)
+- Decisiones de negocio relevantes (`knowledgeKind: decision`)
+- Escenarios límite (`knowledgeKind: discovery`)
+- Información que arquitectura o implementación necesitará
+
+**NO guardar**:
+- Resúmenes completos de la spec
+- Texto duplicado sin aprendizaje adicional
+- Dudas ya resueltas y sin valor posterior
+
+#### Architecture / Plan
+
+**Guardar**:
+- Decisiones arquitectónicas (`knowledgeKind: decision`, `stability: candidate-project-context`)
+- Tradeoffs y alternativas descartadas (`knowledgeKind: decision`)
+- Dependencias técnicas (`knowledgeKind: constraint`)
+- Riesgos técnicos (`knowledgeKind: risk`)
+- Constraints para frontend/backend (`knowledgeKind: constraint`)
+- Patrones que deben seguirse en implementación (`knowledgeKind: pattern`)
+
+**Marcar como `candidate-project-context`** cuando la decisión sea estable para el proyecto, no solo para el incremento.
+
+#### Frontend implementation
+
+**Guardar**:
+- Limitaciones reales de UI (`knowledgeKind: constraint`)
+- Componentes reutilizables (`knowledgeKind: pattern`)
+- Inconsistencias con diseño/spec (`knowledgeKind: discovery`)
+- Edge cases de navegador (`knowledgeKind: gotcha`)
+- Gotchas de estado, cache, formularios o validación (`knowledgeKind: gotcha`)
+- Patrones útiles para próximos incrementos (`knowledgeKind: pattern`)
+
+**Marcar como `candidate-skill`** cuando sea una regla operativa que debería repetirse en futuras implementaciones frontend.
+
+#### Backend implementation
+
+**Guardar**:
+- Contratos reales observados (`knowledgeKind: discovery`)
+- Inconsistencias entre spec/OpenAPI/backend legacy (`knowledgeKind: discovery`)
+- Workarounds (`knowledgeKind: workaround`)
+- Efectos colaterales (`knowledgeKind: gotcha`)
+- Reglas de integración (`knowledgeKind: constraint`)
+- Gotchas de persistencia, colas, cache, permisos o errores funcionales (`knowledgeKind: gotcha`)
+
+**Marcar como `candidate-project-context`** si describe una realidad estable del sistema.
+**Marcar como `candidate-skill`** si describe un checklist o prevención repetible.
+
+#### QA / Validator
+
+**Guardar**:
+- Defectos recurrentes (`knowledgeKind: bugfix`)
+- Gaps de tests (`knowledgeKind: discovery`)
+- Escenarios que deberían añadirse a futuras validaciones (`knowledgeKind: pattern`)
+- Patrones de fallo (`knowledgeKind: pattern`)
+- Errores del flujo SDD (`knowledgeKind: gotcha`)
+- Checks que faltan en skills actuales (`knowledgeKind: discovery`)
+
+**Marcar como `candidate-skill`** cuando sea una regla que debería añadirse a una skill de validación/review.
+
+### Flujo de memoria entre fases
+
+```text
+Analista
+  → guarda memoria útil (stability: candidate-project-context o temporary)
+  → el backend de memoria (Engram/JSON) persiste localmente
+Arquitecto
+  → consulta memorias del incremento (filtro: phase=analysis)
+  → usa lo aprendido por el analista
+  → guarda sus propias memorias
+Frontend / Backend / QA / Validator
+  → repiten el mismo patrón: consultar fases anteriores → actuar → guardar
+```
+
+Al finalizar el incremento, `axiom knowledge harvest --increment <id>` clasifica
+todas las memorias y genera `knowledge-harvest.md` con propuestas de promoción
+a contexto técnico y skills.
+
+### Relación con el Knowledge Harvest
+
+El harvest clasifica automáticamente por `stability`:
+- `candidate-project-context` → propuesta de promoción a `context/technical/`
+- `candidate-skill` → propuesta de creación/actualización de skill
+- `temporary` / `historical-only` → solo memoria histórica del incremento
+- Sin metadata de fase → descartada (ruido)
+
+La promoción real a contexto técnico o skills requiere revisión humana
+o confirmación explícita. El harvest solo propone, nunca muta.

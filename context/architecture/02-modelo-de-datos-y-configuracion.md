@@ -23,7 +23,7 @@ Editable con criterio a mano; no editar `init.json`, `install-profile.json`, `la
 > Renombrado desde el antiguo prefijo oculto (`sdd`, con punto delante, sin este sufijo `-state`) por `INC-20260703-config-folder-renames` (cerrado). Verificado: `packages/filesystem-truth/src/discovery.ts#LOCAL_OVERLAY_DIRNAME = '.axiom-state'`.
 
 - `.axiom-state/local/`: overlay NO versionada. Overrides locales, markers (`last-sync.json`). Regida por `local-overlay-policy.yaml`.
-- `.axiom-state/<projectName>/`: `init.json`, `members.yaml`, `install-profile.json`, `last-start.json`.
+- `.axiom-state/<projectName>/`: `init.json`, `members.yaml`, `install-profile.json`, `last-start.json` y, cuando el proyecto fija versiones del toolchain, `toolchain.lock`.
 - `.axiom-state/config/<projectName>/`: `managed-state.json`, `model-assignments.json`, `components-state.json`, `gateway-state.json`.
 - `.axiom-state/<projectName>/checkpoints/<id>/`: snapshots pre-mutación, últimos 5 conservados.
 
@@ -62,6 +62,7 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 | `sync` | `.axiom-state/local/last-sync.json` (+ outputs del adapter) |
 | `start` | `.axiom-state/<projectName>/last-start.json` |
 | `upgrade` | `.axiom-state/config/<projectName>/managed-state.json`, checkpoints |
+| `toolchain upgrade` | `.axiom-state/<projectName>/toolchain.lock` (schema 1), con checkpoint/rollback |
 | `model set/unset/reset` | `.axiom-state/config/<projectName>/model-assignments.json` (+ `.opencode/model-routing.json`) |
 | `components install/uninstall` | `.axiom-state/config/<projectName>/components-state.json` |
 | `roles assign` | Materializa `axiom.config/topology.yaml` de forma perezosa si estaba ausente (nuevo comportamiento, ver nota arriba) |
