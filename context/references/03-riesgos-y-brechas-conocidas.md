@@ -111,3 +111,29 @@ reduce la inferencia sobre un package), actualizar esta lista quitando o
 marcando como resuelto el punto correspondiente, con fecha y referencia al
 incremento que lo cerró. Si cambia el árbol real de `Axiom/`, volver a
 verificar primero los conteos y las rutas citadas.
+
+### Límites vigentes del gobierno verificable (tanda `INC-20260730-*`, 2026-08-02)
+
+- **El freeze de candidate no cubre dependencias.** `hashCandidateInputs` hashea las entries de memoria filtradas por incremento y el `README.md` del incremento, y nada más. No entran lockfiles (`package-lock.json`, `toolchain.lock`) ni `metadata.yml`. El Scope original del incremento decía "memoria local, repo specs, dependencias"; la cobertura real es menor y se dejó documentada en vez de ampliarse, porque ampliar el algoritmo invalidaría todo artefacto ya congelado del repo de spec.
+- **Reescribir el `README.md` de un incremento invalida su freeze.** Es el mecanismo funcionando (cambia `specsHash`), pero implica que cualquier pase de reconciliación documental deja stale los freezes de los incrementos que toca. Re-congelar tras editar.
+- **El receipt no cubre excepciones que escapen del core de la transición.** Se emite tras retornar `runIncrementSubcommandCore`/`runBugSubcommandCore`, de modo que un `exitCode` distinto de cero sí deja receipt `failure`, pero un throw no capturado no deja ninguno.
+- **El gate de evidencia no juzga calidad.** `rationale`/`source` solo deben superar 3 caracteres tras `trim()`. Rechaza vacíos, solo-espacios y placeholders mínimos (`-`, `x`, `ok`, `na`), pero acepta `n/a` o `tbd`. Emitir un juicio semántico es non-goal explícito del incremento.
+- **La ruta de lectura de memoria sigue siendo permisiva.** `searchResultToEntry`/`buildEntryFromSearchResult` reconstruyen entries con `rationale`/`source` vacíos cuando el resultado de búsqueda no los trae; endurecerlas rompería el recall de entradas preexistentes.
+- **Quedan 25 throw sites sin tipar en `apps/cli`** (de 62), enumerados con su razón en el README de `INC-20260730-typed-recovery`. Son wrapping de YAML externo, errores ya estructurados como `Result`, invariantes internos y una utilidad de búsqueda de puerto.
+
+### Brecha 6 — VIGENTE: una directiva solo en la copia local del workspace no está adoptada
+
+`INC-20260730-autopilot-integration` descubrió que las tres directivas de gobierno de `axiom-autopilot` existían únicamente en `.agents/skills/axiom-autopilot/SKILL.md` de la raíz del workspace, y **no** en las fuentes distribuibles bajo `Axiom.SDD/` que son las que se instalan en un proyecto adoptante. Un adoptante recibía por tanto un orquestador sin ninguno de los gates.
+
+El caso concreto quedó cerrado (las 7 superficies están alineadas), pero la clase de riesgo sigue vigente: **existen 7 copias del mismo orquestador sin un generador único**, mantenidas a mano. Cualquier cambio normativo futuro debe aplicarse a las 7, y nada lo verifica automáticamente hoy. Candidato natural a un check de doctor o a un generador de superficie única.
+
+### Hallazgo 2026-08-02: el freeze no alcanza incrementos archivados
+
+Al intentar re-congelar `INC-20260730-candidate-freeze` tras el pase de integración, `axiom freeze --increment <id>` falló con "Directorio del incremento no existe". Causa: tanto `registerFreezeCommand` como `checkCandidateFreeze` resuelven exclusivamente `<specRepo>/specs/increments/<id>` y **no contemplan `specs/increments/_archive/<id>/`**, que es donde vive el incremento una vez cerrado.
+
+Consecuencias prácticas:
+
+- Un candidate archivado **no puede re-congelarse ni verificarse**. Su `candidate-freeze.json` queda como registro histórico no comprobable.
+- El `candidate-freeze.json` de `INC-20260730-candidate-freeze` quedó **stale a propósito y sin posibilidad de refresco**: el pase de integración reescribió su `README.md` (cambiando `specsHash`) y el archivado posterior dejó la ruta fuera del alcance del comando. Se documenta en vez de simularse un estado válido.
+
+No es un bloqueo del ciclo — el freeze es un gate *previo al apply*, y un incremento archivado ya no recibe applies — pero sí un límite real de la trazabilidad post-cierre. Candidato a incremento futuro: que ambas funciones resuelvan también la ruta archivada, en línea con `resolveArchivedArtifactDir`, que ya existe en `@axiom/workflow` y que `INC-20260730-phase-receipts` usa exactamente para este problema en la emisión de receipts.

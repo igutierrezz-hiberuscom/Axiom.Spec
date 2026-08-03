@@ -426,3 +426,47 @@ Primera entidad de ejecución de primera clase para rastrear runs paralelos (tí
 `ResolvedInstallProfile` (`@axiom/install-profiles`) gana `executionMode: 'in-place' | 'worktree'` (`DEFAULT_EXECUTION_MODE = 'in-place'`), persistido en `.axiom-state/<projectId>/install-profile.json` por `axiom configure --execution-mode`. Es el default elegido por el arquitecto en la instalación; se preserva a través de re-configuraciones no relacionadas (se relee el valor previo cuando el flag se omite) y es overridable por run (ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md)).
 
 **Canal de inyección por proyecto** (dónde va lo específico de cada stack, manteniendo el producto genérico): (i) `axiom.config/skills-index/<role>.yaml` — índice de skills por rol que leen las superficies (`sdd.skillIndexRead`); (ii) el contexto técnico del proyecto, propiedad de `axiom-tech-context`; (iii) las skills de rol del proyecto. Las superficies del producto se mantienen adapter/stack-agnósticas y parametrizables; a diferencia de un sistema role-specialized que hornea las reglas de stack en agentes por rol, Axiom las deja como DATO del proyecto para funcionar en cualquier adapter/stack sin perder profundidad. Guía operable en [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
+## Artefactos y tipos de gobierno verificable (2026-08-02) — tanda `INC-20260730-*`
+
+### `candidate-freeze.json` (por incremento)
+
+Vive en `specs/increments/<id>/candidate-freeze.json`. Escrito por `axiom freeze --increment <id>`, leído por `checkCandidateFreeze`.
+
+| Campo | Tipo | Significado |
+|---|---|---|
+| `incrementId` | `string` | Incremento congelado |
+| `hash` | `string` (sha256) | Hash combinado sobre `memoryHash` + `specsHash`; es el valor que se compara para detectar mutación |
+| `memoryHash` | `string` (sha256) | Sobre las entries de memoria con `entry.increment === incrementId`, ordenadas por `id` |
+| `specsHash` | `string` (sha256) | Sobre el `README.md` del incremento |
+| `timestamp` | ISO-8601 | Momento del congelado |
+
+Nombre real del fichero: `candidate-freeze.json` (el Scope original del incremento decía `.frozen.json`; se conservó el nombre ya materializado en disco). Cobertura real del hash: memoria filtrada + `README.md`, **no** lockfiles ni `metadata.yml` — ver la limitación en RF-AXM-060.
+
+Consecuencia operativa a tener presente: **reescribir el `README.md` de un incremento invalida su freeze por diseño** (cambia `specsHash`), y `checkCandidateFreeze` pasará a reportar `ok: false` hasta que se vuelva a congelar. Es el mecanismo funcionando, no un fallo.
+
+### `receipts/<timestamp>-<phase>-<status>.json` (por incremento/bug)
+
+Vive en `specs/<kind>s/<id>/receipts/`. Escrito por `writePhaseReceipt` (`@axiom/workflow`), automáticamente en cada transición y también por el comando manual `axiom phase receipt`.
+
+| Campo | Tipo | Significado |
+|---|---|---|
+| `incrementId` | `string` | Artefacto al que pertenece la fase |
+| `phase` | `PhaseName` | Nombre **real** de la transición (`increment-verify`, `bug-archive`…) |
+| `status` | `'success' \| 'failure'` | Desenlace de la fase |
+| `timestamp` | ISO-8601 | Fin de la fase |
+| `details` | `string?` | Mensaje del resultado |
+| `hash` | `string` (sha256) | Sobre `{incrementId, phase, status, timestamp, details}` |
+
+El nombre de fichero sanea `:` (inválido en rutas Windows) y cualquier carácter no `[a-zA-Z0-9_-]` del nombre de fase.
+
+### Evidencia requerida en `MemoryEntry`
+
+`rationale` y `source` dejan de ser requeridos solo en tipos y pasan a ser **requeridos en runtime**: `string` con longitud `> 3` tras `trim()`. Nueva variante de error `MemoryError { kind: 'missing-evidence', field: 'rationale' | 'source', message }`. Constante exportada `MIN_EVIDENCE_LENGTH = 3` y guard puro `validateMemoryEvidence()`.
+
+Nota de fondo relevante para cualquier futura garantía "de tipos": los `tsconfig.json` de cada package usan `"include": ["src/**/*"]`, de modo que **`tsc -b` no typechequea los ficheros de test** y vitest transpila sin typecheck. Un campo requerido en una interfaz no es, por sí solo, una garantía sobre lo que los tests o los callers JS realmente pasan — de ahí que el gate de evidencia sea un chequeo de runtime y no una declaración de tipo.
+
+### `AXIOM_ERROR_CODES` (catálogo de `@axiom/core`)
+
+Catálogo cerrado, documentado y **anclado a throw sites reales**; añadir un código va de la mano de migrar el/los sitio(s) correspondiente(s) en el mismo cambio. Entradas vigentes: `AXIOM_NO_PROJECT`, `AXIOM_GATE_FAILURE`, `AXIOM_MEMORY_SCOPE`, `AXIOM_MEMORY_QUERY`, `AXIOM_INIT_NOT_FOUND`, `AXIOM_INIT_INVALID_JSON`, `AXIOM_INSTALL_PROFILE_FAILED`, `AXIOM_INVALID_OPTION`, `AXIOM_ARTIFACT_ID_EXHAUSTED`, `AXIOM_BRANCH_TEMPLATE_VAR_MISSING`, `AXIOM_CHECKPOINT_NOT_FOUND`, `AXIOM_INVALID_CONFIG`.
+
+`AXIOM_INVALID_OPTION` cubre toda validación de **input de CLI** (enum cerrado, flag requerido ausente, formato de `--role`, canal de toolchain); `AXIOM_INVALID_CONFIG` cubre **config inválida en disco**. Se mantienen distintos a propósito: permiten a un subagente distinguir "el operador escribió mal el comando" de "el fichero de configuración del proyecto está roto", que tienen recuperaciones diferentes.

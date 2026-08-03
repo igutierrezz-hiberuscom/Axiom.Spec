@@ -117,3 +117,17 @@ Postura de gobierno/seguridad de la graduación a *full product lifecycle*. Form
 - **Push acotado, nunca repo-wide** (`INC-20260724-sdd-artifact-freshness`): la escritura de artefactos SDD hace `git add -- <paths>` acotado a la carpeta del incremento/bug (nunca `git add -A`) — cada worktree/ejecución empuja solo lo suyo, sin arrastrar otros artefactos.
 - **Aislamiento MCP preservado en el broker unificado** (`INC-20260724-unified-axiom-mcp`): el broker `axiom` mantiene los pins project-scoped por-campo de los brokers previos (cada input-builder fija `projectRoot`/`specScopeAbsolutePath` al contexto del server); el subconjunto de escritura es exactamente `sdd.transitionApply` + `sdd.gitCommitSync` (no expone `sdd.gitRoleBranch`).
 - **Genericidad sin fuga de gobierno**: todo el contenido nuevo es adapter/stack-agnóstico; la profundidad específica de cada proyecto se inyecta como DATO por proyecto (`skills-index/<role>.yaml` + contexto técnico), no en el producto — sin hardcodear reglas de un stack ni credenciales. Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
+## Gobierno verificable de flujos desatendidos (2026-08-02) — tanda `INC-20260730-*`
+
+La tanda cierra el bloque de gobierno de la ejecución desatendida sobre tres gates y un catálogo de errores (detalle funcional en RF-AXM-057..061, propiedades en NFR-AXM-023):
+
+- **Gate de evidencia** — `@axiom/memory` rechaza fail-closed cualquier `save` sin `rationale`/`source` no triviales, antes de tocar disco o de invocar engram por MCP, y desde los tres puntos de entrada del backend para que no sea evitable. Un agente no puede persistir contexto inventado sin declarar su origen.
+- **Gate de freeze** — el orquestador congela el candidate y verifica el hash antes de delegar un `apply`, de modo que el subagente trabaja sobre exactamente los inputs revisados.
+- **Gate de recibos** — cada transición deja un receipt JSON con hash, en éxito y en fallo, antes de dar un incremento por verificado o de integrar su conocimiento.
+- **Errores tipados** — la recuperación automática se decide sobre `error.code` de un catálogo cerrado, nunca sobre el texto del mensaje.
+
+### Propagación normativa a las 7 superficies de `axiom-autopilot` (`INC-20260730-autopilot-integration`)
+
+Las tres directivas (scope tipado y determinista al delegar, verificación de freeze antes de un apply delegado, captura y verificación de recibos antes de integrar conocimiento) son **requisito formal, no sugerencia**, y están presentes en las **siete** superficies del orquestador: `.agents/skills/axiom-autopilot/SKILL.md` (raíz del workspace), `Axiom.SDD/.agents/skills/axiom-autopilot/SKILL.md`, `Axiom.SDD/.github/skills/axiom-autopilot/SKILL.md`, `Axiom.SDD/.github/agents/axiom-autopilot.agent.md`, `Axiom.SDD/.github/prompts/axiom-autopilot.prompt.md`, `.claude/skills/axiom-autopilot.md` y `.claude/commands/axiom-autopilot.md`.
+
+El defecto que esto corrige es de **propagación, no de redacción**: las directivas existían únicamente en la copia de la raíz del workspace, mientras que las fuentes distribuibles bajo `Axiom.SDD/` — que son las que se instalan en un proyecto adoptante — no las tenían. Un proyecto que adoptara Axiom recibía por tanto un orquestador sin ninguno de los tres gates. Regla derivada: **una directiva normativa que solo vive en la copia local del workspace no está adoptada**; la fuente distribuible es la que define lo que reciben los adoptantes.

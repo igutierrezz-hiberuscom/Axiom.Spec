@@ -98,3 +98,14 @@ El versionado de tools debe conservar separación de responsabilidades y fallar 
 - La persistencia del lockfile debe ser atómica (`tmp` + `rename`), y un upgrade fallido debe dejar exactamente el lockfile previo o restaurar la ausencia previa. No se permite modificar binarios externos como efecto lateral.
 - `plan` debe ser una operación pura. La mera presencia de una tool en el catálogo no debe implicar una alta, descarga o instalación; la CLI planifica el conjunto declarado o lockeado y permite restringirlo con `--id`.
 - Los probes de versión deben ser locales, inyectables en tests y best-effort. La ruta síncrona de doctor mantiene su semántica existente; `doctor --deep` puede añadir advertencias o saltos de probe, pero nunca nuevos fallos duros.
+## NFR-AXM-023 Gobierno verificable de la ejecución desatendida (tanda `INC-20260730-*`)
+
+Un flujo desatendido (`/axiom-autopilot` y sus subagentes) debe dejar **evidencia comprobable** de lo que ejecutó, y no debe poder avanzar sobre estado no verificado. Tres propiedades, todas fail-closed o best-effort según corresponda:
+
+1. **Evidencia en memoria** — nada se persiste en la memoria del proyecto sin `rationale` y `source` no triviales (RF-AXM-058). Un agente no puede "inventar contexto" y guardarlo sin justificar de dónde salió. El rechazo ocurre antes de cualquier I/O y no es evitable eligiendo otro backend.
+2. **Recibos de fase** — toda transición de ciclo de vida emite un receipt JSON inmutable con `hash` sha256 sobre su contenido, en éxito y en fallo (RF-AXM-059). La emisión es **best-effort/never-block**: certifica sin poder romper el ciclo que certifica. Esta es una asimetría deliberada — un receipt ausente degrada la auditabilidad, pero un receipt que hace fallar un `apply` correcto sería peor.
+3. **Congelado de candidate** — el estado de entrada de un candidate se congela y se verifica antes de delegar un apply (RF-AXM-060), de modo que el apply sea determinista respecto de los inputs que se revisaron.
+
+Refuerza `NFR-AXM-006` (sin excepciones para control de flujo): con `AXIOM_ERROR_CODES` (RF-AXM-057) la recuperación automática se decide sobre un `code` estable, no sobre el texto de un mensaje.
+
+**Hueco conocido y no cerrado**: el receipt se emite tras retornar el core de la transición, por lo que cubre los fallos con `exitCode === 1` pero **no** una excepción que escape del core — ese camino no deja receipt. Es defendible (una excepción es un crash, no un desenlace de fase) pero es un límite real del gobierno verificable y queda registrado como tal, no como cobertura completa.

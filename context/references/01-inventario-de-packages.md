@@ -8,9 +8,9 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 
 | Package | Responsabilidad | Exports/tipos clave | Tests | Notas |
 |---|---|---|---|---|
-| `@axiom/core` | Branded IDs, `Result<T,E>` sin excepciones, constantes de path compartidas | `asProjectId`, `asSkillId`, `asCapabilityId`, `ok`, `err`, `Result`, `LOCAL_OVERLAY_DIRNAME` | Sí (`packages/core/tests/`) | README disponible |
+| `@axiom/core` | Branded IDs, `Result<T,E>` sin excepciones, constantes de path compartidas, **errores tipados** | `asProjectId`, `asSkillId`, `asCapabilityId`, `ok`, `err`, `Result`, `LOCAL_OVERLAY_DIRNAME`, `AxiomError`, `AXIOM_ERROR_CODES`, `AxiomErrorCode` | Sí (`packages/core/tests/`, incl. `error.test.ts`) | README disponible |
 | `@axiom/capability-model` | Modelo de capabilities/providers/discovery/compliance | `CapabilityDefinition`, `ProviderDefinition`, `CapabilityDomain`, `ComplianceClass`, `CANONICAL_CAPABILITY_IDS` | No documentados en README | Depende de filesystem-truth, config-validation, isolation, project-resolution |
-| `@axiom/config-validation` | Validación Zod de YAML (`axiom.yaml`, `integrations.yaml`, `policy.yaml`, `capability-model.yaml`, `provider-registry.yaml`, `install-profiles.yaml`) | `validateWithSchema`, `validateAxiomYamlContent`, `AxiomYamlSchema` | No documentados | Sin I/O propio |
+| `@axiom/config-validation` | Validación Zod de YAML (`axiom.yaml`, `integrations.yaml`, `policy.yaml`, `capability-model.yaml`, `provider-registry.yaml`, `install-profiles.yaml`) | `validateWithSchema`, `validateAxiomYamlContent`, `AxiomYamlSchema`, `validateInstallProfilesYamlContent` | Sí (`packages/config-validation/tests/`) | Sin I/O propio. **Consumido por `apps/cli` desde `INC-20260730-exact-scope`**: los 3 loaders de `profiles.yaml` (`roles.ts`, `init.ts`, `topology.ts`) usan `validateInstallProfilesYamlContent`; antes el `InstallProfilesYamlSchema` no tenía consumidores |
 
 ## Capa descubrimiento/aislamiento
 
@@ -25,7 +25,7 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 | Package | Responsabilidad | Exports/tipos clave | Tests | Notas |
 |---|---|---|---|---|
 | `@axiom/persistence` | `FilesystemStore` (read/write/delete/list), escritura atómica, aislamiento cross-project | `createFileSystemStore` | Sí (5 escenarios / 21 sub-tests) | README disponible |
-| `@axiom/memory` | Curación de memoria por `MemoryKind`, recall con ranking | `MemoryBackend`, `MemoryEntry`, `MemoryKind`, `recall`, `store` | No documentados | GATE 0024: memoria ≠ fuente de verdad |
+| `@axiom/memory` | Curación de memoria por `MemoryKind`, recall con ranking, **gate de evidencia fail-closed** | `MemoryBackend`, `MemoryEntry`, `MemoryKind`, `recall`, `store`, `validateMemoryEvidence`, `MIN_EVIDENCE_LENGTH` | Sí (`packages/memory/tests/`, incl. `evidence.test.ts`) | GATE 0024: memoria ≠ fuente de verdad. Desde `INC-20260730-engram-evidence`, `save` exige `rationale`/`source` (trim > 3) en runtime desde los 3 puntos de entrada |
 | `@axiom/versioning` | State machine de upgrade, checkpoints, migraciones, managed state | `loadManagedState`, `createCheckpoint`, `restoreCheckpoint`, `executeUpgrade` | No documentados | — |
 
 ## Capa instalación
@@ -59,7 +59,7 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 |---|---|---|---|
 | `@axiom/toolchain` | Manifest `toolchain.yaml`, detección, repair | `ToolchainManifest`, `detectAllTools`, `repairToolchain` | Spec 0023/0027; catálogo real reconciliado en ADR-0031 (`cmm` reemplaza codegraph/graphify) |
 | `@axiom/topology` | Manifest `axiom.config/topology.yaml` (multi-repo, roles, QA lanes); ahora opt-in/derivado-en-lectura | `TopologyManifest`, `RepoRef`, `RoleAssignment`, `loadTopology` | Spec 0021/0022; `INC-20260703-config-dedup` (cerrado) — `init` ya no lo escribe, `loadTopology` deriva fallback desde `axiom.yaml` |
-| `@axiom/workflow` | State machine SDD, hooks, branch naming | `WorkflowState`, `applyTransition`, `createHookEngine` | Spec 0022 |
+| `@axiom/workflow` | State machine SDD, hooks, branch naming, **receipts de fase** | `WorkflowState`, `applyTransition`, `createHookEngine`, `writePhaseReceipt`, `PhaseReceipt` | Spec 0022 |
 | `@axiom/model-routing` | Routing de modelo por slot, assignments, projection a opencode, checks de drift MRC-001..004 | `ModelRoutingPolicy`, `resolveSlot`, `SUPPORT_MATRIX` | Ver `../architecture/04-adapters-y-model-routing.md`. Sus checks corren vía `axiom model validate`, NO como parte de `@axiom/doctor` |
 | `@axiom/tool-routing` | Dispatcher de `ToolCall`, fallback chain, telemetría | `routeTool`, `resolveToolDispatch` | Spec 0008 (ADR-0008/0013/0020) |
 
@@ -113,4 +113,10 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 
 ## Cobertura de tests (agregada, según README/estructura)
 
-E2E smoke en `apps/cli` (**129 ficheros `*.test.ts` verificados 2026-07-29** vía `find apps/cli -name "*.test.ts" | wc -l`; el conteo "31 files, 201 tests" del baseline quedó muy desactualizado y no se re-verificó al nivel de número de tests individuales — no citarlo como cifra actual); tests por escenario en `orchestrator`, `persistence`, `agents`, `skills`; tests de validación en `config-validation`. La mayoría de los 43 packages **no documentan** su conteo de tests en README — no asumir cobertura sin verificarlo en el repo real antes de decisiones críticas.
+Cifra agregada del monorepo **verificada 2026-08-02** con `npx vitest run` completo: **336 ficheros de test, 3489 tests, 3483 en verde y 6 en rojo**. Los 6 fallos son preexistentes a la tanda `INC-20260730-*` y están caracterizados: 5 deterministas en `packages/install-profiles/tests/composer.test.ts` (matrices `builder`/`product-owner` con `opencode` y enablement de capabilities) y 1 por **timeout de 5000 ms bajo contención de la suite completa** en `packages/memory/tests/engram-backend.test.ts` (`query()` con filtro de kind), que pasa en verde al ejecutar `packages/memory` en aislamiento. `apps/cli/tests/launcher-panels.test.ts` presenta la misma clase de flake por contención de forma intermitente.
+
+Advertencia metodológica confirmada en esta medición: una ejecución única de la suite **no** es evidencia suficiente — dos corridas del mismo árbol dieron 9 y 6 fallos respectivamente, y una tercera murió con `Segmentation fault` en `npx` devolviendo un exit code engañoso. Contrastar siempre contra varias corridas antes de atribuir un fallo a un cambio.
+
+Tests por escenario en `orchestrator`, `persistence`, `agents`, `skills`; tests de validación en `config-validation`. La mayoría de los 43 packages **no documentan** su conteo de tests en README — no asumir cobertura sin verificarlo en el repo real antes de decisiones críticas.
+
+Nota estructural relevante para cualquier garantía basada en tipos: los `tsconfig.json` de cada package usan `"include": ["src/**/*"]`, por lo que **`tsc -b` no typechequea los ficheros de test** y vitest transpila sin typecheck. Un build verde no prueba que los tests compilen ni que respeten los contratos de tipos.

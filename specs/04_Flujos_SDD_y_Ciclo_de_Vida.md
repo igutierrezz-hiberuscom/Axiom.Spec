@@ -299,3 +299,24 @@ El harvest de worktree (`harvestAndCleanupExecution`, INC-20260724-worktree-harv
 5. Si hay conflicto de Git, reporta sin ocultar
 
 El diseño de chunks append-only (nunca se modifican chunks viejos) + `manifest.json` pequeño y mergeable evita conflictos de Git en el caso común. `.engram/engram.db` está gitignored (solo se versionan chunks + manifest).
+## Gobierno verificable en el ciclo (2026-08-02) — tanda `INC-20260730-*`
+
+### Receipt automático por transición
+
+Cada invocación de `runIncrementSubcommand`/`runBugSubcommand` que aplica una transición real deja un receipt JSON en `receipts/` del artefacto. El flujo efectivo por transición es:
+
+1. El `…Core` privado ejecuta la transición exactamente como antes (lógica sin cambios).
+2. El wrapper público emite el receipt a partir del resultado ya calculado: `success` si `exitCode === 0`, `failure` en cualquier otro caso.
+3. El wrapper devuelve el resultado **intacto**.
+
+Casos que **no** emiten receipt, por diseño: `verify --preview`/`--dry-run` (no se aplicó transición), subcomando que no mapea a una transición real, y ausencia de un id de incremento resoluble (no se inventa carpeta). Fallo de escritura del receipt: se avisa por stderr y el ciclo continúa.
+
+Al archivar, la carpeta ya fue movida a `_archive/<id>/` antes de que corra el wrapper, de modo que el receipt de `archive` se co-localiza en el destino archivado y no recrea una carpeta fantasma pre-archive.
+
+### Gate de freeze antes del apply
+
+Antes de delegar un apply a un subagente, el orquestador congela el candidate (`axiom freeze --increment <id>`) y verifica con `checkCandidateFreeze` que los inputs no mutaron. Un hash distinto del congelado significa que la memoria del incremento o su `README.md` cambiaron desde la revisión, y el apply no debe delegarse sobre esa base sin re-congelar. Un `candidate-freeze.json` corrupto o truncado devuelve `{ ok: false, reason }` como cualquier otro fallo — no lanza una excepción fuera de la función.
+
+### Evidencia al escribir memoria durante el ciclo
+
+Cualquier fase que persista conocimiento debe aportar `rationale` y `source` (RF-AXM-058). Esto se compone con el contrato de memoria por fase de la tanda `INC-20260729-knowledge-*`: aquélla define **qué** guardar en cada fase; ésta impone que lo guardado venga **justificado y con origen**, y lo hace cumplir en runtime.

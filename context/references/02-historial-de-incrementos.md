@@ -57,3 +57,16 @@ Este documento cubre 0015-0030. El git log real de `Axiom/` llega hasta commits 
 Este incremento extiende el toolchain posterior a la ventana histórica 0015–0030. El catálogo dedicado `axiom.config/toolchain-catalog.yaml` pasa a schema 2 con `versionExtractor`, canales `stable`/`candidate`/`edge` y compatibilidad opcional. El estado de versiones fijadas se persiste como `toolchain.lock` schema 1 bajo `.axiom-state/<project>/`; `axiom toolchain plan` es read-only y `axiom toolchain upgrade` solo escribe el lockfile con `--yes`, checkpoint y rollback. El catálogo funciona como allowlist/política y no ordena instalar todas sus tools.
 
 La implementación también añade observaciones best-effort de versión, checks TC-020..TC-023 y drift profundo en `axiom doctor --deep`. No instala binarios, no descubre releases upstream y no trata las versiones del catálogo como releases upstream verificadas. Los probes locales conocen `serena`, `cmm` y `engram`; `context7`, `rtk`, `caveman` y `autoskills` permanecen sin contrato local de probe. La validación focalizada del paquete de toolchain cubre 10 tests; el estado global y los fallos preexistentes se documentan en el README del incremento.
+
+## Tanda `INC-20260730-*` — gobierno verificable (2026-08-02, 6 incrementos)
+
+| Incremento | Entrega | Nota |
+|---|---|---|
+| `INC-20260730-typed-recovery` | `AxiomError` + catálogo `AXIOM_ERROR_CODES` (12 códigos); 45 sitios tipados (antes 3) | Corrigió un `instanceof` roto en toda subclase de `AxiomError` (`setPrototypeOf` hardcodeado) |
+| `INC-20260730-engram-evidence` | `rationale`/`source` fail-closed en runtime, enforced en los 3 puntos de entrada del backend | Ruta de lectura y session-summary exentas por diseño |
+| `INC-20260730-phase-receipts` | Emisión automática de receipts por transición, éxito y fallo | Encontró y corrigió una carpeta fantasma por `metadataId` y una race con el move de `archive` |
+| `INC-20260730-candidate-freeze` | Cobertura de tests (antes cero) + `JSON.parse` endurecido en `checkCandidateFreeze` | El grueso ya estaba implementado y cableado antes de esta tanda |
+| `INC-20260730-exact-scope` | 3 loaders de `profiles.yaml` convergidos en el schema canónico ya existente | El Scope original ("instalar zod") estaba obsoleto: zod y `@axiom/config-validation` ya existían |
+| `INC-20260730-autopilot-integration` | Las 3 directivas de gobierno propagadas a las 7 superficies de `axiom-autopilot` | Defecto de propagación: solo la copia local del workspace las tenía |
+
+Suite al cierre de la tanda: **3489 tests, 3483 verdes, 6 rojos preexistentes** (5 deterministas en `install-profiles/composer.test.ts`, 1 flake por contención en `memory/engram-backend.test.ts`). Baseline antes de la tanda: 3428 tests. Neto: **+61 tests, cero regresiones**.

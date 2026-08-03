@@ -167,3 +167,17 @@ Tanda de 3 incrementos que implementa el flujo de memoria viva entre fases del c
 
 Detalle: tipos y modelo en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md), flujo en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md), capacidades en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md), manual en [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
 - **Launcher como front por defecto de `axiom app`** (`INC-20260727-launcher-default-and-old-ui-removal`): `axiom app` abre el launcher (`/launcher/`) por defecto y `GET /` / `GET /index.html` redirigen `302` a `/launcher/`; la vieja UI de operador raíz (`static/index.html`+`app.js`+`style.css`+`sw.js`+`manifest.json`) y sus 6 endpoints backend muertos se eliminaron (confirmados sin consumidores antes de borrar). Detalle en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
+### Tanda `INC-20260730-*` — gobierno verificable de la ejecución desatendida (2026-08-02)
+
+Seis incrementos que cierran el bloque de gobierno de los flujos desatendidos, con la propiedad común de que un orquestador o subagente pueda **comprobar** el estado sobre el que actúa en vez de confiar en él:
+
+- **Errores tipados** (`INC-20260730-typed-recovery`): `AxiomError` + `AXIOM_ERROR_CODES` (12 códigos anclados a throw sites reales); 45 sitios tipados frente a los 3 previos; recovery por `error.code`, no por texto de mensaje. Corrige de paso un `instanceof` roto en toda subclase de `AxiomError`.
+- **Evidencia en memoria** (`INC-20260730-engram-evidence`): `rationale`/`source` fail-closed en runtime antes de cualquier I/O, enforced desde los tres puntos de entrada del backend.
+- **Recibos de fase** (`INC-20260730-phase-receipts`): emisión automática en cada transición, en éxito y en fallo, best-effort/never-block, vía wrappers delgados que no alteran el resultado del core.
+- **Freeze de candidate** (`INC-20260730-candidate-freeze`): gate de `apply` ya cableado al ciclo; endurecido el parseo del artefacto congelado.
+- **Validación de config** (`INC-20260730-exact-scope`): tres loaders de `profiles.yaml` convergidos en el schema canónico ya existente y hasta entonces sin consumidores.
+- **Propagación al orquestador** (`INC-20260730-autopilot-integration`): las tres directivas pasan a ser requisito formal en las 7 superficies de `axiom-autopilot`, incluidas las fuentes distribuibles que reciben los proyectos adoptantes.
+
+Dos límites se registran explícitamente en vez de declararse cubiertos: el freeze hashea memoria filtrada + `README.md`, **no** lockfiles ni `metadata.yml`; y el receipt cubre los fallos con `exitCode` distinto de cero pero no una excepción que escape del core de la transición.
+
+Detalle en [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) (RF-AXM-057..061), propiedades en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md) (NFR-AXM-023), artefactos en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md), gates en [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md).
