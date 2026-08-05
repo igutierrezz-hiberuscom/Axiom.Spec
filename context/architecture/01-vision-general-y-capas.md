@@ -13,8 +13,10 @@ Axiom es un CLI Node/TypeScript (`axiom`) que coordina, para un proyecto adoptan
 ## Tres espacios dentro del repo `Axiom/` (según overview.md)
 
 1. **Builder tooling** (`_builder/`): herramientas de construcción, no parte del runtime — no presente en este checkout (ver riesgos conocidos).
-2. **Especificación del producto** (`axiom.spec/`, minúsculas): fuente de verdad documental interna al producto — presente en este checkout con `increments/`, `plans/`, `target-axiom-agents/`, `target-axiom-skills/` y `templates/`; la carpeta `_builder/` sigue siendo el único hueco menor relevante de la readiness.
+2. **Baseline product-owned de spec** (`axiom.spec/`, minúsculas): contenido versionado que el runtime materializa y consume dentro del repo adoptante — presente en este checkout con `increments/`, `plans/`, `target-axiom-agents/`, `target-axiom-skills/` y `templates/`; la carpeta `_builder/` sigue siendo el único hueco menor relevante de la readiness.
 3. **Runtime del producto** (`apps/` + `packages/`): implementación ejecutable real, sí presente y operativa.
+
+La fuente documental canónica del workspace es el repo sibling `Axiom.Spec/` (mayúsculas), cuyo `decisions/` contiene los ADR y decisiones estructurales. `Axiom/axiom.spec/` es una baseline product-owned legítima del runtime dogfoodeado; no es un alias ni una segunda ubicación que deba fusionarse con `Axiom.Spec/` (ADR-0032).
 
 ## Capas por responsabilidad (43 packages + `apps/cli`)
 
@@ -30,7 +32,7 @@ Axiom es un CLI Node/TypeScript (`axiom`) que coordina, para un proyecto adoptan
 | MCP | `mcp-server`, `mcp-tools`, `providers` | Dispatcher JSON-RPC hand-rolled + handlers de capability + registry/discovery de providers (nuevo desde el baseline) |
 | Tooling/manifests | `toolchain`, `topology`, `workflow`, `model-routing`, `tool-routing` | Manifests YAML + state machines + dispatcher |
 | Catálogos | `skills`, `components`, `agents` | Materialización idempotente (tmp+rename) |
-| Operación | `doctor`, `orchestrator`, `cli-commands`, `tui`, `launcher`, `apps/cli` | State machines, hooks, telemetría, ~81 ficheros de comando; `launcher` es el front web operador por defecto (nuevo) |
+| Operación | `doctor`, `orchestrator`, `cli-commands`, `launcher`, `apps/cli` | State machines, hooks, telemetría, ~81 ficheros de comando; `launcher` es el front web operador por defecto |
 | Contexto/telemetría/tracking | `technical-context`, `telemetry`, `tracker`, `tracker-ado` | Índice de contexto técnico servible por MCP, bus/sinks de telemetría, puertos de tracker + adapter Azure DevOps (todos nuevos desde el baseline) |
 | Documentación/disciplina | `document-bootstrap`, `cavekit-discipline`, `user-workspace` | Bootstrap de surfaces, invariantes nativos, registry user-level |
 

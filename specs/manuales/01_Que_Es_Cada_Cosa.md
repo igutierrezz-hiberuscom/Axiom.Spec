@@ -34,7 +34,7 @@ Un adapter es la capa de traducción entre las capacidades de Axiom y un IDE/CLI
 
 ## El launcher (`axiom app`)
 
-El launcher es el front de navegador (PWA servida por `axiom app`) que permite operar Axiom sin abrir la terminal ni la TUI: seleccionar proyecto y adapter, ver el prompt pregenerado, ejecutar transiciones confirm-gated, instalar/unirse a un proyecto, registrar roles, y (si el tracker está configurado) crear el work item correspondiente en Azure DevOps. Ver el manual dedicado: [11_Launcher_Visual.md](11_Launcher_Visual.md).
+El launcher es el front de navegador (PWA servida por `axiom app`) que permite operar Axiom sin abrir la terminal: seleccionar proyecto y adapter, ver el prompt pregenerado, ejecutar transiciones confirm-gated, instalar/unirse a un proyecto, registrar roles, y (si el tracker está configurado) crear el work item correspondiente en Azure DevOps. Ver el manual dedicado: [11_Launcher_Visual.md](11_Launcher_Visual.md).
 
 ## El doctor
 

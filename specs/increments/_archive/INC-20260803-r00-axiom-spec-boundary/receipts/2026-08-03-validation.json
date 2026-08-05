@@ -1,0 +1,27 @@
+{
+  "incrementId": "INC-20260803-r00-axiom-spec-boundary",
+  "kind": "validation",
+  "timestamp": "2026-08-03T14:37:07.342Z",
+  "cwd": "Axiom/",
+  "commands": [
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "output": "> axiom-product@0.1.0 build\n> tsc -b"
+    },
+    {
+      "command": "npm run doctor",
+      "exitCode": 0,
+      "output": "Axiom Doctor — Proyecto: axiom-runtime\nEstado del proyecto: resolved\nFecha: 2026-08-03T14:37:07.342Z\nResumen: 46/61 OK · 0 FALLO · 3 ADVERTENCIA · 12 OMITIDO\nResultado: PASS"
+    },
+    {
+      "command": "npm run readiness:first-project",
+      "exitCode": 0,
+      "output": "[readiness:first-project] PASS\n[readiness:first-project] baseline: profile=builder overlay=local-only target=opencode\n[readiness:first-project] sequence: init -> configure -> toolchain repair -> sync -> start -> gateway start/status -> audit -> doctor"
+    }
+  ],
+  "notes": [
+    "These commands were rerun from the Axiom/ repository after the boundary and stale-reference corrections.",
+    "The historical apply receipt at 2026-08-03T13:14:48.311Z predates the candidate freeze and is not treated as the governed pre-apply gate."
+  ]
+}

@@ -1,0 +1,12 @@
+id: INC-20260804-cli-commands-package-output
+kind: increment
+title: Convencionalizar la salida de cli-commands y TUI
+status: archived
+createdAt: '2026-08-04T00:00:00Z'
+updatedAt: '2026-08-04T17:49:46Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-04T23:58:24Z'
+links:
+  planId: null

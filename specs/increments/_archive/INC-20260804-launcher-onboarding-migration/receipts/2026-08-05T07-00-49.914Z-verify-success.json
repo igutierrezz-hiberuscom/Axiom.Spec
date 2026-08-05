@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260804-launcher-onboarding-migration",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T07:00:49.914Z",
+  "details": "Final batch integration verified: onboarding/adoption guards, preview, provenance, registry and 7-file/90-test validation green.",
+  "hash": "3c5ab85e5db9c1d9d91a1287735d5b7000ba5064a860290f4ff24f8b74cde071"
+}

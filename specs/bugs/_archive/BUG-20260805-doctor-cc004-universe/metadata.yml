@@ -1,0 +1,9 @@
+id: BUG-20260805-doctor-cc004-universe
+kind: bug
+title: CC-004 construye su universo desde los mismos providers
+status: closed
+createdAt: '2026-08-05'
+updatedAt: '2026-08-05'
+externalRefs: []
+links:
+  planId: null

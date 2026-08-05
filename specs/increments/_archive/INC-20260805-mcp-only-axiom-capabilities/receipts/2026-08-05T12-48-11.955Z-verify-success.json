@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260805-mcp-only-axiom-capabilities",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T12:48:11.955Z",
+  "details": "Focused suites: 25 files, 245 tests passed; npm run build passed; candidate freeze check passed with AXIOM_TEST_FORCE_JSON=1.",
+  "hash": "38243f7a50541eb0c365d9aca41c05b3dadebab307bc9bb6fe5735d31464a404"
+}

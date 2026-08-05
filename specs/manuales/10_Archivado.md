@@ -26,7 +26,7 @@ Si algo falta, el artefacto se deja `Status: pending` — nunca se archiva un ar
 Al cerrar, el paso final es actualizar `Axiom.Spec/specs/00_*.md`…`08_*.md` con el conocimiento estable y reutilizable que dejó el incremento/bug (decisiones de arquitectura, nuevos comandos, nuevos términos de glosario, cambios de contrato). Reglas concretas:
 
 - actualizar primero el propio fichero del incremento/bug;
-- integrar en `general-spec`/00–08 SOLO conocimiento estable y consolidado, nunca el historial completo de implementación;
+- integrar en la spec general (`00–08`) SOLO conocimiento estable y consolidado, nunca el historial completo de implementación;
 - si no hace falta integrar nada, decirlo explícitamente en el propio artefacto (no dejarlo en silencio).
 
 ## Best-effort desde la CLI

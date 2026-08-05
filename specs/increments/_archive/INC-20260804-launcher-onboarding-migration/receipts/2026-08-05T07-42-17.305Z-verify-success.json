@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260804-launcher-onboarding-migration",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T07:42:17.305Z",
+  "details": "Verificacion final: setup/adopt, preview/dry-run, ownership/overlap, partial success, provenance e idempotencia validados; listo para archive.",
+  "hash": "aa4afd518459442812231a938b2b4ea0f1e00e187fb4052b9377d084d5b27a32"
+}

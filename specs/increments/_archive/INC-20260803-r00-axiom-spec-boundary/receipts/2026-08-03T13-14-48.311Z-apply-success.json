@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260803-r00-axiom-spec-boundary",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-03T13:14:48.311Z",
+  "details": "ADR-0032 verificado; axiom.spec conservado, consumidores y topologia comprobados, overview corregido y build limpio.",
+  "hash": "d9bd40077d35b4cd901947e6fe72412bf6c11c757a5c9d0b9a642a4254c5ff84"
+}

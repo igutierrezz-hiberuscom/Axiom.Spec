@@ -1,0 +1,12 @@
+id: INC-20260803-r00-adr-ownership-docs
+kind: increment
+title: R-00 ADR ownership and workspace documentation
+status: archived
+createdAt: '2026-08-03T00:00:00Z'
+updatedAt: '2026-08-03T15:30:57.504Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-03T15:30:57.504Z'
+links:
+  planId: null

@@ -8,6 +8,10 @@
 4. validar resultado (orden de descubrimiento: README → package scripts → task runners → test configs → build configs);
 5. cerrar y reintegrar conocimiento en la spec. Un incremento/bug solo puede marcarse `closed` si: el objetivo es claro, hay acceptance criteria, se implementó (o hay justificación explícita de no-code), se corrió la validación disponible, se revisó contra el intent original y se integró conocimiento estable. Si falta algo, queda `status: pending` con motivo explícito.
 
+La integración estable de este workspace se enruta a las ocho specs numeradas
+`Axiom.Spec/specs/00..08`; no existe un `general-spec.md` alternativo que pueda
+actuar como fuente canónica.
+
 ### Tooling de orquestación del workspace: `/axiom-autopilot` (INC-20260708-axiom-autopilot-command, INC-20260729-copilot-autopilot-reconciliation)
 
 Nota de tooling de desarrollo (no funcionalidad de runtime del producto Axiom): el flujo base de arriba se puede conducir de forma **desatendida** sobre una tanda de cambios mediante `/axiom-autopilot`, disponible como comando/skill de Claude Code (`.claude/commands/axiom-autopilot.md` + `.claude/skills/axiom-autopilot.md`) y como custom agent, skill y prompt de GitHub Copilot (`Axiom.SDD/.github/agents/axiom-autopilot.agent.md`, `Axiom.SDD/.github/skills/axiom-autopilot/SKILL.md` y `Axiom.SDD/.github/prompts/axiom-autopilot.prompt.md`). Codifica el playbook manual de orquestación multi-incremento —descomponer una tanda de cambios en incrementos foco, ejecutarlos secuencialmente vía subagentes `axiom-increment`, auto-resolver ambigüedad registrando cada decisión, verificar cada resultado de forma independiente, integrar el conocimiento estable en los ficheros canónicos `00–08`, reconciliar el contexto técnico en `Axiom.Spec/context/**` y actualizar su fecha de validación, archivar cada incremento y cerrar con un resumen de decisiones— sin detenerse a preguntar y sin ejecutar git mutante. La consolidación es una reconciliación activa: modifica o elimina afirmaciones actuales que hayan quedado obsoletas; `SUPERSEDE` por sí solo no convierte texto antiguo en histórico. Los claims que deban conservarse por trazabilidad se reencuadran bajo una marca histórica explícita. Vive en `.claude/` y `Axiom.SDD/.github/` (configuración para CONSTRUIR Axiom), no en `Axiom/` (runtime del producto); es la contraparte de tanda del comando `axiom-increment` por incremento único, no una capacidad del producto adoptable por proyectos de terceros. La ampliación de contexto técnico quedó consolidada por `INC-20260729-autopilot-technical-context-step` y se portó con reconciliación normativa a Copilot en `INC-20260729-copilot-autopilot-reconciliation`.
@@ -24,9 +28,15 @@ Verificado por el script de smoke `Axiom/scripts/verify-first-project-readiness.
 
 Contrato por comando (lee/escribe) detallado en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y en `context/architecture/`.
 
-### Onboarding del operador (entrada TUI y wizard de `init`)
+### Onboarding del operador mediante launcher y CLI headless
 
-El punto de entrada interactivo es `axiom` sin subcomando, que abre la TUI. En una carpeta sin proyecto Axiom (con TTY), la TUI ofrece un menú de bootstrap desde el que se inicializa el workspace vía un **wizard guiado**: pregunta el nombre, las rutas de SDD y Spec, los roles (texto libre, con nombres separados por coma), profile, overlay, adapters multi-select de los 10 targets y providers multi-select (`cmm`, `serena` y `engram`, sin preselección), muestra un resumen de confirmación como último paso y solo al confirmar ejecuta el setup. `axiom init` sigue siendo la vía no-interactiva/scriptable equivalente para el flujo single-repo. Detalle de UI y capas en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) (RF-AXM-023 en [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md)).
+El punto de entrada guiado vigente es `axiom app`, que sirve el launcher local
+bajo `/launcher/`. Sus endpoints de install/join y de workspace setup/adopt
+ofrecen preview read-only y requieren confirmacion antes de escribir. La CLI
+mantiene las rutas headless `axiom init`, `axiom workspace setup` y
+`axiom workspace setup --adopt-*`; MCP expone handlers de registry y workflow
+sin depender de una interfaz terminal. `axiom` sin subcomando no abre una
+superficie implicita y `axiom tui` ya no existe como comando.
 
 Modelo de datos tras el init (fuente única de verdad): `axiom.yaml` es la fuente autoral de la identidad del proyecto (`projectId`/`name`/`repoId`/`role`) y del mapa de repos. `init` escribe `axiom.yaml`, `.gitignore`, `.axiom-state/local/` y `.axiom-state/<projectName>/init.json` (con `profileTriple`+`createdAt`+`version`, sin `projectName` propio) — y ya NO escribe `topology.yaml`, que se deriva de `axiom.yaml` al leer y se materializa de forma perezosa solo al asignar roles (`INC-20260703-config-dedup`; ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)).
 
@@ -79,7 +89,10 @@ El versionado de toolchain es un flujo project-scoped distinto de `axiom upgrade
 - `axiom configure`: re-aplica el perfil persistido completo (single-shot, sin flags incrementales). No cubre añadir/quitar repo, rol, adapter o tool/MCP — ver el hueco de 7 operaciones (NFR-AXM-015) documentado en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md). Desde `INC-20260708-incremental-operations` las 4 operaciones ADD (`axiom repo/adapter/provider/role add`, idempotentes y no-clobber) cubren la mitad aditiva de ese hueco; los REMOVE quedan diferidos.
 - `axiom upgrade`: calcula y aplica migraciones de `ManagedState` con checkpoint rollback-first; soporta `--dry-run`/`--from-checkpoint`/`--target-version`.
 - `axiom repair`: ejecuta `axiom doctor`, agrupa hallazgos por categoría, y despacha las 4 categorías conocidas-como-corregibles (`install-profiles`, `artifact-index`, `toolchain`, `memory`) a las funciones de reparación ya existentes; el resto se reporta como no auto-corregible. Soporta `--dry-run`.
-- Los tres flujos anteriores están cableados en la TUI (`packages/tui/src/flows/configure.ts`/`upgrade.ts`/`repair.ts`, wrappers sin lógica de negocio); `repair` y `upgrade` exigen preview dry-run + confirmación Y/n antes de mutar el filesystem.
+- Los tres flujos anteriores tienen superficies CLI/launcher confirm-gated;
+  `repair` y `upgrade` exigen preview dry-run y confirmacion antes de mutar el
+  filesystem. La antigua interfaz TUI que los presentaba se conserva solo en
+  el historial de incrementos archivados.
 
 Ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) (RF-AXM-022) y [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) para el detalle de datos persistidos por cada operación.
 
@@ -166,7 +179,16 @@ El flujo de actualización del runtime (`axiom upgrade`) es **rollback-first** (
 
 ## Onboarding guiado desde el launcher (2026-07-15) — tanda INC-20260715-*
 
-El ciclo de vida ahora tiene una **puerta de entrada visual** que no requiere terminal ni TUI (`INC-20260715-launcher-onboarding`): desde el launcher web, un miembro (a) instala Axiom en un proyecto nuevo — eligiendo si el repo es `sdd`/`spec`/`code`, perfil/overlay/target/layout, y la ruta con un explorador de carpetas — vía `runInit`; (b) se une a un proyecto Axiom existente vía `runProjectsJoin`; y (c) da de alta roles y los asocia a repos vía `runRolesRegister`/`runRolesAssign`. Todas las acciones son confirm-gated (preview→confirmar) y best-effort, y reusan los mismos run-functions del CLI (sin duplicar lógica). Antes de lanzar cualquier acción, el launcher corre el **doctor** del proyecto y muestra lo que falta (`INC-20260715-launcher-doctor-gate`), y presenta el **prompt pregenerado para el adapter seleccionado** con el tuning del agente aplicado (`INC-20260715-adapter-agent-tuning`). Superficies en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md); guía de usuario en [manuales/11_Launcher_Visual.md](manuales/11_Launcher_Visual.md).
+El ciclo de vida ahora tiene una **puerta de entrada visual** que no requiere
+terminal (`INC-20260715-launcher-onboarding`): desde el launcher web, un
+miembro instala Axiom en un proyecto nuevo, se une a uno existente, configura
+workspace, adopta spec/contexto y registra roles. Todas las acciones son
+confirm-gated (preview→confirmar), best-effort y reutilizan los mismos
+run-functions del CLI. Antes de lanzar cualquier acción, el launcher corre el
+doctor del proyecto y muestra lo que falta; también presenta el prompt
+pregenerado para el adapter seleccionado. Superficies en
+[05_Interfaces_Operativas.md](05_Interfaces_Operativas.md); guía de usuario en
+[manuales/11_Launcher_Visual.md](manuales/11_Launcher_Visual.md).
 
 ## Ciclo con gates de calidad instaladas (2026-07-15) — tanda INC-20260715-*
 

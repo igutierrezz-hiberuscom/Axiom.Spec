@@ -1,0 +1,12 @@
+id: INC-20260804-launcher-safe-plugins
+kind: increment
+title: Integrar plugins externos con ejecucion segura
+status: archived
+createdAt: '2026-08-04T00:00:00Z'
+updatedAt: '2026-08-04T22:44:00Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-04T23:58:24Z'
+links:
+  planId: null

@@ -1,0 +1,9 @@
+id: INC-20260805-mcp-only-axiom-capabilities
+kind: increment
+title: superficie MCP-only para axiom.*
+status: closed
+createdAt: '2026-08-05'
+updatedAt: '2026-08-05'
+externalRefs: []
+links:
+  planId: null

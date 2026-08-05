@@ -1,0 +1,12 @@
+id: INC-20260804-launcher-sdd-lifecycle
+kind: increment
+title: Completar el ciclo SDD operativo del launcher
+status: archived
+createdAt: '2026-08-04T00:00:00Z'
+updatedAt: '2026-08-04T19:19:30Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-04T23:58:24Z'
+links:
+  planId: null

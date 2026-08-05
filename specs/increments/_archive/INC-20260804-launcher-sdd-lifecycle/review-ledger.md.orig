@@ -1,0 +1,121 @@
+# Review ledger - INC-20260804-launcher-sdd-lifecycle
+
+Status: pending
+Review type: independent review after apply; N=1 re-review
+Review date: 2026-08-04
+Scope: ACC-007 / R-10, launcher registry, action routing, canonical run functions, integrate/archive, launcher front and focused tests.
+Governance: no general specs or context were edited; no artifact was archived; no commit, branch, reset or other Git mutation was performed.
+Freeze: the prior hash `d118591cf24dc6303f57edfa8722f16001c07f469e02696467c42effa72f566f` is stale by the increment's own statement. N=1 did not create a replacement freeze or receipts and was not used to close governance.
+
+## Review sweeps
+
+1. Contract and diff inventory: read `Axiom.SDD/AGENTS.md`, the increment README, acceptance criteria, metadata and candidate freeze; isolated the requested launcher/integrate/front/test surface from the larger dirty runtime diff.
+2. Action routing: traced every catalog action through `LAUNCHER_ACTION_COMMAND`, `executeSubcommand`, `runIncrementSubcommand`, `runBugSubcommand`, `runPlanCreate`, `runPlanApprove`, `runRoleSubcommand`, `runQaE2eSubcommand`, `runValidateTransition`, `runValidateChanges` and `runIntegrate`.
+3. Registry and archive: checked path resolution, metadata loading, workflow-state matching, topology/role/repository relations, dry-run, move failure rollback and registry refresh/broadcast.
+4. Front and validation: checked transport behavior for HTTP 500 bodies, execution-log rendering, registry rendering, stale/unknown actions, non-executable actions, and the available build/test/type diagnostics.
+
+
+## N=1 re-review
+
+Basis: the existing ledger, the current diff in the affected runtime files, and focused executable validation. No broad repository exploration, general spec or context edit, artifact archive, or Git mutation was performed.
+
+### Finding status
+
+- D-001: `resolved` for behavior. Preview and confirmed execution now carry the selected `executionMode`; the endpoint awaits the async role handler and keeps `executionMode`, `worktreeStart` and `worktreeClose` in the normalized result.
+- D-002: `resolved` for the requested destination-collision and typed-rollback double-failure paths. Destination preflight avoids the first metadata write; the raw snapshot restores the original file when typed rollback fails.
+- D-003: `resolved` for the requested fields. The front renders `toState` when `fromState` is absent and appends `paths.metadata` to the registry path cell.
+- Gates and non-executable actions: `pass`. Confirmation remains required for mutators; read-only validators stay read-only; `increment-change` and `plan-archive` remain explicitly non-executable.
+ 
+## Compliance
+
+- Registry basic compatibility: PASS. `RegistryEntry` retains `id`, `kind`, `title` and `status`, while adding `metadata`, `paths`, optional `workflowState` and `relations` in [app-launcher.ts](../../../../Axiom/apps/cli/src/commands/app-launcher.ts#L1089).
+- Registry provenance: PASS with a minor observability caveat. Metadata and paths come from `listArtifacts` and `resolveArtifactDir`; workflow state is included only when the real state record matches the artifact in [app-launcher.ts](../../../../Axiom/apps/cli/src/commands/app-launcher.ts#L1204). Links, role files, target repos, allowed write scope and topology assignments are the only relation sources in [app-launcher.ts](../../../../Axiom/apps/cli/src/commands/app-launcher.ts#L1291). Missing target entries remain id-only rather than being fabricated.
+- Registry archive refresh: PASS for the exercised path. Active listing scans the non-archive kind directory, the successful integrate path broadcasts only after `exitCode === 0`, and the focused test confirms the active entry disappears after the move in [app-launcher.test.ts](../../../../Axiom/apps/cli/tests/app-launcher.test.ts#L406).
+- Action coverage: PASS for the reviewed catalog. All executable keys traced to a handler; `increment-change` is explicitly non-executable in [app-launcher.ts](../../../../Axiom/apps/cli/src/commands/app-launcher.ts#L278), and `plan-archive` is explicitly non-executable in [app-launcher.ts](../../../../Axiom/apps/cli/src/commands/app-launcher.ts#L315). `e2e-archive` visibly maps to the canonical QA `pass` command rather than pretending to move a folder.
+- Preview and confirmation: PASS for the HTTP contract. Craft is read-only, unconfirmed execute returns preview without invoking a mutator, and confirmed execution is gated before the handler in [app-launcher.ts](../../../../Axiom/apps/cli/src/commands/app-launcher.ts#L912). Validation actions also remain read-only after confirmation because their canonical runners only inspect.
+- Canonical gates: PARTIAL but honest. Increment verify delegates to the functional-verify gate; role start/complete delegates to the synchronous role runner with plan, affinity, write-scope review and functional verification; QA delegates to its lane runner; integrate enforces terminal transition, emits the real QA advisory, writes integration metadata and performs the atomic no-clobber move. The QA archive behavior is advisory by design, matching the increment README.
+- Integrate nominal and collision behavior: PASS for tested cases. A successful move leaves archived metadata under `_archive`; a destination collision causes an attempted metadata rollback and the focused test confirms the original metadata remains active in [integrate.test.ts](../../../../Axiom/apps/cli/tests/integrate.test.ts#L100).
+- Front error and result transport: PASS for the exercised error path. The transport forwards JSON bodies even when the API status is 500, and the front logs the canonical message, exit code, legal commands, QA warning and gate refusal in [launcher.js](../../../../Axiom/apps/cli/static/launcher/launcher.js#L1051).
+
+## Deviations
+
+### D-001 - High - preview and execute disagree for role execution mode
+
+The launcher mapping advertises `back-new` and `front-new` with `executionMode` and the preview emits `--worktree` or `--in-place` in [app-launcher.ts](../../../../Axiom/apps/cli/src/commands/app-launcher.ts#L294). The execute path still calls `executeSubcommand` with only the id and slug in [app-launcher.ts](../../../../Axiom/apps/cli/src/commands/app-launcher.ts#L1051). `app-api.ts` then calls the synchronous `runRoleSubcommand` without forwarding `executionMode` in [app-api.ts](../../../../Axiom/apps/cli/src/commands/app-api.ts#L521); it does not invoke `runRoleSubcommandAsync`.
+
+Impact: a confirmed user can see a worktree command in preview but execute an in-place role transition, with a different actual command in the result. This violates the requirement that the executed transition not differ from preview. The existing execution-mode test documents this as preview-only, so the passing test does not disprove the mismatch.
+
+Required disposition: either route the action through the real async role wrapper and pass the selected mode, or remove the executable claim and make the preview state explicitly informational. Add an end-to-end test that confirms the selected mode changes the actual execution result and state variables.
+
+### D-002 - High - integrate rollback is compensating, not guaranteed
+
+`runIntegrate` writes archived status and integration metadata before the physical move in [integrate.ts](../../../../Axiom/apps/cli/src/commands/integrate.ts#L193). If the move fails it attempts to restore the old metadata in [integrate.ts](../../../../Axiom/apps/cli/src/commands/integrate.ts#L200), but if that second write also fails the function returns the error while the metadata can remain marked archived. The current collision test proves the successful compensation path, not the double-failure path.
+
+
+N=1 confirms the three previously open behavioral findings with the focused tests listed below. The remaining limitations are recorded under each finding and in Risks.
+Impact: the acceptance wording says a failed move must not leave archived metadata. Under a write failure, the active folder can advertise `status: archived` and `integration.status: integrated` even though it was not moved, producing an inconsistent registry/archive view.
+
+
+The following entries record the pre-N=1 findings. Their current disposition is the N=1 status recorded after each entry.
+Required disposition: make the operation atomic or establish a rollback mechanism whose failure is itself surfaced as an explicit inconsistent state requiring repair, and add a test for rollback-write failure. Until that contract is guaranteed, ACC-005 is not fully closed.
+
+### D-003 - Medium - front omits valid destination-only state and metadata path
+
+The execution log renders the state arrow only when `fromState` exists in [launcher.js](../../../../Axiom/apps/cli/static/launcher/launcher.js#L1056). QA inline/no-op and other gate responses can provide a `toState` without a `fromState`, so the UI does not show the next state even though the API returned it. In the registry table, the path cell chooses `readme` before `folder` and never renders `paths.metadata` in [launcher.js](../../../../Axiom/apps/cli/static/launcher/launcher.js#L482).
+
+Impact: the UI requirement to show previous/next state and the real spec/metadata relationship is only partially met. The data exists in the API, but the operator view can hide the destination state or the metadata path.
+
+Required disposition: render `fromState` and `toState` independently when present, and render folder, metadata and README as separate provenance-backed path lines. Add DOM-level coverage for success, gate failure, QA no-op and registry relations.
+
+## Risks and accepted boundaries
+
+
+- `runValidateTransition` validates the declared graph but does not execute command-specific gates; this is correct for a read-only transition validator, so callers must not present it as approval, freeze or write-scope execution.
+- `runValidateChanges` enforces the plan status/write-scope checks when explicitly invoked; archive does not silently run it. This matches the acceptance wording that write-scope applies when the corresponding validation is run.
+- `requiresApproval` is not interpreted by the pure workflow state machine. The launcher confirmation gate is the real HTTP approval boundary; direct CLI calls remain explicit commands rather than launcher mutations.
+- In a multi-repo project, `resolveProjectRoot` selects the primary `sdd` repo while role affinity gates expect the assigned role repo. Role actions can therefore fail honestly at the affinity gate, but the launcher has no role-repo selector in this route.
+- Relation IDs with no matching target entry are sourced from real metadata links, but the UI does not expose their unresolved/provenance details beyond the ID. Do not convert them into resolved paths without topology or filesystem evidence.
+- The formal freeze, re-freeze receipts, independent review and final orchestrator integration remain outstanding and prevent closure regardless of the nominal test results.
+
+## Validation observed
+
+- `npm run build`: reported OK in the increment validation record.
+- `npx vitest run apps/cli/tests/app-launcher.test.ts`: reported OK, 23 tests.
+- `npx vitest run apps/cli/tests/integrate.test.ts`: reported OK, 5 tests, including archive-destination rollback.
+
+- Focused launcher/workflow/increment/bug/plan/role/validate/integrate/QA suite: reported OK, 13 files and 124 tests.
+- `npx vitest run apps/cli/tests/e2e/launcher.e2e.test.ts`: reported OK, 1 test.
+- `node --check apps/cli/static/launcher/launcher.js`: reported OK.
+- `get_errors` on `app-launcher.ts`, `integrate.ts` and `app-api.ts`: no errors found in this review.
+- Missing targeted evidence: actual confirmed `back-new/front-new` execution with worktree/in-place mode, UI rendering tests for destination-only state and metadata path, and rollback failure when metadata restoration also fails.
+
+## Recommendation
+
+`pending`.
+
+Reason: D-001 is a user-visible action-to-handler mismatch, D-002 leaves the explicit archive consistency requirement conditional on a second write succeeding, D-003 leaves required result/provenance data hidden in the UI, and the stale freeze still lacks the required re-freeze/receipts and orchestrator integration. The nominal build and focused tests are not sufficient for `closed`.
+
+## Documentary actions for the orchestrator
+
+
+- Keep this increment pending until D-001 through D-003 are resolved or explicitly accepted with updated acceptance criteria and tests.
+- Re-run the formal freeze for the post-apply tree and preserve its receipts; do not reuse `d118591cf24dc6303f57edfa8722f16001c07f469e02696467c42effa72f566f`.
+- Reconcile stable launcher facts in the owning `specs/00..08` and `context/**`: actual role execution route, preview-only versus executable semantics, archive rollback guarantee, and the fact that QA archive is advisory.
+- Remove or rewrite any active prose that says the launcher applies worktree mode or guarantees archive consistency until the implementation and evidence support that claim.
+- Perform the final increment integration only after review, re-freeze and receipts satisfy the closure rules. No general spec/context change was made by this review.
+
+## Suggested commit message
+
+`review(launcher): keep SDD lifecycle increment pending after independent review`
+
+No commit was created.
+
+## N=1 validation
+
+- `npx vitest run apps/cli/tests/app-launcher.test.ts apps/cli/tests/integrate.test.ts`: 2 files, 30 tests passed.
+- `npx vitest run apps/cli/tests/e2e/launcher.e2e.test.ts apps/cli/tests/validate-transition.test.ts apps/cli/tests/validate-changes.test.ts`: 3 files, 17 tests passed.
+- `npx vitest run apps/cli/tests/axiom-role-worktree.test.ts apps/cli/tests/e2e/axiom-role-worktree.e2e.test.ts`: 2 files, 8 tests passed.
+- `npm run build`: passed (`tsc -b`).
+- `node --check apps/cli/static/launcher/launcher.js`: passed.
+- `get_errors` on `app-launcher.ts`, `app-api.ts` and `integrate.ts`: no errors found.
+- Missing targeted evidence remains: DOM-level rendering coverage and a test in which the raw snapshot write/rename itself fails.

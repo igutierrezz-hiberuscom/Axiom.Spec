@@ -1,0 +1,9 @@
+id: BUG-20260805-installer-profiles-fallback
+kind: bug
+title: installProfile oculta errores de profiles.yaml
+status: closed
+createdAt: '2026-08-05'
+updatedAt: '2026-08-05'
+externalRefs: []
+links:
+  planId: null

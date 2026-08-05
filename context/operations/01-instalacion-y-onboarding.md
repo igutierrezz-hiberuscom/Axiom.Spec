@@ -41,6 +41,13 @@ npx axiom start
 npx axiom doctor
 ```
 
+`axiom configure` usa `DEFAULT_PROFILES` únicamente cuando
+`axiom.config/profiles.yaml` está ausente. Si el archivo existe pero no se
+puede leer, contiene YAML inválido o no cumple `InstallProfilesYamlSchema`,
+devuelve `invalid-profiles-yaml` y no continúa con una configuración por
+defecto silenciosa. Un override válido se usa sin modificar el archivo de
+origen.
+
 ## `onboarding.yaml` (contrato declarativo)
 
 - `init`: preguntas, defaults, valores permitidos, documentos generados.
@@ -70,24 +77,46 @@ Triple recomendado: `functionalProfile: builder`, `operationalOverlay: local-onl
 Checklist manual de equipo:
 1. `npm run build` verde en `Axiom/`.
 2. `npm test` verde en `Axiom/`.
-3. `node ../axiom.spec/scripts/doctor-validate-contracts.mjs` verde desde la raíz del repo. **Gap residual verificado 2026-07-29**: `Axiom/axiom.spec/` ya existe (contiene `increments/`, `plans/`, `target-axiom-agents/`, `target-axiom-skills/`, `templates/`), pero NO tiene subcarpeta `scripts/` — este paso del checklist sigue sin script real que ejecutar; no confundir con la brecha más amplia ya resuelta del punto anterior.
+3. `npm run doctor` verde desde la raíz de `Axiom/`. El script histórico `../axiom.spec/scripts/doctor-validate-contracts.mjs` ya no forma parte del árbol actual; la validación operativa vigente usa el comando del package.
 4. `npm run readiness:first-project` en `PASS` como criterio de aceptación del flujo.
 5. Documentación operativa navegable (instalación, uso diario, CLI, troubleshooting, esta guía).
 
-**Última ejecución verificada el 2026-07-30:** el flujo no alcanzó `PASS` porque
-su paso `doctor` falló en `TC-011` por un `bundleHash` stale de `axiom-reviewer`.
-La causa es ajena al versionado de toolchain; los checks TC-020..TC-023 no
-fallaron por el incremento.
+La checklist histórica de readiness debe interpretarse junto con el estado
+actual de Doctor: desde R-04, el proyecto dogfooded no pasa `doctor` ni
+`readiness:first-project` mientras `CC-004` detecte capabilities activas sin
+provider. Esto es una señal de configuración pendiente, no un fallo del
+proceso de readiness.
+
+**Registro histórico de ejecución (2026-07-30; superado el 2026-08-02):** el
+flujo no alcanzó `PASS` porque su paso `doctor` falló en `TC-011` por un
+`bundleHash` stale de `axiom-reviewer`. La causa era ajena al versionado de
+toolchain; los checks TC-020..TC-023 no fallaron por el incremento.
+
+**Registro histórico verificado el 2026-08-02:** `npm run doctor` terminó en
+`PASS` (46/61 OK, 0 fallos, 3 advertencias, 12 omitidos) y
+`npm run readiness:first-project` terminó en `PASS`. Esta fotografía quedó
+superada por R-04 (2026-08-05): la nueva cobertura canónica de `CC-004` detecta
+que el repo dogfooded sirve 7 de 16 capabilities provider-routed, por lo que
+Doctor y readiness devuelven `FAIL` hasta completar esa configuración.
 
 ## Onboarding multi-repo (`axiom workspace setup` / `axiom workspace adopt` / `member install`)
 
-Añadido desde el baseline 2026-07-02 (varias oleadas post-0030, consolidadas por `INC-20260727-adoption-config-scaffolding` y anteriores). `runWorkspaceSetup` (`apps/cli/src/commands/workspace-setup.ts`) es el motor CORE compartido, sin TUI ni MCP, detrás de dos flujos:
+Añadido desde el baseline 2026-07-02 (varias oleadas post-0030, consolidadas por `INC-20260727-adoption-config-scaffolding` y anteriores). `runWorkspaceSetup` (`apps/cli/src/commands/workspace-setup.ts`) es el motor CORE compartido, sin interfaz TUI y sin lógica de negocio de MCP, detrás de dos flujos:
 
 - **`axiom workspace setup`**: scaffolding aditivo de un proyecto/repo de control ya existente (no requiere legacy repos previos).
 - **`axiom workspace adopt`** (`workspace-adopt.ts`): adopción de un repo/proyecto legacy hacia el modelo Axiom; llama a `runWorkspaceSetup` tras confirmación explícita para la parte de scaffolding (Subject B), y añade por separado la migración basada en detectores (Subject A) — no cambia la firma de `runWorkspaceSetup` (parametrización puramente aditiva).
 - **`member install`** (`member-install.ts`): instalación por miembro de equipo en un repo multi-rol ya adoptado/configurado.
 
 Ambos flujos de `workspace setup`/`adopt` siembran, best-effort y no-clobber, los 4 artefactos de config que antes ningún comando producía automáticamente: `axiom.config/integrations.yaml` (PC-001), `axiom.config/policy-as-code.yaml` (PC-002), `axiom.config/agents-catalog.yaml` (TC-011) y el `axiom.skills.lock` raíz (GC-001/GC-002/GC-007) — ver `../architecture/02-modelo-de-datos-y-configuracion.md`.
+
+El launcher web (`axiom app`) expone estos flujos con endpoints server-level
+`/api/launcher/workspace/setup` y `/api/launcher/workspace/adopt`. La preview
+no escribe; la confirmación delega en los mismos runners. Antes de adoptar se
+rechazan destinos con `axiom.yaml` de otro proyecto o identidad desconocida y
+paths de roles iguales/anidados. El resultado devuelve paths, created/skipped,
+warnings, provenance, conformance y registry real; una adopción parcial se
+representa como resultado parcial, no como error opaco. `axiom app` es la
+interfaz guiada vigente; no existe una TUI pública equivalente.
 
 ## Fuera de la baseline inicial (no-goals explícitos del MVP)
 

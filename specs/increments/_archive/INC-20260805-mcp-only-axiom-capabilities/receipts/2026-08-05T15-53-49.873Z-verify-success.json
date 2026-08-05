@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260805-mcp-only-axiom-capabilities",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T15:53:49.873Z",
+  "details": "Validación final R-04: npm run build pasó; batería dirigida 15 archivos y 213 tests pasó; get_errors y git diff --check limpios; broker MCP y separación MCP-only verificados.",
+  "hash": "aa11722b5ccc4b026b3fe0a0f35cac0e83432c955f39a94f1e4fb6af4ee5eddc"
+}

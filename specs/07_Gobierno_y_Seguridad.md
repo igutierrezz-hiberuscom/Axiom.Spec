@@ -7,6 +7,10 @@
 3. no promover estructuras legacy como canónicas por comodidad;
 4. límites explícitos de bootstrap (`Axiom.SDD/AGENTS.md`): no introducir sin pedido explícito índices obligatorios, sistemas de metadata complejos, carpetas de lifecycle enterprise, integraciones de work items (Azure DevOps/Jira) como dependencia obligatoria, abstracciones MCP obligatorias, lógica de Workbench, frameworks pesados de multi-agente, jerarquías autogeneradas profundas, ni scripts que no existan aún.
 
+### Ownership documental de decisiones
+
+`Axiom.Spec/decisions/` es el hogar canónico de los ADR y decisiones estructurales del workspace. Las referencias activas deben apuntar a esa ruta; `Axiom/docs/` puede conservar documentación operativa o histórica, pero no es el hogar actual de esos ADR. Esta regla es independiente de `Axiom/axiom.spec/`, que sigue siendo baseline product-owned del runtime y no una segunda fuente canónica de la spec (ADR-0032).
+
 ## Seguridad operativa y compliance (verificado en runtime)
 
 1. **GATEs verificables por doctor**: GATE 0010 (overlay `enterprise` exige `audit-trail-sink`), GATE 0031 (9 adapter packages deben tener `src/generator.ts` + `dist/index.js`), GATE 0024 (memoria no es fuente de verdad; spec prevalece en conflicto), GATE 0033 (agents como contratos materializables, sin ejecución).
@@ -15,6 +19,24 @@
 4. **Telemetría por overlay**: `telemetry-sinks.yaml` define `dataSensitivityBoundaries` por overlay (tags permitidos/redactados, nivel de redacción, flujo cross-project, ventana de retención) y una lista de sinks (`null-sink`, `log-sink`, `remote-sink`, `audit-trail-sink`). `axiom sync` aborta antes de mutar si el overlay exige señales mínimas y no hay sink habilitado que las cubra. No hay documentado un mecanismo formal de opt-out completo de telemetría (verificado como ausente, no como implementado).
 5. **Doctor como gate de gobierno mínimo**: valida presencia y validez de `axiom.yaml`, `integrations.yaml`, `policy-as-code.yaml`, protección de `.axiom-state/local/` frente a versionado accidental, y aislamiento project-scoped.
 6. **Policy-as-code**: `policy-as-code.yaml` concentra `sensitivityTags`, `artifactLifecycle` (transiciones y verificación antes de archive), reglas de `tools`/`compliance` (actitud ante herramientas faltantes o MCP no aprobados), `projectIsolation` y `doctorValidation`.
+
+## Seguridad de launcher, plugins y superficies sustituidas (2026-08-04)
+
+- El launcher es una capa fina sobre CLI/workflow: onboarding, adopción,
+	lifecycle y plugins no duplican escritores ni máquinas de estados.
+- Las acciones de plugins solo pueden ejecutarse mediante handlers registrados
+	en una allowlist estática. El campo declarativo `command` es una etiqueta de
+	compatibilidad; nunca se interpreta como shell, script, path o permiso.
+- El catálogo HTTP usa una proyección explícita y elimina propiedades
+	desconocidas, `sourcePath`, credenciales y opciones no declaradas. Los
+	valores de fields se validan contra tipo, required, opciones y campos
+	permitidos antes de alcanzar tracker, filesystem o red.
+- Las mutaciones local/external requieren preview y `confirmed: true`; el
+	default Azure DevOps usa `NullTracker` sin red. Mensajes de proveedor y
+	`externalRefs` se redactan antes de volver a la UI.
+- La antigua TUI pública y su acción implícita fueron retiradas tras una
+	matriz de paridad. La CLI headless, el launcher y MCP son las superficies
+	vigentes; los runners compartidos no se eliminan por retirar una interfaz.
 
 ## Reglas de cierre (incrementos y bugs, vigentes en este workspace)
 
@@ -42,6 +64,15 @@ Regla: "Axiom se desarrolla con Axiom, pero Axiom no contiene su propia factorí
 - `TC-013` (`technical-context-index-validity`) — opcional: se salta cuando `technical-context/indexes/` está ausente.
 - `TR-001..004` — smoke-test de `routeTool` vía fixture en memoria.
 - `DF-001` (categoría `dogfooding`) — ver arriba.
+
+`CC-004` no valida únicamente el subconjunto que ya aparece en
+`providers.yaml`: compara las 16 capabilities provider-routed canónicas con
+su declaración en `capabilities.yaml`, su estado, su clase de cumplimiento y
+los providers que las sirven. Las capabilities MCP-only `axiom.*` se
+comprueban en la superficie MCP y no se consideran huérfanas del registry
+tradicional. La severidad es `fail` para requeridas activas sin provider,
+`warn` para opcionales o post-MVP sin provider y no bloqueante para
+`disabled`/`unavailable`, siempre con evidencia visible.
 
 ### Gobierno del versionado de toolchain (`INC-20260730-toolchain-versioning`)
 
@@ -81,7 +112,7 @@ El server MCP ejecutable (`@axiom/mcp-server`, lanzado por proyecto vía `axiom 
 
 ## Postura de gobierno de la tanda INC-20260708-* (auto-validación, LOCAL-only, aislamiento preservado)
 
-- **Auto-validación del producto: cierre histórico y estado actual** (`INC-20260708-product-repo-self-bootstrap` + `INC-20260708-fix-longstanding-test-failures`): aquella tanda dejó la baseline canónica de `Axiom/` materializada y registró doctor/readiness y suite verde. La verificación del 2026-07-30 no mantiene ese estado: `npm run doctor` y `npm run readiness:first-project` fallan en `TC-011` por un `bundleHash` stale de `axiom-reviewer`, y la ejecución global independiente del review reportó 3425/3427 tests, con dos fallos fuera del alcance de este incremento; después se añadió una prueba focalizada de `extractVersion()` y ambos fallos se reprodujeron aisladamente. Ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md) y [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md).
+- **Auto-validación del producto: estado histórico y revalidación R-04** (`INC-20260708-product-repo-self-bootstrap` + `INC-20260708-fix-longstanding-test-failures`): aquella tanda dejó la baseline canónica de `Axiom/` materializada y registró doctor/readiness y suite verde. El registro del 2026-07-30 quedó superado: entonces `npm run doctor` y `npm run readiness:first-project` fallaban en `TC-011` por un `bundleHash` stale de `axiom-reviewer`, y la ejecución global independiente del review reportó 3425/3427 tests; ambos hechos pertenecen a fotografías históricas. El estado de 2026-08-02 también queda como histórico: desde R-04, `CC-004` devuelve `FAIL` de forma intencional y explicada porque el repo dogfooded sirve 7/16 capabilities provider-routed; `readiness:first-project` hereda ese fallo. Ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md), [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md) y [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 - **Postura LOCAL-only / bbdd-local en toda la capa de providers**: la restricción no-negociable del operador ("todas las herramientas siempre en local con bbdd en local") se hace cumplir por construcción en `@axiom/providers` — el guard `LOCAL_ONLY`/`isLocalTarget` rechaza/degrada cualquier config de provider que apunte a un endpoint no-local, y los clientes de code-intel (`cmm`/`serena`) y el backend de memoria (`engram`, SQLite local vía MCP stdio) se lanzan siempre como procesos LOCALES. No existe ninguna ruta de ejecución de provider remota/cloud en el seam. Una tool local ausente degrada limpiamente (`not-installed`), nunca es un `fail` de gobierno (`PS-001` del doctor es `warn`, no `fail`, para "habilitado pero no instalado" — una tool de dev ausente es un hecho de entorno, no un defecto del proyecto). Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 - **Aislamiento project-scoped preservado en todas las superficies nuevas**: GATE 0024 (memoria) se conserva y se EXTIENDE al nuevo backend engram con un segundo pin a nivel de proceso (`engram mcp --project=<projectId>`), y el input-builder `memory.*` fija SIEMPRE `projectRoot` al `context` del server (nunca lee un id/path del llamador — un pin más estricto que el de `sdd.*`/`spec.*`, porque la memoria no tiene ningún caso de uso legítimo cross-project). El aprendizaje continuo hereda el aislamiento gratis (todo persist/recall pasa por un `MemoryBackend` scope-bound). La selección de providers, las reglas, las autoskills y las operaciones incrementales son todas project-scoped (resuelven el proyecto desde cwd/`workspace.json`) y best-effort/no-clobber, heredando la misma postura de ownership (nunca reclaman ni clobberan un repo gobernado por otro proyecto). Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
 - **Sin arquitectura especulativa** (límites de bootstrap): esta tanda rechazó explícitamente el motor de instintos de ECC (scoring/herencia/promoción), un motor de hooks de sesión propio, y la fabricación de instrumentación de tool-calls en vivo — el aprendizaje continuo y los delegation triggers son deterministas/puros sobre inputs reales o explícitos, y los hooks de sesión quedan como snippet documentado opt-in, nunca auto-aplicado.

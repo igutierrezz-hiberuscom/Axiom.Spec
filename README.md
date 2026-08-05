@@ -20,11 +20,15 @@ Aquí vive la definición del producto y de su modelo operativo:
 
 ## Estructura
 
-1. `context/`: conocimiento técnico estable y compartido.
-2. `specs/`: spec general numerada y artefactos funcionales.
-3. `decisions/`: ADR y decisiones estructurales.
-4. `artifacts/`: material de apoyo, análisis y entregables no canónicos.
-5. `prompts/`: prompts de especificación o refinamiento documental.
+1. `specs/`: especificación canónica numerada y artefactos funcionales; incluye `specs/increments/` y `specs/bugs/`.
+2. `context/`: conocimiento técnico estable y compartido.
+3. `technical-context/`: índices derivados del contexto técnico; las fuentes narrativas viven en `context/`.
+4. `bugs/`: raíz top-level existente con dos artefactos; las specs canónicas del workspace viven en `specs/bugs/`.
+5. `increments/`: raíz top-level existente actualmente vacía; las specs canónicas del workspace viven en `specs/increments/`.
+6. `plans/`: planes de implementación y coordinación entre repositorios.
+7. `templates/`: plantillas de especificación y workflow.
+8. `prompts/`: prompts de especificación o refinamiento documental.
+9. `decisions/`: ADR y decisiones estructurales.
 
 ## Relación con los otros repos
 

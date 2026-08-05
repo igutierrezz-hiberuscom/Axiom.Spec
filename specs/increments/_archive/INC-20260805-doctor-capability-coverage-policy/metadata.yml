@@ -1,0 +1,9 @@
+id: INC-20260805-doctor-capability-coverage-policy
+kind: increment
+title: política de cobertura de capabilities en Doctor
+status: closed
+createdAt: '2026-08-05'
+updatedAt: '2026-08-05'
+externalRefs: []
+links:
+  planId: null

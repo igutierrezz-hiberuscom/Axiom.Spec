@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260803-r00-adr-ownership-docs",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-03T14:52:11.736Z",
+  "details": "Post-freeze idempotent apply: ADR destinations, old-source absence, active references, and runtime build state rechecked.",
+  "hash": "1d46d09db058fc7cdc4068b371dc3c7469a303902754e12ebfc887a7d12a4f40"
+}

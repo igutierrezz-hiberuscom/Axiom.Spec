@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260803-r00-axiom-spec-boundary",
+  "phase": "freeze",
+  "status": "success",
+  "timestamp": "2026-08-03T14:40:39.726Z",
+  "details": "Candidate re-frozen after README and validation evidence stabilization; hash verified before delegated apply.",
+  "hash": "bb9d4d280a9baf684df9675624ae032604354fdd2663d9c1de6d5ffa8daef1e0"
+}

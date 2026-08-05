@@ -1,0 +1,33 @@
+{
+  "incrementId": "INC-20260803-r00-adr-ownership-docs",
+  "kind": "validation",
+  "timestamp": "2026-08-03T15:21:55.671Z",
+  "cwd": "Axiom/",
+  "commands": [
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "output": "> axiom-product@0.1.0 build\\n> tsc -b"
+    },
+    {
+      "command": "npm run doctor",
+      "exitCode": 0,
+      "output": "Resumen: 46/61 OK | 0 FALLO | 3 ADVERTENCIA | 12 OMITIDO\\nResultado: PASS"
+    },
+    {
+      "command": "npm run readiness:first-project",
+      "exitCode": 0,
+      "output": "[readiness:first-project] PASS"
+    },
+    {
+      "command": "rg --pcre2 legacy-route-sweep",
+      "exitCode": 1,
+      "expectedNoMatches": true,
+      "output": "Sin coincidencias en superficies activas; el codigo 1 es el resultado esperado de rg sin matches."
+    }
+  ],
+  "notes": [
+    "La validacion se repitio despues de corregir instrucciones activas, plantillas materializables y el bundleHash del catalogo.",
+    "El receipt verify posterior y los receipts freeze/apply gobernados se conservan en este directorio."
+  ]
+}

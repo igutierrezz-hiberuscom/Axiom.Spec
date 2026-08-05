@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260804-cli-commands-package-output",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T07:00:48.040Z",
+  "details": "Final batch integration verified: canonical entrypoints, lockfile, runtime and focused consumers green.",
+  "hash": "00b3ad6e44cffd09119af73d4a27c2e14e3740dce4007079a6d47cd976e5152d"
+}

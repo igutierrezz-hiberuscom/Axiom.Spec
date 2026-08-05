@@ -14,7 +14,7 @@ Familias de checks verificadas (prefijo de check ID entre paréntesis; el prefij
 | policies | `PC-001/002` | `axiom.config/integrations.yaml`, `axiom.config/policy-as-code.yaml` presentes |
 | manifests | `MC-001/002` | `axiom.yaml` válido, `.axiom-state/local/` protegida por `.gitignore` |
 | isolation | `IC-001..003` | invariantes project-scoped, restricciones MCP |
-| capability-model | `CC-001..006` | consistencia del modelo declarativo de capabilities |
+| capability-model | `CC-001..006` | consistencia del modelo declarativo y cobertura provider-routed de capabilities |
 | install-profiles | `IP-001..004` | consistencia del profile triple resuelto |
 | gateway | `GW-001` | `gateway-state.json` vs drift contra `providers.yaml`/`profiles.yaml`/`install-profile.json` |
 | tool-routing | `TR-001..004` | consistencia del dispatcher de `ToolCall` |
@@ -67,6 +67,14 @@ Las checks de lockfile **TC-020..TC-023** son project-scoped: TC-020 valida exis
 - Warnings de retención: revisar política espejo en `telemetry-sinks.yaml`.
 
 **`axiom doctor`**: correr con `--json`, corregir primero fallos estructurales, dejar warnings para una segunda pasada.
+
+`CC-004` usa las 16 capabilities provider-routed canónicas, no solo las que
+ya aparecen en `providers.yaml`. Lee su clase y estado desde
+`capabilities.yaml`: requeridas activas sin provider son `fail`, opcionales o
+post-MVP son `warn`, y `disabled`/`unavailable` quedan visibles sin fallo
+activo. Las tres capabilities MCP-only `axiom.*` quedan fuera de esta
+obligación. Si `capabilities.yaml` falta o no es válido, `CC-004` devuelve un
+fallo explícito con la ruta y la causa.
 
 ## Telemetría (`telemetry-sinks.yaml`)
 

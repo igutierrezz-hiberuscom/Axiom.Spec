@@ -2,16 +2,16 @@
 
 Este documento existe para que la spec general no maquille el estado real. Cada punto fue verificado directamente contra el filesystem del repo, no inferido de la documentación.
 
-## Estado de resolución (actualizado 2026-07-30)
+## Estado de resolución (actualizado 2026-08-03)
 
 Varias brechas de este documento (redactado el 2026-07-02) ya están resueltas; las que siguen abiertas se han vuelto a medir contra el árbol real:
 
 - **Brecha 1 — RESUELTA** (`INC-20260708-product-repo-self-bootstrap`): `Axiom/axiom.spec/`, `AGENTS.md`, `axiom.skills.lock` y `axiom.config/` (con sus YAML canónicos) existen hoy en la raíz de `Axiom/`; `_builder/` sigue ausente, pero el script de readiness lo crea vacío en el proyecto temporal.
 - **Brecha 4 — RESUELTA**: el roadmap de rediseño quedó cerrado y archivado (23/24 incrementos ejecutados; INC-24 Workbench sigue diferido).
-- **Ola 2026-07-10 (10 incrementos)** — resolvió además: drift de schemas en `mcp-manifest.yaml`/`integrations.yaml` (CLI `mcp`/`toolchain` ya funcionan contra los artefactos reales; con tests que los cargan de verdad, no fixtures); ausencia de `workflows.yaml`/`topology.yaml` en el propio repo (dogfooding); roles fijos → registro dinámico de roles de equipo (1..N) con validador reconciliado; planes sin separación por rol; contexto técnico que el MCP servía como `null` (ahora indexado y servido); paridad de comandos del wizard TUI; separación arquitecto↔miembro (compartido/committeado vs personal/gitignored) con `member install`/`bindings`; y correctitud (`archive` mueve carpeta, `self-update`, estados reales de toolchain, código muerto del orchestrator). Ver [../../specs/00_Resumen_Ejecutivo.md](../../specs/00_Resumen_Ejecutivo.md) §"Ola de endurecimiento 2026-07-10".
+- **Ola 2026-07-10 (10 incrementos)** — resolvió además: drift de schemas en `mcp-manifest.yaml`/`integrations.yaml` (CLI `mcp`/`toolchain` ya funcionan contra los artefactos reales; con tests que los cargan de verdad, no fixtures); ausencia de `workflows.yaml`/`topology.yaml` en el propio repo (dogfooding); roles fijos → registro dinámico de roles de equipo (1..N) con validador reconciliado; planes sin separación por rol; contexto técnico que el MCP servía como `null` (ahora indexado y servido); paridad de comandos del antiguo wizard interactivo; separación arquitecto↔miembro (compartido/committeado vs personal/gitignored) con `member install`/`bindings`; y correctitud (`archive` mueve carpeta, `self-update`, estados reales de toolchain, código muerto del orchestrator). Ver [../../specs/00_Resumen_Ejecutivo.md](../../specs/00_Resumen_Ejecutivo.md) §"Ola de endurecimiento 2026-07-10".
 - **Brecha 2 — VIGENTE**: hay 81 ficheros de comando CLI y solo una minoría tiene página operativa dedicada.
 - **Brecha 3 — VIGENTE**: la mayoría de los 43 packages no tiene README propio y su descripción requiere contrastar `src/` y `package.json`.
-- **Brecha 5 — VIGENTE**: persiste la ambigüedad de nombres `Axiom.Spec/` vs `axiom.spec/`.
+- **Brecha 5 — MITIGADA (ADR-0032, 2026-08-03)**: la similitud de nombres `Axiom.Spec/` vs `axiom.spec/` sigue siendo un riesgo de lectura, pero el ownership ya está decidido y verificado. `Axiom.Spec/` es el repo canónico del workspace; `Axiom/axiom.spec/` es baseline product-owned consumida por el runtime y se conserva en su ubicación actual.
 
 ### Límites vigentes del versionado de toolchain (`INC-20260730-toolchain-versioning`)
 
@@ -64,7 +64,7 @@ en `Axiom/axiom.config/`; la arquitectura vigente se documenta en
 `apps/cli/src/commands/` contiene **81 ficheros**; 10 son helpers internos con
 prefijo `_` y no comandos invocables por sí mismos. `Axiom/docs/cli/`
 documenta en profundidad los 12 comandos del baseline (`init`, `join`,
-`configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `tui`, `model`,
+`configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `model`,
 `components`, `skills`), pero la cobertura no alcanza a la mayoría de las
 superficies añadidas después.
 
@@ -101,7 +101,7 @@ canónicos de `specs/` y el contexto técnico reconciliado.
 
 ## 5. Ambigüedad de nombres `Axiom.Spec/` vs `axiom.spec/`
 
-Ver `specs/08_Glosario.md`, sección "Aviso de ambigüedad de nombres". Es una fuente real de confusión al leer los docs de `Axiom/` (que usan `axiom.spec/` en minúsculas para su propio catálogo de configuración interna) junto a este repo de workspace (`Axiom.Spec/`, en mayúsculas, con una estructura completamente distinta: `context/`, `specs/`, `templates/`, `plans/`, `prompts/`).
+Ver `specs/08_Glosario.md`, sección "Aviso de ambigüedad de nombres". La similitud nominal sigue siendo una fuente real de confusión al leer los docs de `Axiom/`, pero ADR-0032 fija la separación: `Axiom.Spec/` (mayúsculas) es el repo canónico del workspace, con `context/`, `specs/`, `templates/`, `plans/`, `prompts/` y `decisions/`; `Axiom/axiom.spec/` (minúsculas) es baseline product-owned del runtime, con `increments/`, `plans/`, `target-axiom-agents/`, `target-axiom-skills/` y `templates/`. Los consumidores activos y `specRepo.ref: ../Axiom.Spec` verifican que no debe moverse, eliminarse ni renombrarse.
 
 ## Cómo mantener este documento
 

@@ -1,6 +1,6 @@
 # 11. Launcher visual
 
-`axiom app`: el front de navegador que permite operar Axiom sin abrir la terminal ni la TUI.
+`axiom app`: el front de navegador que permite operar Axiom sin abrir la terminal.
 
 ## Abrirlo
 
@@ -32,7 +32,7 @@ Al completarlo se muestra el **prompt pregenerado** con un botón de copiar-a-un
 
 ## Onboarding: instalar o unirse sin terminal
 
-La pestaña **Instalar / Unirse** cubre, con tres tarjetas, exactamente lo que antes requería la CLI/TUI:
+La pestaña **Instalar / Unirse** cubre, con tres tarjetas, el onboarding que antes requería operar desde la terminal:
 
 - **Instalar**: crea un proyecto Axiom NUEVO (equivalente a `axiom init`), con un formulario de nombre/perfil/overlay/layout/adapter.
 - **Unirse**: registra un proyecto Axiom YA EXISTENTE en el registro de esta máquina (equivalente a `axiom projects join`).

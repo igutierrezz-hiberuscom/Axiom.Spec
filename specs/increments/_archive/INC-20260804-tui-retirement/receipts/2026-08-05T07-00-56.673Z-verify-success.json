@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260804-tui-retirement",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T07:00:56.673Z",
+  "details": "Final batch integration verified: parity matrix, no active TUI wiring, compiled CLI absence, doctor/readiness and 23-file/221-test validation green.",
+  "hash": "de1fd5b0c0c3e1c8fdb4d9f0fbe530fdea6dbaa9f488a819e88b0f45ae992150"
+}

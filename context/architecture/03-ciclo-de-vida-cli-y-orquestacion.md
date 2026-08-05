@@ -46,11 +46,18 @@ Ejecuta familias de checks (creció bastante desde el baseline 2026-07-02: bound
 ### `axiom upgrade`
 `--dry-run` | `--from-checkpoint <id>` | `--target-version <v>` | `--no-sync` | `--no-doctor`. Calcula migraciones aplicables, crea checkpoint pre-upgrade (`init.json`, `install-profile.json`, `managed-state.json`), aplica migraciones en orden con rollback automático si alguna falla, persiste nuevo `ManagedState`, y por defecto encadena `sync` + `doctor` post-upgrade.
 
-## TUI (`axiom tui`)
+## Histórico: TUI (`axiom tui`)
+
+La TUI fue retirada como superficie pública en ACC-005 (2026-08-04). Esta
+sección se conserva únicamente para explicar decisiones históricas y no es
+una instrucción operativa vigente.
 
 Requiere TTY. Menú de 6 items: configurar, sincronizar, diagnóstico, upgrade, model routing, salir. Para mutaciones (configure/sync/upgrade): preview read-only → confirmación (Y/n) → ejecución real vía `@axiom/cli-commands` → post-run summary con restore point y follow-ups. Doctor corre directo (read-only). Model routing tiene submenú por slot (teclas 1-4 = clases, 0 = unset).
 
-**Wizard genérico de `init` (`INC-20260703-tui-init-wizard`, cerrado)**: cuando no hay proyecto detectado, la pantalla `setup` de la TUI ya no es un formulario fijo — lanza un wizard guiado de 6 steps (nombre, rol, layout, profile, overlay, target) con una pantalla de confirmación/resumen antes de invocar `runInit`. Las screens genéricas reutilizables (`wizard-select`, `wizard-text`) viven en `@axiom/tui` (`packages/tui/src/screens/wizard-select.ts`/`wizard-text.ts`, driver en `packages/tui/src/driver.ts`); el step-builder consciente de los enums concretos de Axiom (profile/overlay/target) vive en `apps/cli/src/commands/tui.ts`.
+**Wizard genérico de `init` (histórico, `INC-20260703-tui-init-wizard`)**: fue
+retirado junto con la TUI en ACC-005. El contrato vigente equivalente es el
+launcher de onboarding y `axiom init` headless; no quedan screens ni driver
+TUI en el runtime.
 
 ## `axiom model` (routing de modelos por slot)
 
@@ -76,11 +83,11 @@ Slots: `increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archiv
 - Comandos backed por `@axiom/tracker`/`@axiom/tracker-ado`: `_tracker-status.ts`, `external-sync.ts`, además de `app-launcher-ado.ts`.
 - Otros ficheros nuevos desde el baseline: `axiom-adr.ts`, `axiom-decision.ts`, `artifact-metadata-cli.ts`, `bindings.ts`, `bootstrap.ts`, `eject.ts`, `external-sync.ts`, `index-cmd.ts`, `integrate.ts`, `learn.ts`, `mcp-serve.ts`, `normalize-cmd.ts`, `rollback.ts`, `scaffold.ts`, `state-cmd.ts`, `validate-changes.ts`.
 
-Los 12 comandos documentados en el baseline (`init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `tui`, `model`, `components`, `skills`) siguen siendo los únicos con página dedicada de nivel similar en `docs/cli/`; el resto (ya ~70 ficheros de comando real) sigue sin ella. **`axiom app`** merece mención aparte: desde `INC-20260727-launcher-default-and-old-ui-removal` (cerrado) abre `${url}/launcher/` por defecto (el viejo operator UI raíz — `static/index.html`/`app.js`/`style.css`/`sw.js`/`manifest.json` — se eliminó junto a 6 endpoints exclusivos que solo él usaba); `GET /` y `GET /index.html` redirigen 302 a `/launcher/` (verificado: `apps/cli/src/commands/app.ts`, comentarios junto a la constante `launcherUrl`). Antes de tratar el comportamiento de cualquiera de estos comandos como contrato estable, verificar directamente en el código.
+Los comandos documentados en el baseline (`init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `model`, `components`, `skills`) siguen siendo páginas históricas de `docs/cli/`; `tui` ya no forma parte de la superficie registrada. **`axiom app`** abre `${url}/launcher/` por defecto; el viejo operator UI raíz se eliminó y `GET /`/`GET /index.html` redirigen 302 a `/launcher/`. Antes de tratar el comportamiento de cualquier comando como contrato estable, verificar directamente en el código.
 
 ## `@axiom/cli-commands` (barrel)
 
-Re-exporta funciones `runX` (`runConfigure`, `runSync`, `runModel`, `runComponents`, `runSkills`, `runMemory`, `runMcp`, etc.) desde `apps/cli/src/commands/*`, para que `@axiom/tui` no dependa directamente de `apps/cli`. Es re-export trivial, sin lógica propia. Nota conocida: bug pre-existente de resolución de paths por configuración de `tsconfig`/`rootDir`, documentado en `Axiom/docs/installation.md`.
+Reexporta funciones `runX` desde el owner físico `packages/cli-commands/src/commands/*` y publica `dist/index.js`/`dist/index.d.ts` con ownership único para CLI, launcher y MCP. No contiene lógica de negocio ni depende de una interfaz TUI.
 
 ## Gobierno verificable en el ciclo (2026-08-02) — tanda `INC-20260730-*`
 

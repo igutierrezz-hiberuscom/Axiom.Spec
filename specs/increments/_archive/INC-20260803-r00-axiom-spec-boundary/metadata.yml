@@ -1,0 +1,12 @@
+id: INC-20260803-r00-axiom-spec-boundary
+kind: increment
+title: R-00 axiom.spec boundary decision
+status: archived
+createdAt: '2026-08-03T00:00:00Z'
+updatedAt: '2026-08-03T15:31:02.897Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-03T15:31:02.897Z'
+links:
+  planId: null

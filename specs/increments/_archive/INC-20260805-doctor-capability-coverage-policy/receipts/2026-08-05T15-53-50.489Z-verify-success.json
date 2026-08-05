@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260805-doctor-capability-coverage-policy",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T15:53:50.489Z",
+  "details": "Validación final R-04: npm run build pasó; batería dirigida 15 archivos y 213 tests pasó; CC-004 real fail esperado con 7/16 servidas; get_errors y git diff --check limpios.",
+  "hash": "af28bae85f85b0a0359f5e84f85cd41dd8de6800e06c6e4bde40d2050dafa95a"
+}

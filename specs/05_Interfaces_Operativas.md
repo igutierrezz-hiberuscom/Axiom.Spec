@@ -3,13 +3,14 @@
 ## Surfaces principales
 
 1. CLI del runtime (`axiom`, entry point `apps/cli/dist/index.js`, instalado vía `scripts/install-global.mjs` como shim/`npm link` único en el PATH del usuario);
-2. TUI operativa (`axiom tui`, `@axiom/tui`);
+2. launcher web local (`axiom app`, servido bajo `/launcher/`);
 3. adapters que conectan Axiom con harnesses o IDEs (`@axiom/adapters-*`);
-4. manifests/YAML que describen la configuración y topología del proyecto (`axiom.yaml`, `axiom.config/*.yaml`, `topology.yaml`).
+4. manifests/YAML que describen la configuración y topología del proyecto (`axiom.yaml`, `axiom.config/*.yaml`, `topology.yaml`);
+5. servidores MCP ejecutables y handlers project-scoped.
 
 ## CLI: comandos documentados en profundidad
 
-`init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `tui`, `model` (`show`/`set`/`unset`/`reset`/`validate`), `components` (`list`/`show`/`install`/`uninstall`/`restore`), `skills` (`list`/`refresh`/`drift`). Fuente: `Axiom/docs/cli/*.md`.
+`init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `model` (`show`/`set`/`unset`/`reset`/`validate`), `components` (`list`/`show`/`install`/`uninstall`/`restore`), `skills` (`list`/`refresh`/`drift`). Fuente: `Axiom/docs/cli/*.md`. `tui` ya no es un comando registrado.
 
 ## CLI: comandos presentes en código sin documentación operativa equivalente
 
@@ -24,13 +25,14 @@ La superficie adicional de `apps/cli/src/commands/` incluye las rutas de aplicac
 
 El catálogo dedicado (`axiom.config/toolchain-catalog.yaml`) usa schema 2 y declara `versionExtractor`, canales y compatibilidad opcional. El lockfile usa schema 1, queda bajo `.axiom-state/<project>/` y se escribe de forma atómica. `TC-020..TC-023` son las checks síncronas asociadas; el drift real de versión se comprueba mediante `axiom doctor --deep`.
 
-## TUI (`axiom` / `axiom tui`)
+## Launcher web (`axiom app`)
 
-Punto de entrada: `axiom` sin subcomando abre la TUI (acción por defecto de Commander en `apps/cli/src/index.ts`, reusa `runTuiCli`); `axiom tui` es equivalente. Los subcomandos, `--help` y `--version` matchean antes y quedan sin cambios.
-
-Con proyecto Axiom resuelto: menú operativo de 6 items (configurar, sincronizar, diagnóstico, upgrade, model routing, salir; 7 con "reparar instalación" — ver sección del roadmap más abajo). Para mutaciones (`configure`, `sync`, `upgrade`) muestra preview read-only, pide confirmación y muestra un post-run summary con restore point y follow-ups. Exige TTY.
-
-Sin proyecto Axiom (y con TTY): en vez de abortar con `projectNotFound`, la TUI abre el menú de bootstrap `setup` (ver "wizard guiado de `init`" más abajo). En no-TTY se preserva `projectNotFound` + exit 1 (CI-safe). Fuente: `Axiom/docs/cli/tui.md`, package `@axiom/tui`.
+`axiom app` abre por defecto `/launcher/`. El launcher ofrece selector de
+proyecto, install/join, workspace setup/adopt, doctor, registry, acciones del
+ciclo SDD, plugins y paneles ADO/Git. Las operaciones mutantes usan
+preview→confirmacion y delegan en los runners canonicos; el servidor no
+introduce una segunda logica de negocio. La ausencia de `axiom tui` y de la
+accion implicita sin subcomando se comprueba en el binario compilado.
 
 ## Adapters (surfaces por IDE/CLI externo)
 
@@ -53,7 +55,7 @@ La superficie realmente alcanzable y primaria coincide con la forma preferida `a
 - `axiom validate changes --project <id> --plan <planId>` (validación de write-scope);
 - `axiom bootstrap from-code --level minimal|basic [--role <role>]` y `axiom bootstrap from-legacy-sdd <path> [--dry-run]`;
 - `axiom repair` (general, top-level, distinto de `axiom toolchain repair` y `axiom mcp repair`).
-- `axiom mcp serve --kind <sdd|spec|memory|axiom> --project-root <path> [--home-dir <path>]` (`INC-20260708-mcp-runnable-server` y `INC-20260724-unified-axiom-mcp`): lanza el server MCP ejecutable `@axiom/mcp-server` (JSON-RPC 2.0 sobre stdio delimitado por saltos de línea) con el conjunto de herramientas correspondiente al kind. `sdd` expone las capabilities `sdd.*`, `spec` las `spec.*`, `memory` las capabilities reales de memoria y `axiom` el broker unificado del repo `<project>.axiom` con la unión acotada de lecturas de spec, dos escrituras SDD confirmadas y las lecturas de plano de proyecto. Es el proceso servidor real detrás de `sdd-mcp-server`/`spec-mcp-broker` y de las entradas del broker `axiom`; todos los servers fijan el scope del proyecto. El comando se registra desde un fichero app-owned (`apps/cli/src/commands/mcp-serve.ts`).
+- `axiom mcp serve --kind <sdd|spec|memory|axiom> --project-root <path> [--home-dir <path>]` (`INC-20260708-mcp-runnable-server` y `INC-20260724-unified-axiom-mcp`): lanza el server MCP ejecutable `@axiom/mcp-server` (JSON-RPC 2.0 sobre stdio delimitado por saltos de línea) con el conjunto de herramientas correspondiente al kind. `sdd` expone las capabilities `sdd.*`, `spec` las `spec.*`, `memory` las capabilities reales de memoria y `axiom` el broker unificado del repo `<project>.axiom` con la unión acotada de lecturas de spec, dos escrituras SDD confirmadas y las lecturas MCP-only de plano de proyecto. Las tres lecturas `axiom.*` pertenecen a la superficie MCP y no exigen un provider tradicional del modelo genérico. Es el proceso servidor real detrás de `sdd-mcp-server`/`spec-mcp-broker` y de las entradas del broker `axiom`; todos los servers fijan el scope del proyecto. El comando se registra desde un fichero app-owned (`apps/cli/src/commands/mcp-serve.ts`).
 
 Ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) para el contrato funcional completo de cada uno.
 
@@ -68,9 +70,9 @@ Comandos nuevos entregados por esta tanda, todos app-owned (registrados directo 
 
 ### `axiom workspace` — setup headless completo + reparación/reuso granular (`INC-20260710-workspace-command-parity`)
 
-Hasta este incremento, `runWorkspaceSetup` (el motor multi-repo detrás del wizard de la TUI, ver la sección de abajo) no tenía ningún caller headless: no había forma de scriptear un install completo, correrlo en CI, ni reparar/reusar una PARTE de un install ya existente sin re-correr todo el setup. `axiom workspace` (`apps/cli/src/commands/workspace.ts`, registrado en `index.ts` justo después de `registerWorkspaceIncremental`) cierra ese hueco, 100% no-interactivo (sin TTY, sin prompts — todo por flags):
+Antes de `axiom workspace`, `runWorkspaceSetup` era el motor multi-repo detrás del wizard interactivo histórico y no tenía caller headless. `axiom workspace` (`apps/cli/src/commands/workspace.ts`, registrado en `index.ts` justo después de `registerWorkspaceIncremental`) cerró ese hueco y sigue siendo 100% no-interactivo (sin TTY, sin prompts — todo por flags):
 
-- **`axiom workspace setup`**: equivalente headless COMPLETO del wizard de la TUI. Mapea flags a un `WorkspaceSetupSpec` (`buildWorkspaceSetupSpecFromFlags`, el análogo headless de `tui.ts`'s `buildWorkspaceSetupSpecFromWizard`) y llama al MISMO `runWorkspaceSetup`, sin cambios. Flags: `--name`/`--spec-path` (requeridos), `--control-path` (default cwd), `--role <name>:<path>` (repetible — roles de equipo dinámicos, 1..N, sin enum fijo, Decision D5), `--adapters`/`--profile`/`--overlay`/`--providers <csv>`, `--no-register`, `--json`.
+- **`axiom workspace setup`**: setup headless COMPLETO del workspace. Mapea flags a un `WorkspaceSetupSpec` (`buildWorkspaceSetupSpecFromFlags`) y llama al MISMO `runWorkspaceSetup`, sin cambios. Flags: `--name`/`--spec-path` (requeridos), `--control-path` (default cwd), `--role <name>:<path>` (repetible — roles de equipo dinámicos, 1..N, sin enum fijo, Decision D5), `--adapters`/`--profile`/`--overlay`/`--providers <csv>`, `--no-register`, `--json`.
 - **Sub-comandos granulares, re-ejecutables sobre un install YA EXISTENTE** (resuelven el proyecto desde cwd con el mismo `resolveExistingProject` que `repo add`/`adapter add` ya usan): `axiom workspace spec-base --spec-path <dir>` (→ `scaffoldSpecRepoBase`, no requiere proyecto registrado), `axiom workspace adapters [--path <repo>] [--adapters <csv>]` (→ `generateWorkspaceAdapters`; nunca toca `workspace.json` ni la config MCP nativa — para eso siguen existiendo `adapter add`/`mcp-config` respectivamente), `axiom workspace skills [--path <repo>]` (→ `scaffoldSddSkills`/`scaffoldCodeRepoSkills`, sin gatear en "recién creado" — a propósito, es el punto de un comando de reparación), `axiom workspace rules [--path <repo>]` (→ `scaffoldRules`), `axiom workspace mcp-config [--path <repo>]` (→ `buildWorkspaceMcpServers` + `writeWorkspaceMcpConfig` + `writeWorkspaceNativeMcpConfigs`), `axiom workspace config-scaffold` (→ `scaffoldArchitectDeclarations`, `INC-20260710-architect-member-handoff`; ver más abajo).
 
 Reparto de responsabilidad, deliberadamente sin superposición: los comandos ADD-only (`repo add`/`adapter add`/`provider add`/`role add`, más `roles register`) agregan algo NUEVO a un install; `axiom workspace <granular>` re-aplica/repara una parte de lo que YA EXISTE (sin agregar nada nuevo al registro/`workspace.json`). Ninguno de los dos grupos duplica lógica de scaffolding: ambos son wrappers finos sobre los mismos step fns del motor (`workspace-setup.ts`/`workspace-adapters.ts`/`workspace-skills.ts`/`workspace-rules.ts`/`workspace-mcp.ts`/`workspace-spec-base.ts`).
@@ -153,7 +155,12 @@ ej. resucitar la idea de `intent.ts` cableada en `index.ts` como
 `axiom run <action>`) seguiría siendo superficie de producto nueva
 que requeriría su propio incremento — no un gap de cumplimiento.
 
-## TUI — pantallas y flujos añadidos por el roadmap de rediseño
+## Histórico: TUI — pantallas y flujos añadidos por el roadmap de rediseño
+
+Las subsecciones siguientes conservan la forma histórica de la interfaz
+retirada para trazabilidad. No describen una superficie operativa vigente ni
+deben usarse como instrucciones de runtime; los sustitutos actuales son el
+launcher web, la CLI headless y MCP.
 
 `router.ts`'s `MENU_ITEMS` tiene 7 entradas: configurar, sincronizar, diagnóstico, upgrade, **reparar instalación** (posición 4, entre upgrade y model routing — añadida por este roadmap), model routing, salir. `packages/tui/src/flows/configure.ts`/`upgrade.ts`/`repair.ts` son wrappers sin lógica de negocio (solo formateo de mensajes). Esto extiende, sin reemplazar, el menú de 6 items descrito en la sección "TUI" de arriba.
 

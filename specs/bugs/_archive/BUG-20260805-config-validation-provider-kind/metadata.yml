@@ -1,0 +1,9 @@
+id: BUG-20260805-config-validation-provider-kind
+kind: bug
+title: config-validation rechaza el kind real de cmm
+status: closed
+createdAt: '2026-08-05'
+updatedAt: '2026-08-05'
+externalRefs: []
+links:
+  planId: null

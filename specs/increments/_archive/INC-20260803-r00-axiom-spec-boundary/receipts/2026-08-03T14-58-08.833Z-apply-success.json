@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260803-r00-axiom-spec-boundary",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-03T14:58:08.833Z",
+  "details": "Post-freeze idempotent apply: axiom.spec inventory, topology boundary, ADR-0032, active references, and runtime build state rechecked.",
+  "hash": "1ad4e4b7398ed640c66dacad37cef403eb08cc799860a1a410efa7222dab0490"
+}

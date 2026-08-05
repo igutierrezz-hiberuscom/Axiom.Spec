@@ -34,7 +34,9 @@ El `single-mode` de `claude-code` (tabla de arriba) es una decisión de diseño 
 
 ## Capability model y providers
 
-`@axiom/capability-model` gestiona capabilities por dominio (`sdd`, `spec`, `code`, `memory`), con `supportLevels` y `degradationPolicy`. Providers se resuelven por `discoveryOrder` con perfiles `filesystem-first` / `gateway-first` / `local-only`. En el estado actual, `cmm` cubre las capacidades estructurales (`code.knowledgeGraph` y `code.structureAnalysis`), `serena` cubre la navegación semántica (`code.semanticNavigation`) y `engram` implementa el backend de memoria; todos degradan de forma explícita cuando una tool local no está disponible.
+`@axiom/capability-model` separa 16 capabilities provider-routed por los dominios `sdd`, `spec`, `code` y `memory`, con `supportLevels` y `degradationPolicy`, de 3 capabilities MCP-only (`axiom.topologyRead`, `axiom.migrationManifestRead`, `axiom.adoptionStateRead`) que se registran en la superficie MCP pero no exigen un provider tradicional. Providers se resuelven por `discoveryOrder` con perfiles `filesystem-first` / `gateway-first` / `local-only`. En el estado actual, `cmm` cubre las capacidades estructurales (`code.knowledgeGraph` y `code.structureAnalysis`), `serena` cubre la navegación semántica (`code.semanticNavigation`) y `engram` implementa el backend de memoria; todos degradan de forma explícita cuando una tool local no está disponible.
+
+`@axiom/doctor` comprueba la cobertura del catálogo provider-routed con `CC-004`: usa un universo canónico independiente de las capabilities que ya aparecen en `providers.yaml`. Una capability requerida activa sin provider produce `fail`; una opcional o post-MVP sin provider produce `warn`; una capability `disabled` o `unavailable` queda visible sin fallo activo; las capabilities MCP-only quedan fuera de esta obligación. El propio repo `Axiom` produce actualmente `CC-004 fail` porque solo 7 de las 16 capabilities provider-routed tienen provider declarado.
 
 **Providers cableados y seleccionables** (`INC-20260708-*`, actualizado por `INC-20260724-cmm-replaces-graphify-codegraph`): existe una capa de ejecución real (`@axiom/providers`) con clientes locales de code-intel y backend local de memoria, degradación tipada `not-installed` y fallback explícito. El registry canónico contiene 6 ids (`filesystem`, `axiom-gateway`, `serena`, `cmm`, `engram`, `generated-snapshots`); la selección project-scoped se guarda aparte en `workspace.json#providers`. Los ids `codegraph` y `graphify` quedan fuera del registry, del routing y de la UX de selección.
 
@@ -176,7 +178,7 @@ Resuelve la pregunta de arquitectura Q4: el sistema existente `@axiom/capability
   - Resolución de `repositories.target`: gana el `input.targetRepoId` explícito; si no, si queda exactamente una entrada de repo tras excluir las claves `spec`/`sdd`, esa es `target`; si no, `target` es `null` y se marca en `missingMetadata` — un no-adivinar deliberado para proyectos con múltiples repos target: el llamador debe pasar `targetRepoId` explícitamente en ese caso.
   - `mandatory.rules`/`mandatory.commands` (y sus contrapartes en `indexes`/`recommended`) están permanentemente vacíos/ausentes: no existe ningún tipo de artefacto "rules" o "commands" que los respalde. `indexes.commands`/`indexes.rules` llevan `unsupported: true` para distinguir este hueco de producto permanente de un caso de "índice no encontrado esta vez" por proyecto.
 - **Mapeo histórico de proveedor `sdd`/`spec` -> `axiom-gateway`**: la allowlist MCP de `@axiom/isolation` (`sdd`/`spec`/`serena`) y los `CANONICAL_PROVIDER_IDS` de aquella versión (`filesystem`, `axiom-gateway`, `serena`, `codegraph`, `graphify`, `engram`, `generated-snapshots`) eran listas independientes. El registry vigente de 6 ids y la sustitución por `cmm` prevalecen sobre esta fotografía.
-- **`@axiom/cli-commands`** es el seam establecido para exponer las funciones `runX` de `apps/cli/src/commands/*` a cualquier consumidor que no deba importar `apps/cli/src/...` directamente (construido originalmente para `@axiom/tui`). Toda nueva herramienta MCP respaldada por CLI o flujo de TUI debería reusar este seam como re-export trivial, no inventar uno nuevo.
+- **`@axiom/cli-commands`** es el seam establecido para exponer las funciones `runX` de los comandos compartidos a cualquier consumidor que no deba importar fuentes app-side directamente. Publica `dist/index.js` y `dist/index.d.ts`, mantiene ownership único y es consumido por CLI, launcher y MCP; no es una dependencia de una interfaz TUI.
 - **Checks `TR-001..004` de `@axiom/doctor`** hacen smoke-test de `routeTool` vía un fixture en memoria; no dependen de ningún capability id específico. Extender la cobertura de doctor al registro de capability/provider de `@axiom/mcp-tools` (`TR-005`+) se consideró y quedó diferido — ningún installer/scaffold escribe hoy un `capabilities.yaml`/`providers.yaml` real a ningún proyecto, así que no hay call site de producción vivo que comprobar.
 
 ### Technical-context index GENERADO (deja de servir `null`) — INC-20260710-technical-context-served
@@ -255,7 +257,7 @@ El setup de workspace multi-repo (`runWorkspaceSetup`, ver [03_Modelo_Operativo_
   - `spec-mcp-broker` (Spec MCP) con `targetRepo` = la `roleKey` de registro del repo de spec.
   
   En aquella versión, ambas entradas llevaban un comando de lanzamiento real (`command: 'axiom'` + `args: ['mcp','serve','--kind',<sdd|spec>,'--project-root',<path absoluto>]`). Los `targetRepo` referencian claves del mapa de repos del registro v2 (no paths); la forma vigente y sus cuatro kinds se describen arriba. En el caso degenerado de que control y spec colapsen a la misma `roleKey` (workspace single-repo), solo se emite `sdd-mcp-server` más un warning, evitando un par `duplicate-type-target-repo` inválido.
-- **Proyección a cada adapter MCP-capaz seleccionado** (evolución histórica): aquella primera ruta pasó del target primario a una proyección por adapter y después fue sustituida por el schema MCP nativo. La forma actual y la matriz completa de targets están en la sección "Config MCP nativa por herramienta destino".
+- **Proyección a cada adapter MCP-capaz seleccionado**: la forma vigente usa el schema MCP nativo por adapter y la matriz completa de targets está en la sección "Config MCP nativa por herramienta destino".
 - **Semántica best-effort**: la generación solo corre si el registro tuvo éxito (`register !== false` y `registryRegistered: true`); si se saltó o falló, la generación MCP se salta con un warning explicativo. El paso está envuelto en try/catch que nunca escala: los fallos (incluidos issues de validación) se acumulan en `warnings`, nunca abortan el setup; `.axiom/mcp.yml` se escribe aunque la validación reporte issues (validate-after-write).
 - **Caveat de gitignore**: `.axiom/` está gitignoreado, así que `mcp.yml` es un artefacto machine-local (no versionado) — coherente con que declara qué procesos servidor MCP están habilitados localmente para que los adapters generen config runtime.
 
@@ -413,7 +415,7 @@ Tanda de graduación a *full product lifecycle*. Reordena el stack externo (prov
 
 ### `cmm` sustituye a `graphify` y `codegraph` como único proveedor estructural — ADR-0031 (INC-20260724-cmm-replaces-graphify-codegraph)
 
-**SUPERSEDE** la sección "Providers de code-intel cableados (codegraph/serena/graphify) — INC-20260708-code-intel-providers-wired" y el `SELECTABLE_PROVIDER_IDS` de "Selección de providers" (arriba). `codebase-memory-mcp` (`cmm`) pasa a ser el **único** proveedor estructural; `graphify` y `codegraph` dejan de ser seleccionables/registrables/enrutables en cualquier parte. El set cerrado `CANONICAL_PROVIDER_IDS` baja de 7 a **6** ids (fuera `codegraph`/`graphify`, dentro `cmm`); el cambio del set cerrado se autoriza vía **ADR-0031** (`docs/0031-adr-cmm-replaces-graphify-and-codegraph.md`), honrando la regla ADR-0021.
+**SUPERSEDE** la sección "Providers de code-intel cableados (codegraph/serena/graphify) — INC-20260708-code-intel-providers-wired" y el `SELECTABLE_PROVIDER_IDS` de "Selección de providers" (arriba). `codebase-memory-mcp` (`cmm`) pasa a ser el **único** proveedor estructural; `graphify` y `codegraph` dejan de ser seleccionables/registrables/enrutables en cualquier parte. El set cerrado `CANONICAL_PROVIDER_IDS` baja de 7 a **6** ids (fuera `codegraph`/`graphify`, dentro `cmm`); el cambio del set cerrado se autoriza vía **ADR-0031** (`Axiom.Spec/decisions/0031-adr-cmm-replaces-graphify-and-codegraph.md`), honrando la regla ADR-0021.
 
 - `cmm` sirve AMBAS capabilities estructurales (`code.knowledgeGraph` + `code.structureAnalysis`) con un `ProviderClient` real (`cmm-client.ts`, patrón `serena-client.ts`); nuevo `ProviderKind` `'structural-code-intel'`.
 - `serena` **sin cambios** = simbólico (`code.semanticNavigation`). Separación fuerte cmm (estructural/grafo/blast-radius/dependencias/trazas) ↔ serena (def/refs/rename).
@@ -452,9 +454,24 @@ Todo el contenido es adapter/stack-agnóstico; la profundidad específica de cad
 
 Tanda de 7 incrementos que lleva el conjunto de adapters a paridad de primera clase (registro, generadores, MCP nativo, routing/prompt del launcher), añade probes de runtime opt-in a `doctor` y convierte el onboarding del launcher en un front config-rich. Requisitos en [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) (RF-AXM-049..055); no funcionales en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md) (NFR-AXM-020/021).
 
+### Hardening del launcher y plugins externos (2026-08-04) — ACC-006/007/008
+
+El launcher delega setup/adopcion y lifecycle en los runners canonicos. Valida
+ownership de destinos antes de adoptar, rechaza paths de repos solapados y
+devuelve resultados parciales con provenance y warnings. El lifecycle propaga
+`executionMode` al handler async de roles y `runIntegrate` hace preflight y
+rollback antes de informar un archive exitoso.
+
+Los plugins declarativos usan `schemaVersion`, `handler` y una allowlist
+estatica. `command` solo se compara como etiqueta; no se ejecuta. La
+proyeccion de catalogo/resultado es explicita, valida tipos/options/required,
+redacta mensajes y URLs, y omite propiedades desconocidas. Azure DevOps sigue
+opcional: `NullTracker` no hace red y ADO real solo se construye mediante sus
+ports/configuracion existentes.
+
 ### Registro canónico de 10 adapter targets (fuente única) — INC-20260726-adapter-registry-canonical
 
-El vocabulario `ADAPTER_TARGETS` es ahora exactamente 10 ids (`opencode, copilot-vscode, claude-code, antigravity, visual-studio-2026, cursor, github-copilot, litellm, vscode, codex`), reconciliado a fuente única a través del CLI (`init.ts` + `tui.ts`'s `TARGET_LABELS`), el composer de install-profiles (`default-profiles.ts`, `allowedTargets` de ambos profiles), `axiom.yaml#capabilities.adapters` (headline de 8) y `SUPPORT_MATRIX`/`MVP_TARGETS` de model-routing (`codex` añadido como `'fallback-only'`, 10 entradas). `vscode` deja de ser invisible a `init`/`workspace-adapters` (ya tenía paquete `@axiom/adapters-vscode` + entrada en support-matrix, pero faltaba en la lista del CLI y en `allowedTargets`) y `codex` es un id nuevo. Detalle del invariante de reconciliación en RF-AXM-049 y NFR-AXM-021.
+El vocabulario `ADAPTER_TARGETS` es ahora exactamente 10 ids (`opencode, copilot-vscode, claude-code, antigravity, visual-studio-2026, cursor, github-copilot, litellm, vscode, codex`), reconciliado a fuente única a través del CLI (`init.ts` + `_adapter-labels.ts`), el composer de install-profiles (`default-profiles.ts`, `allowedTargets` de ambos profiles), `axiom.yaml#capabilities.adapters` (headline de 8) y `SUPPORT_MATRIX`/`MVP_TARGETS` de model-routing (`codex` añadido como `'fallback-only'`, 10 entradas). `vscode` deja de ser invisible a `init`/`workspace-adapters` (ya tenía paquete `@axiom/adapters-vscode` + entrada en support-matrix, pero faltaba en la lista del CLI y en `allowedTargets`) y `codex` es un id nuevo. Detalle del invariante de reconciliación en RF-AXM-049 y NFR-AXM-021.
 
 ### Generadores de adapter dedicados (codex/antigravity/visual-studio-2026) — INC-20260726-adapter-generators
 

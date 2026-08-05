@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260804-tui-retirement",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T07:42:19.149Z",
+  "details": "Verificacion final: paridad, retiro de TUI, regresiones directas, dist cleanup y reconciliacion canonica validados; listo para archive.",
+  "hash": "d6b443029bcf5191edd8260d5d872576bff4288cd4b048e35b226e04524ae4d1"
+}

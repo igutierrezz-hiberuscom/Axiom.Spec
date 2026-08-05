@@ -41,7 +41,7 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 
 ### Bloques de cada YAML relevante (documentados)
 
-- **`capabilities.yaml`**: `capabilities.required/.optional/.postMvpOptional`, `supportLevels`, `degradationPolicy`. Cada capability: `id`, `domain` (`sdd`|`spec`|`code`|`memory`), `name`, `version`, `compliance`, `requiredTools`, `optionalTools`, `fallbacks`, `deprecated`, `schemaRef`.
+- **`capabilities.yaml`**: `capabilities.required/.optional/.postMvpOptional`, `supportLevels`, `degradationPolicy` y, cuando aplica, `mcpOnlyCapabilities`. El modelo provider-routed usa `id`, `domain` (`sdd`|`spec`|`code`|`memory`), `name`, `version`, `compliance`, `requiredTools`, `optionalTools`, `fallbacks`, `deprecated` y `schemaRef`; las tres capabilities MCP-only `axiom.*` se mantienen en su mapa separado.
 - **`providers.yaml`**: registry de providers + perfiles de discovery (`filesystem-first`, `gateway-first`, `local-only`) con `discoveryOrder`, `preferredProviders`, `optionalProviders`, `gatewayExpectation`.
 - **`profiles.yaml`**: `profileBindings` (profile funcional → overlay por defecto, discovery provider profile, `allowedTargets`).
 - **`command-protocol.yaml`**: `explicitCommands`, `runtimeCommands` (nombre, dónde corre, qué lee/escribe, si exige binding explícito de proyecto), `intentCommands`, `safety` (confirmaciones y bloqueos).

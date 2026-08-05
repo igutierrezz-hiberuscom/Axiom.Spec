@@ -1,6 +1,6 @@
 # Historial de incrementos (0015–0030, post-MVP)
 
-Fuente: `Axiom/docs/0015-cavekit-discipline-post-mvp.md` a `0030-operator-app-plugins-and-external-bridge.md`. El MVP (incrementos previos a 0015, incluyendo 0008/0010/0018) cerró el 2026-06-25; este documento cubre la ola post-MVP cerrada el 2026-06-30.
+Fuente: ADR migrados a `Axiom.Spec/decisions/` (0015, 0019, 0026–0031) y evidencia histórica de los incrementos post-MVP 0015–0030. El MVP (incrementos previos a 0015, incluyendo 0008/0010/0018) cerró el 2026-06-25; este documento cubre la ola post-MVP cerrada el 2026-06-30.
 
 Las rutas y nombres de toolchain que aparecen en las entradas históricas
 (`axiom.spec/config/`, `.sdd/`, `CodeGraph` y `Graphify`) describen el estado

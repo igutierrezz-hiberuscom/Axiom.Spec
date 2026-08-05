@@ -4,7 +4,7 @@ Cómo arrancar la spec canónica y el contexto técnico de un proyecto — desde
 
 ## Escenario 1: proyecto nuevo (scaffold desde plantillas)
 
-Cuando el setup de workspace (`axiom workspace setup`, o el wizard guiado de la TUI) crea desde cero el repo de Spec, lo scaffoldea automáticamente desde la base canónica de plantillas: `specs/README.md` + `specs/00..08` + `context/TECHNICAL_CONTEXT.md`/`README.md` + los directorios estructurales (`specs/{increments,bugs,archive}`, `context/*`). Es best-effort y guardado per-file — nunca sobreescribe contenido ya existente en una corrida posterior. Así, un workspace nuevo arranca ya con la estructura numerada de spec en vez de una carpeta vacía.
+Cuando el setup de workspace (`axiom workspace setup`) crea desde cero el repo de Spec, lo scaffoldea automáticamente desde la base canónica de plantillas: `specs/README.md` + `specs/00..08` + `context/TECHNICAL_CONTEXT.md`/`README.md` + los directorios estructurales (`specs/{increments,bugs,archive}`, `context/*`). Es best-effort y guardado per-file — nunca sobreescribe contenido ya existente en una corrida posterior. Así, un workspace nuevo arranca ya con la estructura numerada de spec en vez de una carpeta vacía.
 
 ## Escenario 2: adoptar código existente (bootstrap)
 

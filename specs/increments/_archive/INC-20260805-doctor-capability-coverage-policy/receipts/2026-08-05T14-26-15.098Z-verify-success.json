@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260805-doctor-capability-coverage-policy",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T14:26:15.098Z",
+  "details": "npm run build paso; suites doctor, capability-model y config-validation: 24 archivos, 266 tests; CC-004 real: fail, 7/16 servidas, 6 requeridas y 3 opcionales sin provider; candidate freeze verificado con AXIOM_TEST_FORCE_JSON=1.",
+  "hash": "13953736c73db328daba7c08498b408b30b2c5ba07512156135be9769760755f"
+}

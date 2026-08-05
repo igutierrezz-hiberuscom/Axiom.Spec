@@ -1,0 +1,8 @@
+{
+  "incrementId": "BUG-20260805-installer-profiles-fallback",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-05T16:05:39.521Z",
+  "details": "Validación final R-04: installProfile hace fallback solo ante ausencia; errores presentes son fail-closed; build, installer y consumidores CLI pasan; integración canónica y review completadas.",
+  "hash": "0fea68231aa7b53ee6743374dbaf2f7505f13f6ac2580790191be702f958db7d"
+}

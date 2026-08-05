@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260803-r00-adr-ownership-docs",
+  "phase": "freeze",
+  "status": "success",
+  "timestamp": "2026-08-03T14:40:27.037Z",
+  "details": "Candidate re-frozen after README and validation evidence stabilization; hash verified before delegated apply.",
+  "hash": "dbc355e756f8de6090e35af50c8632b0cde20154b398098321b2681bac9699cb"
+}

@@ -33,7 +33,7 @@ La detección de versiones usa probes locales best-effort y la regex del catálo
 
 ## Qué hace el producto hoy
 
-El punto de entrada del operador es `axiom` sin subcomando, que abre la TUI (los subcomandos, `--help` y `--version` siguen funcionando igual). En una carpeta sin proyecto Axiom, la TUI muestra un menú de bootstrap cuya acción de inicializar recorre un **wizard guiado multi-repo** que prepara un workspace completo en una sola operación — repo de control (SDD), repo de Spec y N repos de código por rol, cruzados entre sí, registrados y con MCP configurado (`INC-20260705-*`; supersede al antiguo wizard single-repo de `init`) — ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md). `axiom init` sigue disponible como comando no-interactivo/scriptable single-repo.
+El punto de entrada guiado vigente es `axiom app`, que abre el launcher web local bajo `/launcher/`. Desde allí se puede instalar o unir un proyecto, configurar un workspace, adoptar spec/SDD/contexto, consultar el registry y operar el ciclo SDD con preview y confirmación. La misma capacidad está disponible de forma headless mediante los comandos CLI y sus handlers MCP. `axiom` sin subcomando ya no abre una TUI y `axiom tui` dejó de ser un comando registrado; `axiom init` sigue disponible como comando no-interactivo/scriptable single-repo.
 
 Para un proyecto que adopta Axiom, el ciclo de vida real es:
 
@@ -43,10 +43,28 @@ axiom init → axiom join → axiom configure → axiom sync → axiom start →
 
 Cada comando lee/escribe un conjunto concreto de artefactos (`axiom.yaml`, `.axiom-state/<project>/*.json`, `.axiom-state/local/*`) y, según el profile y los adapters seleccionados, genera la superficie portable `.axiom/{agents,commands,skills}/`, salidas específicas como `.opencode/`, `.claude/`, `.codex/`, `.antigravity/`, `.vs/`, `.cursor/`, `.vscode/`, `.github/copilot-instructions.md` y `litellm.config.json`, además de `.axiom/mcp.yml` y la configuración MCP nativa aplicable (`opencode.json`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` o `.vs/mcp.json`). `codex` y `antigravity` reciben notas sobre su configuración user-global y `litellm` un warning sin schema verificado. El detalle completo vive en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y en `context/architecture/`.
 
+## Reconciliación de superficies operativas (2026-08-04)
+
+La salida pública de `@axiom/cli-commands` se publica desde `dist/index.js` y
+`dist/index.d.ts`, con ownership único de los comandos compartidos; la TUI
+pública se retiró y ya no forma parte del runtime. El launcher delega onboarding y adopción en
+`runWorkspaceSetup`/`runWorkspaceAdopt`, rechaza destinos foráneos o paths de
+roles solapados y conserva resultados parciales con warnings y provenance.
+
+El registry del launcher deriva metadata, paths, workflow-state y relaciones
+solo de archivos reales. Las acciones SDD se delegan a los `run*` canónicos,
+propagan `executionMode` al handler async de worktrees y archivan mediante
+`runIntegrate` con preflight y rollback. Los plugins externos usan handlers
+allowlisted: `command` es una etiqueta, no una autoridad de ejecución; el
+catálogo y los resultados se proyectan sin secretos. Estas reglas quedaron
+verificadas en ACC-004, ACC-006, ACC-007 y ACC-008.
+
 ## Dos modelos distintos que conviven bajo el nombre "Axiom" (evitar confundirlos)
 
 1. **El producto Axiom** (`Axiom/`): el CLI/runtime descrito arriba, que cualquier proyecto externo puede adoptar. Su unidad de configuración es `axiom.yaml` + estado runtime en `.axiom-state/<projectName>/` dentro del proyecto que lo instala, más un catálogo de ~20 YAML de política/capacidad que el propio Axiom espera encontrar en una carpeta `axiom.config/` (minúsculas) en la raíz del proyecto; el contenido de spec vive aparte en `axiom.spec/`. Ambas carpetas fueron renombradas en `INC-20260703-config-folder-renames` (ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [08_Glosario.md](08_Glosario.md)).
 2. **El workspace de desarrollo de Axiom** (esta raíz: `Axiom/`, `Axiom.SDD/`, `Axiom.Spec/`): el modelo de tres repos desacoplados que `Axiom.SDD/AGENTS.md` establece para construir el propio producto con disciplina SDD ligera (spec en `Axiom.Spec/`, implementación en `Axiom.SDD/`, runtime opcional en `Axiom/`). Este es el "dogfooding" de Axiom sobre sí mismo, y es un concepto de nivel distinto al `axiom.spec/` interno de un proyecto cualquiera.
+
+En este workspace, la topología identifica `Axiom.Spec/` como `specRepo` y fuente documental canónica. `Axiom/axiom.spec/` se conserva como baseline product-owned materializable del runtime dogfoodeado; sus contenidos no sustituyen el repositorio canónico ni deben fusionarse con él (ADR-0032).
 
 Ver el glosario ([08_Glosario.md](08_Glosario.md)) para no mezclar `Axiom.Spec/` (este repo) con `axiom.spec/` (carpeta que el producto espera dentro de cualquier proyecto que lo adopte, incluido potencialmente `Axiom/` mismo).
 
@@ -54,7 +72,14 @@ Ver el glosario ([08_Glosario.md](08_Glosario.md)) para no mezclar `Axiom.Spec/`
 
 El cierre histórico de `INC-20260708-product-repo-self-bootstrap` y `INC-20260708-fix-longstanding-test-failures` registró la baseline canónica de `Axiom/` (`axiom.config/`, `axiom.spec/target-axiom-skills|agents/`, `axiom.spec/templates/`, `AGENTS.md`, `axiom.skills.lock`), corrigió el `repoRoot` de `verify-first-project-readiness.mjs` y dejó la suite en verde (`178/178` ficheros, `1859/1859` tests en ese momento). Ese resultado describe el cierre de aquella tanda y no debe leerse como una garantía vigente.
 
-**Estado actual verificado el 2026-07-30:** `npm run doctor` y `npm run readiness:first-project` fallan en `TC-011` por un `bundleHash` stale de `axiom-reviewer`. La ejecución global independiente del review reportó 328/330 archivos y 3425/3427 tests, con dos fallos fuera del alcance de `INC-20260730-toolchain-versioning`; después se añadió una prueba focalizada de `extractVersion()` y ambos fallos se reprodujeron aisladamente. Las carpetas `axiom.config/` y `axiom.spec/` sí existen en la raíz actual de `Axiom/`.
+**Registro histórico de validación (2026-07-30; superado por la verificación del 2026-08-02):** `npm run doctor` y `npm run readiness:first-project` fallaban en `TC-011` por un `bundleHash` stale de `axiom-reviewer`. La ejecución global independiente del review reportó 328/330 archivos y 3425/3427 tests, con dos fallos fuera del alcance de `INC-20260730-toolchain-versioning`; después se añadió una prueba focalizada de `extractVersion()` y ambos fallos se reprodujeron aisladamente. La verificación posterior devuelve `npm run doctor` en PASS (46/61 OK, 0 fallos, 3 advertencias, 12 omitidos) y `npm run readiness:first-project` en PASS. Las carpetas `axiom.config/` y `axiom.spec/` sí existen en la raíz actual de `Axiom/`.
+
+**Revalidación R-04 (2026-08-05):** la corrección de `CC-004` hace visible que el
+repo dogfooded solo sirve 7 de las 16 capabilities provider-routed. Por eso
+`npm run doctor` y `npm run readiness:first-project` devuelven `FAIL` en
+`CC-004`, con seis capabilities requeridas y tres opcionales sin provider. El
+fallo es el diagnóstico esperado de la configuración incompleta, no una
+regresión del check; la batería dirigida de R-04 y `npm run build` pasan.
 
 ## Ola de endurecimiento 2026-07-10 (auditoría + 10 incrementos, cerrada)
 
@@ -65,7 +90,7 @@ Tras una auditoría de premisas contra el código real (build limpio, suite en v
 - **Roles dinámicos** (`dynamic-team-roles`): los roles dejan de ser un catálogo fijo. Registro de roles de equipo de primera clase en `topology.yaml#roles` (`axiom roles register/unregister`, 1..N arbitrarios), desacoplado del eje de perfiles de instalación; el validador de topología acepta los roles registrados y la topología generada por el wizard ya pasa su propio `topology validate`.
 - **Planes por rol** (`plan-role-split`): `PlanMetadata.roles` + `axiom-plan create` deriva la separación por rol desde los roles/asignaciones de topología, puebla `targetRepos`/`allowedWriteScope` (ahora `validate changes` sí enforce) y genera un `role-<slug>.md` por rol.
 - **Contexto técnico servido por MCP** (`technical-context-served`): las tools MCP devolvían `null` porque el contexto curado (`context/`) no estaba indexado. Generador de `technical-context/indexes/<rol>.index.yml` (`axiom context index`), índice `repo` materializado, y corregido el `inlineContent` (resolución relativa al índice + path-guard). El MCP ahora sirve el contexto real.
-- **Paridad de comandos del wizard** (`workspace-command-parity`): todo lo que hacía el wizard TUI es ahora ejecutable por comando — `axiom workspace setup` headless + subcomandos granulares (`spec-base`, `adapters`, `skills`, `rules`, `mcp-config`, `config-scaffold`) para reparar o reutilizar partes de una instalación.
+- **Paridad de comandos del antiguo wizard interactivo** (`workspace-command-parity`): todo lo que hacía el wizard es ahora ejecutable por comando — `axiom workspace setup` headless + subcomandos granulares (`spec-base`, `adapters`, `skills`, `rules`, `mcp-config`, `config-scaffold`) para reparar o reutilizar partes de una instalación.
 - **Instalación por miembro** (`per-member-install` + `architect-member-handoff`): separación explícita responsabilidad **compartida/committeada** (arquitecto: `axiom.config/*`, roles, MCPs, catálogo de utilidades, spec, contexto, skills) vs **personal/gitignored** (miembro: rutas físicas en `.axiom-state/local/topology-bindings.yaml`, config MCP nativa per-máquina, estado local de utilidades). Comandos `axiom member install` y `axiom bindings`; launch MCP resoluble (`axiom` en PATH o `node <cli>`); `.gitignore` protege `.axiom-state/`. El `workspace setup` scaffoldea las declaraciones committeadas que `member install` consume.
 - **Correctitud y honestidad** (`lifecycle-correctness-fixes` + `honesty-and-toolchain-states`): `archive` reubica físicamente la carpeta a `_archive/`; `self-update` lee la versión del paquete instalado; registry v1→v2 auto-migra en `init`/`repo attach`; toolchain con estados diferenciados (`declared`/`marker`/`installed-working` con probe real, ya no "present" falso); código muerto del orchestrator (`axiom intent`) eliminado y README corregido; bugs menores (doble prefijo `gateFailure:`/`upgradeFailed:`, preview dry-run adr/decision).
 
@@ -88,7 +113,7 @@ Tras el test de integración controlado adoptando KVP25 (2026-07-13), que dejó 
 
 ## Roadmap de rediseño (cerrado, parcialmente implementado)
 
-El incremento de planificación `specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/` secuenció un rediseño (separación de repos por rol `sdd`/`spec`/`code`, registro global `~/.axiom/projects.yml`, manifiestos `axiom.yml` por repo, índices derivados/curados, MCP único por proyecto con `get_implementation_context`, TUI contextual y sistema de versionado/migraciones) en 24 incrementos (INC-01 a INC-24). A fecha 2026-07-03, los 23 incrementos de infraestructura (Fases A-G más INC-23, dogfooding) están **cerrados** — cada uno auditó primero el paquete `Axiom/packages/*` existente (modelo de reconciliación, no greenfield) antes de extenderlo. INC-24 (Workbench) permanece explícitamente diferido, sin empezar. El detalle de qué quedó resuelto, qué quedó pendiente y el registro de las 5 preguntas de arquitectura (Q1-Q5) vive repartido en las secciones correspondientes de `01` a `08` de esta carpeta (topología y registro en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md), modelo de artefactos y bootstrap en [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) y [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md), capa MCP en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md), gobierno en [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)). El histórico completo de las 71 carpetas de incremento de esta cadena vive archivado en `specs/increments/_archive/`; el índice/resumen de cierre del roadmap está en `specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/README.md`. No confundir el modelo de `axiom.yaml schemaVersion: 1` (vigente por defecto, ver "Dos modelos distintos" arriba) con el `schemaVersion: 2` opt-in que este roadmap añadió de forma aditiva.
+El incremento de planificación `specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/` secuenció un rediseño (separación de repos por rol `sdd`/`spec`/`code`, registro global `~/.axiom/projects.yml`, manifiestos `axiom.yml` por repo, índices derivados/curados, MCP único por proyecto, la interfaz TUI contextual histórica y el sistema de versionado/migraciones) en 24 incrementos (INC-01 a INC-24). A fecha 2026-07-03, los 23 incrementos de infraestructura (Fases A-G más INC-23, dogfooding) están **cerrados** — cada uno auditó primero el paquete `Axiom/packages/*` existente (modelo de reconciliación, no greenfield) antes de extenderlo. INC-24 (Workbench) permanece explícitamente diferido, sin empezar. El detalle de qué quedó resuelto, qué quedó pendiente y el registro de las 5 preguntas de arquitectura (Q1-Q5) vive repartido en las secciones correspondientes de `01` a `08` de esta carpeta (topología y registro en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md), modelo de artefactos y bootstrap en [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) y [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md), capa MCP en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md), gobierno en [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)). El histórico completo de las 71 carpetas de incremento de esta cadena vive archivado en `specs/increments/_archive/`; el índice/resumen de cierre del roadmap está en `specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/README.md`. No confundir el modelo de `axiom.yaml schemaVersion: 1` (vigente por defecto, ver "Dos modelos distintos" arriba) con el `schemaVersion: 2` opt-in que este roadmap añadió de forma aditiva.
 
 ## Principios del producto
 
@@ -97,7 +122,7 @@ El incremento de planificación `specs/increments/_archive/INC-20260702-axiom-re
 3. Axiom model primero; generated config después.
 4. La trazabilidad enterprise es obligatoria (audit trail, telemetry sinks).
 5. Deben soportarse los modos `local-only`, `standard` y `enterprise` (overlays operacionales).
-6. Las capabilities están guiadas por profiles (`functionalProfile` + `operationalOverlay` + `adapterTarget`).
+6. Las capabilities están guiadas por profiles (`functionalProfile` + `operationalOverlay` + `adapterTarget`); el runtime separa las capabilities provider-routed de las tres lecturas MCP-only `axiom.*`.
 7. Las integraciones de tooling son adapters opcionales, con niveles de soporte explícitos (`multi-mode`, `single-mode`, `fallback-only`).
 8. Minimizar el gasto de tokens sin reducir la auditabilidad.
 9. Mantener una arquitectura modular y reemplazable (`Result<T,E>` sin excepciones, escritura atómica, path-guard por proyecto).
@@ -107,7 +132,7 @@ El incremento de planificación `specs/increments/_archive/INC-20260702-axiom-re
 
 No existe hoy `plans/PLAN-PRODUCT-ROADMAP.md` en `Axiom.Spec/plans/` (la carpeta solo tiene un `README.md` de propósito, sin contenido de roadmap). El estado operativo consolidado y verificable vive en:
 - `Axiom/README.md` (tabla de capas y paquetes operativos);
-- `Axiom/docs/0015-…` a `0030-…` (increments post-MVP cerrados);
+- `Axiom.Spec/decisions/0015-…`, `0019-…`, `0026-…` a `0031-…` (ocho ADR migrados) y `0032-…` (frontera entre `Axiom.Spec/` y `Axiom/axiom.spec/`);
 - `specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/README.md` (roadmap de rediseño archivado — ver sección anterior);
 - `specs/increments/_archive/` (histórico de las 71 carpetas de incremento del roadmap de rediseño).
 
