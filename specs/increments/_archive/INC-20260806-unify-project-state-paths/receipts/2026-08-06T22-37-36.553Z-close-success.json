@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-unify-project-state-paths",
+  "phase": "close",
+  "status": "success",
+  "timestamp": "2026-08-06T22:37:36.553Z",
+  "details": "Incremento archived e integrado; metadata status archived, integration.status integrated y ledger sin blockers.",
+  "hash": "49602aab3690b885c921215be40e24f31e6fb8d85740524ba202384e9af3e9c0"
+}

@@ -9,7 +9,7 @@ La configuración de Axiom no es un único archivo, se reparte en:
 - **`axiom.yaml`** (raíz del repo): manifiesto autoral del proyecto — identidad (`projectId`/`name`/`repoId`/`role`), `paths` recíprocos hacia repos hermanos, y el profile triple. Es la fuente única de verdad; `topology.yaml` se deriva de él.
 - **`axiom.config/*.yaml`** (versionado): profiles/overlays/capabilities/providers/políticas — p. ej. `profiles.yaml`, `providers.yaml`, `topology.yaml`.
 - **`~/.axiom/projects.yml`** (registro de usuario, machine-level): el registro v2 de proyectos conocidos por esta máquina, un `repos: { <role>: { role, path } }` por proyecto. Sustituyó al legado `~/.axiom/registry.json` (migración automática, ver `08_Glosario.md`).
-- **`.axiom-state/<project>/`** (estado runtime, no versionado): `init.json`, `install-profile.json`, checkpoints, `workspace.json`, `tracker.json` (ver [12_Plugin_Azure_DevOps.md](12_Plugin_Azure_DevOps.md)), y el overlay local en `.axiom-state/local/` (bindings, provider overrides).
+- **`.axiom-state/<projectKey>/`** (estado runtime, no versionado): `init.json`, `install-profile.json`, checkpoints, `workspace.json`, `tracker.json` (ver [12_Plugin_Azure_DevOps.md](12_Plugin_Azure_DevOps.md)). `.axiom-state/local/` queda reservado para bindings, overrides y audit trail realmente locales.
 
 ## Cómo cambiar la configuración
 
@@ -30,8 +30,8 @@ Los nombres de rol son texto libre (no un enum fijo) — cualquier nombre saniti
 
 ## Profiles, overlays, targets
 
-- **`functionalProfile`**: `builder` (habilita `code.*` + roles de implementación) o `product-owner` (limitado a spec/SDD, `code.*` bloqueado).
-- **`operationalOverlay`**: `local-only` (todo local, sin gateway, recomendado para desarrollo), `standard` (gateway opcional), `enterprise` (gateway requerido + gobierno/compliance ampliado).
+- **`functionalProfile`**: compatibilidad de lectura legacy; el valor efectivo actual es siempre `builder` y no se selecciona.
+- **`operationalOverlay`**: compatibilidad de lectura legacy; la política efectiva actual es siempre `local-only` y no existe gateway.
 - **`adapterTarget`**: el IDE/CLI de destino primario (uno de los 9 targets soportados). Un proyecto puede tener MÚLTIPLES adapters instalados a la vez (selección multi-select en el wizard de setup, persistida en `workspace.json#adapters`); `adapterTarget`/`spec.target` es el primario derivado (`adapters[0]`).
 
 ## Tuning de agente por adapter (verbosity/personality)

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-remove-legacy-resolution-modes",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-06T17:27:03.645Z",
+  "details": "Worker apply completado: ProjectMode local-only; normalizacion legacy gateway/hybrid; pruebas focalizadas y build reportados.",
+  "hash": "aa929c9ff18cded071d6ae5bd49d00551d9ce073bbf6de0cd5a6ecfb51f0df69"
+}

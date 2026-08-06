@@ -32,7 +32,7 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 
 | Package | Responsabilidad | Exports/tipos clave | Tests | Notas |
 |---|---|---|---|---|
-| `@axiom/install-profiles` | Compositor puro del profile triple → `ResolvedInstallProfile` | `resolveInstallProfile`, `loadProfilesData`, `FUNCTIONAL_PROFILES`, `OPERATIONAL_OVERLAYS` | No documentados | README disponible (spec 0018-A4) |
+| `@axiom/install-profiles` | Compositor puro de `builder` + `local-only` + target → `ResolvedInstallProfile` | `resolveInstallProfile`, `loadProfilesData`, `FUNCTIONAL_PROFILES`, `OPERATIONAL_OVERLAYS` (nombres de API conservados por compatibilidad) | No documentados | README disponible (spec 0018-A4) |
 | `@axiom/installer` | Materializa el perfil resuelto, persiste `install-profile.json` | `installProfile`, `GENERATED_FILES_BY_TARGET`, `EXTERNAL_DEPS_BY_CAPABILITY` | Sí | README disponible (spec 0018-A4) |
 
 ## Capa adapters (9 sub-packages de `packages/adapters/`, verificado 2026-07-29)
@@ -85,7 +85,7 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 |---|---|---|---|---|
 | `@axiom/doctor` | Suite de health checks (~19 categorías con IDs propios; ver `../operations/02-doctor-troubleshooting-y-telemetria.md`), modo opt-in `--deep` | `runDoctorChecks`, `runDoctorChecksDeep`, `formatReport` | No documentados | README disponible; creció mucho desde el baseline (6 familias → ~19) |
 | `@axiom/orchestrator` | State machine **8 lifecycle + 19 intent commands** (verificado en README propio, corrige "7+15" del baseline), gates, rollback; solo 7 de los 8 lifecycle pasan realmente por el gate desde `apps/cli` (`doctor-command` es la excepción documentada) | `gateFor`, `runCommand`, `CommandContext` | Sí (smoke E2E por comando) | README disponible |
-| `@axiom/cli-commands` | Barrel de re-export de `runX` desde `apps/cli/src/commands/*` | `runConfigure`, `runSync`, `runModel`, etc. | No documentados | README disponible; re-export trivial |
+| `@axiom/cli-commands` | Barrel y owner de compilacion de los comandos compartidos en `packages/cli-commands/src/commands/*` | `runX`, `registerX`, helpers compartidos | No documentados | `rootDir` e `include` locales; publica `dist/index.js` y `dist/index.d.ts` para CLI, launcher y MCP |
 | `@axiom/tui` | Retirado en ACC-005 (2026-08-04); la fila se conserva como referencia histórica de la superficie eliminada | Ninguno vigente | Tests eliminados con la superficie | Spec 0019 (B1-B3) + ACC-005 |
 | `@axiom/launcher` | Front web operador (default de `axiom app`), routing de adapters a skill/mcp-tool, prompt-builder | `AXIOM_ADAPTER_ROUTING`, `apiGetLauncherData`, prompt-builder | No documentados | Nuevo desde el baseline; ver `../architecture/04-adapters-y-model-routing.md` |
 | `apps/cli` | Entry point, **81 ficheros** de comando (verificado: `ls apps/cli/src/commands/*.ts \| wc -l`; 10 de ellos son helpers `_`-prefixed sin comando propio; **129 ficheros `*.test.ts`** verificados bajo `apps/cli/` — el conteo "31 test files, 201 tests" del baseline no se pudo re-verificar exactamente y se trata como stale/no confiable) | `axiom <comando>` | Sí | README disponible; el propio README interno del package aún cita "31 test files/201 tests", no actualizado en este pase (fuera de alcance: ese README vive en `Axiom/`, no en `Axiom.Spec/`) |
@@ -113,7 +113,9 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 
 ## Cobertura de tests (agregada, según README/estructura)
 
-Cifra agregada del monorepo **verificada 2026-08-02** con `npx vitest run` completo: **336 ficheros de test, 3489 tests, 3483 en verde y 6 en rojo**. Los 6 fallos son preexistentes a la tanda `INC-20260730-*` y están caracterizados: 5 deterministas en `packages/install-profiles/tests/composer.test.ts` (matrices `builder`/`product-owner` con `opencode` y enablement de capabilities) y 1 por **timeout de 5000 ms bajo contención de la suite completa** en `packages/memory/tests/engram-backend.test.ts` (`query()` con filtro de kind), que pasa en verde al ejecutar `packages/memory` en aislamiento. `apps/cli/tests/launcher-panels.test.ts` presenta la misma clase de flake por contención de forma intermitente.
+Cifra agregada del monorepo **verificada 2026-08-06** con `npx vitest run` completo: **326 ficheros de test y 3313 tests, todos en verde**. La suite usa `testTimeout: 30000` en `Axiom/vitest.config.ts` porque contiene escenarios I/O-heavy de workspace, worktree y MCP que superan de forma legítima el timeout por defecto de 5 segundos bajo contención paralela. La diferencia frente a la corrida previa de 3323 tests es la retirada de diez casos que afirmaban combinaciones legacy de perfiles/overlays. La corrida ampliada anterior de 2026-08-02 (3489 tests, 3483 verdes y 6 fallos) queda como registro histórico superado; sus fallos no deben presentarse como estado actual.
+
+El mismo pase operativo dejó `npm run doctor` en `PASS` (`45/60`, 0 fallos) y `CC-004` en `13/16` con warning no bloqueante por tres capabilities opcionales sin provider; `npm run readiness:first-project` también terminó en `PASS`.
 
 Advertencia metodológica confirmada en esta medición: una ejecución única de la suite **no** es evidencia suficiente — dos corridas del mismo árbol dieron 9 y 6 fallos respectivamente, y una tercera murió con `Segmentation fault` en `npx` devolviendo un exit code engañoso. Contrastar siempre contra varias corridas antes de atribuir un fallo a un cambio.
 

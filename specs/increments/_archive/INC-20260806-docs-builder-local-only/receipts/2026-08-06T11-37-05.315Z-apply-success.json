@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-docs-builder-local-only",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-06T11:37:05.315Z",
+  "details": "Apply documental final integrado en specs 00-08 y context: claims activos reconciliados, historia preservada.",
+  "hash": "be6ee2a0936087bbd617c9c54cda3844fe58f073793853366e11f0319893adc2"
+}

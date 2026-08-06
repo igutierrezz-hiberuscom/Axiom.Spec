@@ -24,7 +24,7 @@ init → join → configure → sync → start → audit → doctor
                                           upgrade (cuando cambia la versión target)
 ```
 
-Verificado por el script de smoke `Axiom/scripts/verify-first-project-readiness.mjs` (`npm run readiness:first-project`), que ejecuta exactamente esta secuencia extendida contra un proyecto temporal: `init → configure → toolchain repair → sync → start → gateway start → gateway status → audit → doctor`, y falla si algún paso devuelve exit code distinto de 0, falta un artefacto esperado, o `gateway status` no reporta `state: active`.
+Verificado por el script de smoke `Axiom/scripts/verify-first-project-readiness.mjs` (`npm run readiness:first-project`), que ejecuta exactamente esta secuencia contra un proyecto temporal: `init → configure → toolchain repair → sync → start → audit → doctor`, y falla si algún paso devuelve exit code distinto de 0 o falta un artefacto esperado.
 
 Contrato por comando (lee/escribe) detallado en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y en `context/architecture/`.
 
@@ -38,13 +38,13 @@ mantiene las rutas headless `axiom init`, `axiom workspace setup` y
 sin depender de una interfaz terminal. `axiom` sin subcomando no abre una
 superficie implicita y `axiom tui` ya no existe como comando.
 
-Modelo de datos tras el init (fuente única de verdad): `axiom.yaml` es la fuente autoral de la identidad del proyecto (`projectId`/`name`/`repoId`/`role`) y del mapa de repos. `init` escribe `axiom.yaml`, `.gitignore`, `.axiom-state/local/` y `.axiom-state/<projectName>/init.json` (con `profileTriple`+`createdAt`+`version`, sin `projectName` propio) — y ya NO escribe `topology.yaml`, que se deriva de `axiom.yaml` al leer y se materializa de forma perezosa solo al asignar roles (`INC-20260703-config-dedup`; ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)).
+Modelo de datos tras el init (fuente única de verdad): `axiom.yaml` es la fuente autoral de la identidad del proyecto (`projectId`/`name`/`repoId`/`role`) y del mapa de repos. `init` escribe `axiom.yaml`, `.gitignore`, `.axiom-state/local/` y `.axiom-state/<projectKey>/init.json` (con `profileTriple`+`createdAt`+`version`, sin `projectName` propio); `projectKey` es `projectId` v2 o el slug estable del nombre v1. `init` ya NO escribe `topology.yaml`, que se deriva de `axiom.yaml` al leer y se materializa de forma perezosa solo al asignar roles (`INC-20260703-config-dedup`; ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)). Un `axiom.yaml` v1/v2 con `mode: gateway` o `mode: hybrid` se lee por compatibilidad y se normaliza a `local-only`; esos literales no abren una rama operativa.
 
 ## Baseline operativa actual
 
 1. un solo rol funcional cubierto en profundidad (`functionalProfile: builder`);
 2. soporte multi-repo dentro de un proyecto vía `@axiom/topology` (`installed-multi-repo` layout), no todavía como separación de repos de Axiom-el-producto;
-3. ejecución local (`local-only`) o mediada por gateway (`standard`/`enterprise`), y adapters hacia 10 targets: 9 con paquete dedicado y `copilot-vscode` como único target sin paquete dedicado, servido por el writer compartido de Copilot.
+3. ejecución local (`local-only`) implícita y adapters hacia 10 targets: 9 con paquete dedicado y `copilot-vscode` como único target sin paquete dedicado, servido por el writer compartido de Copilot.
 
 ## Registro histórico: fuera de la baseline inicial del MVP
 
@@ -80,7 +80,7 @@ El versionado de toolchain es un flujo project-scoped distinto de `axiom upgrade
 
 1. El operador declara el subset de tools en `axiom.config/toolchain.yaml`; el catálogo global `axiom.config/toolchain-catalog.yaml` aporta las versiones de política, los canales y los extractores.
 2. `axiom toolchain plan --channel <stable|candidate|edge>` compara el lockfile local con el canal solicitado y muestra el diff sin mutar. `--id <id>` repetido limita la operación; el catálogo por sí solo no ordena instalar todas sus entradas.
-3. `axiom toolchain upgrade` funciona como preview por defecto. Solo `--yes` persiste la actualización en `.axiom-state/<project>/toolchain.lock`; `--dry-run` fuerza explícitamente la vista previa.
+3. `axiom toolchain upgrade` funciona como preview por defecto. Solo `--yes` persiste la actualización en `.axiom-state/<projectKey>/toolchain.lock`; `--dry-run` fuerza explícitamente la vista previa.
 4. La persistencia se protege con checkpoint y rollback. Si la escritura o la comprobación posterior por probe falla, el estado previo se conserva; no se ejecuta instalación, descarga ni sustitución de binarios externos.
 5. `axiom doctor` ejecuta TC-020, TC-021 y TC-023 en su recorrido síncrono y deja TC-022 como indicación de que hace falta probe real. `axiom doctor --deep` sustituye esa indicación por la comparación instalada-versus-locked, manteniendo la regla never-fail de los probes.
 
@@ -105,7 +105,7 @@ El ciclo de vida gana una capa de aprendizaje continuo MÍNIMA y CONCRETA, ancla
 
 ## Señal de delegación no-bloqueante en el ciclo — INC-20260708-delegation-triggers
 
-`axiom context status` surface además un bloque best-effort de `delegationSuggestions` (mismo contrato de degradación que el bloque de lecciones): lee un `session-metrics.json` OPCIONAL en `.axiom-state/<project>/` y, si está presente y cruza umbral, sugiere delegar a un agent del roster curado. Es una señal de sugerencia PURA y estructuralmente no-bloqueante (nunca en el control flow del state machine) — el detalle del evaluador y del roster vive en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+`axiom context status` surface además un bloque best-effort de `delegationSuggestions` (mismo contrato de degradación que el bloque de lecciones): lee un `session-metrics.json` OPCIONAL en `.axiom-state/<projectKey>/` y, si está presente y cruza umbral, sugiere delegar a un agent del roster curado. Es una señal de sugerencia PURA y estructuralmente no-bloqueante (nunca en el control flow del state machine) — el detalle del evaluador y del roster vive en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 
 ## Revisión con ledger de hallazgos (loop-until-dry + re-review scoped) — INC-20260709-review-findings-ledger
 

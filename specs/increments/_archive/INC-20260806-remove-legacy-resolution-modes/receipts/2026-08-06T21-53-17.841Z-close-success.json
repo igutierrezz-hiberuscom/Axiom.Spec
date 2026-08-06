@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-remove-legacy-resolution-modes",
+  "phase": "close",
+  "status": "success",
+  "timestamp": "2026-08-06T21:53:17.841Z",
+  "details": "Review ledger completo; sin hallazgos bloqueantes; listo para archive.",
+  "hash": "732ff0505f830947ecfe116823f9063c1d71ff0e3697a72de5b4db03f9166b97"
+}

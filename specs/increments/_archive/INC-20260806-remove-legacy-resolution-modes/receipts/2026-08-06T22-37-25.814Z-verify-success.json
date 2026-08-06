@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-remove-legacy-resolution-modes",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T22:37:25.814Z",
+  "details": "Verificación final archivada: build, suite dirigida, doctor, readiness, freeze archived lookup e integridad de receipts pasaron.",
+  "hash": "eb19585fc70e48aa365b5eb1db0f9ba85c38c27e80ea98e116815d47e4a9c3a6"
+}

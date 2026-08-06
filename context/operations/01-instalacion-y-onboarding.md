@@ -33,7 +33,7 @@ GATE crítico: el update NO se aplica sin `--apply`. En Windows, antes de aplica
 ## Flujo feliz de onboarding de un proyecto
 
 ```bash
-npx axiom init --yes --name mi-proyecto --profile builder --overlay local-only --target opencode
+npx axiom init --yes --name mi-proyecto --target opencode
 npx axiom join --member user:alice
 npx axiom configure
 npx axiom sync
@@ -63,16 +63,16 @@ La readiness inicial no es solo "compila y pasan los tests unitarios": valida la
 Script ejecutable: `npm run readiness:first-project` (`Axiom/scripts/verify-first-project-readiness.mjs`). Siembra un proyecto temporal con la baseline canónica copiada, vía `seedCanonicalBaseline()`, desde `axiom.config/` (renombrado; antes `axiom.spec` + subcarpeta `config`), `axiom.spec/templates/`, `axiom.spec/target-axiom-skills/`, `axiom.spec/target-axiom-agents/`, `AGENTS.md` y `axiom.skills.lock` del propio repo `Axiom/` (`_builder/` se crea vacío, no se copia), y ejecuta:
 
 ```
-init → configure → toolchain repair → sync → start → gateway start → gateway status → audit → doctor
+init → configure → toolchain repair → sync → start → audit → doctor
 ```
 
-Falla si algún paso devuelve exit code ≠ 0, falta un artefacto esperado, o `gateway status` no reporta `state: active`.
+Falla si algún paso devuelve exit code ≠ 0 o falta un artefacto esperado.
 
 **Nota de estado real (RESUELTA, actualizada 2026-07-29)**: el baseline 2026-07-02 de este documento advertía que `axiom.config/`, `axiom.spec/templates/`, `axiom.spec/target-axiom-skills/`, `axiom.spec/target-axiom-agents/`, `AGENTS.md` y `axiom.skills.lock` no existían en la raíz de `Axiom/` y que el script fallaría con `ENOENT`. Verificado por listado directo 2026-07-29: `Axiom/axiom.config/`, `Axiom/axiom.spec/`, `Axiom/AGENTS.md` y `Axiom/axiom.skills.lock` **ya existen** (`INC-20260708-product-repo-self-bootstrap` + reconciliaciones posteriores). Único gap residual menor: `Axiom/_builder/` sigue sin existir (el script lo crea vacío en el proyecto temporal, no depende de que exista en `Axiom/`). Detalle en [../references/03-riesgos-y-brechas-conocidas.md](../references/03-riesgos-y-brechas-conocidas.md).
 
 ## Baseline recomendada y checklist manual
 
-Triple recomendado: `functionalProfile: builder`, `operationalOverlay: local-only`, `adapterTarget: opencode` (motivo: perfil más cubierto en runtime, menor fricción, target más estable).
+Configuración efectiva: `builder` + `local-only` implícitos y `adapterTarget: opencode` como target inicial de menor fricción.
 
 Checklist manual de equipo:
 1. `npm run build` verde en `Axiom/`.
@@ -81,11 +81,10 @@ Checklist manual de equipo:
 4. `npm run readiness:first-project` en `PASS` como criterio de aceptación del flujo.
 5. Documentación operativa navegable (instalación, uso diario, CLI, troubleshooting, esta guía).
 
-La checklist histórica de readiness debe interpretarse junto con el estado
-actual de Doctor: desde R-04, el proyecto dogfooded no pasa `doctor` ni
-`readiness:first-project` mientras `CC-004` detecte capabilities activas sin
-provider. Esto es una señal de configuración pendiente, no un fallo del
-proceso de readiness.
+La checklist de readiness debe interpretarse junto con el estado actual de
+Doctor: `CC-004` cubre 13/16 capabilities provider-routed y las tres opcionales
+restantes producen warning no bloqueante. Las capabilities MCP-only se validan
+por su superficie MCP.
 
 **Registro histórico de ejecución (2026-07-30; superado el 2026-08-02):** el
 flujo no alcanzó `PASS` porque su paso `doctor` falló en `TC-011` por un
@@ -94,10 +93,9 @@ toolchain; los checks TC-020..TC-023 no fallaron por el incremento.
 
 **Registro histórico verificado el 2026-08-02:** `npm run doctor` terminó en
 `PASS` (46/61 OK, 0 fallos, 3 advertencias, 12 omitidos) y
-`npm run readiness:first-project` terminó en `PASS`. Esta fotografía quedó
-superada por R-04 (2026-08-05): la nueva cobertura canónica de `CC-004` detecta
-que el repo dogfooded sirve 7 de 16 capabilities provider-routed, por lo que
-Doctor y readiness devuelven `FAIL` hasta completar esa configuración.
+`npm run readiness:first-project` terminó en `PASS`. Esta fotografía queda
+superada por R-04: la cobertura canónica actual de `CC-004` sirve 13/16 y deja
+warning por las tres capabilities opcionales sin provider.
 
 ## Onboarding multi-repo (`axiom workspace setup` / `axiom workspace adopt` / `member install`)
 
@@ -120,4 +118,4 @@ interfaz guiada vigente; no existe una TUI pública equivalente.
 
 ## Fuera de la baseline inicial (no-goals explícitos del MVP)
 
-Overlays `standard`/`enterprise` como camino inicial obligatorio; `visual-studio-2026` como baseline de primer arranque; providers post-MVP (`engram`, `cmm`) como requisito de entrada; `cmm` es el reemplazo vigente de `codegraph`/`graphify` (ver `../integrations/01-capabilities-providers-y-toolchain.md`); bridges externos/plugins/lanes paralelos avanzados; instalación user-level del binario como paso obligatorio.
+Como contexto histórico, los overlays `standard`/`enterprise` no formaron parte del camino inicial de readiness; hoy están retirados. También quedan fuera de la baseline inicial `visual-studio-2026` como target de primer arranque, exigir `engram`/`cmm` como requisito de entrada, bridges externos/plugins/lanes paralelos avanzados e instalación user-level del binario como paso obligatorio. `cmm` es el reemplazo vigente de `codegraph`/`graphify` (ver `../integrations/01-capabilities-providers-y-toolchain.md`).

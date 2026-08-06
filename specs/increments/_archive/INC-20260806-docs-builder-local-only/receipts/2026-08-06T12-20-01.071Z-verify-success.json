@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-docs-builder-local-only",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T12:20:01.071Z",
+  "details": "Post-remediation verify: build OK, launcher/perfiles 73/73, doctor/MCP 77/77, doctor PASS 45/60, readiness PASS y npx vitest run 326/326 archivos, 3313/3313 tests; diez casos legacy retirados.",
+  "hash": "607194a25c9380b38755647041f05071f6ccf85bbdbf38cf83a26b14f72bca93"
+}

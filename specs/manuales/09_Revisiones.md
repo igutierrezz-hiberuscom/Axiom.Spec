@@ -19,7 +19,7 @@ Todo `allowedWriteScope` declarado en un plan aprobado (ver [07_Planes.md](07_Pl
 
 ## El doctor como review de salud
 
-El pre-launch gate de `axiom doctor` que corre el launcher antes de ejecutar/lanzar cualquier acción es, en esencia, una revisión de salud del proyecto (boundaries/policies/manifests/isolation/capability model/gateway) — ver [11_Launcher_Visual.md](11_Launcher_Visual.md). Es complementario, no un sustituto, del review de write-scope: uno valida "¿está sano el proyecto?", el otro valida "¿este cambio se mantuvo dentro de lo permitido?".
+El pre-launch gate de `axiom doctor` que corre el launcher antes de ejecutar/lanzar cualquier acción es, en esencia, una revisión de salud del proyecto (boundaries/policies/manifests/isolation/capability model/tool-routing) — ver [11_Launcher_Visual.md](11_Launcher_Visual.md). Es complementario, no un sustituto, del review de write-scope: uno valida "¿está sano el proyecto?", el otro valida "¿este cambio se mantuvo dentro de lo permitido?".
 
 ## Reglas de cierre (recordatorio)
 

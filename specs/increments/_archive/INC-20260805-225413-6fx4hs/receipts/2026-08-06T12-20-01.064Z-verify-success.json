@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260805-225413-6fx4hs",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T12:20:01.064Z",
+  "details": "Post-remediation verify: build OK, launcher/perfiles 73/73, doctor/MCP 77/77, doctor PASS 45/60, readiness PASS y npx vitest run 326/326 archivos, 3313/3313 tests; diez casos legacy retirados.",
+  "hash": "adc6f0a5483c2fb09f2c1b0f3a1e11b6c0aa47cc06e61b9a6f8fb0e7d3d399c8"
+}

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-remove-legacy-resolution-modes",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T21:53:12.816Z",
+  "details": "Build, suite completa, doctor, readiness y checkCandidateFreeze pasaron; ProjectMode expone solo local-only.",
+  "hash": "80ab46fba1e81a1e58158ef88e871af0bb14f2ea64b79a58607442803819eecf"
+}

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-remove-legacy-resolution-modes",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T17:27:04.502Z",
+  "details": "Verificacion independiente: 2 archivos, 65 tests; npm run build OK.",
+  "hash": "5d87344902395db66e6a78dc8236b5d830be20d40fc6c0f3e3ce75ab6ce05650"
+}

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260805-225413-6fx4hs",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-06T09:17:55.705Z",
+  "details": "Apply final ACC-017/018/020: local providers coverage, readiness, legacy workspace normalization and P365D default.",
+  "hash": "1824686a9ecb3d132e9ad8a2b37456b22dde83d316d49adfdead0a828c081946"
+}

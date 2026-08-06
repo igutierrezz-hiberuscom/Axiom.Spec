@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-remove-legacy-resolution-modes",
+  "phase": "close",
+  "status": "success",
+  "timestamp": "2026-08-06T23:18:31.421Z",
+  "details": "Close final: review ledger conforme, metadata archived/integrated y sin findings blocker/critical abiertos.",
+  "hash": "30414e59f796154b6fe990d8eff423d8422fab830359f32bddd3893bcaeabd9e"
+}

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-remove-legacy-resolution-modes",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T23:16:57.952Z",
+  "details": "Verify final: repair aliases, resolver, checkpoint/worktree slices, build, doctor, readiness, freeze archived lookup y claims activos pasaron.",
+  "hash": "6fdaaa14a1cdeb0852a99725a7d89d65df9a23f396c27261f08091f0c6bab557"
+}

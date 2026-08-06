@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-unify-project-state-paths",
+  "phase": "knowledge",
+  "status": "success",
+  "timestamp": "2026-08-06T21:53:32.707Z",
+  "details": "Integración canónica preparada: specs 00..08 y context describen projectKey, local y executions con precedencia legacy.",
+  "hash": "6fc899f6a714f0862ed1b9bb2e36390575a552ad52c548d28caa07383463e129"
+}

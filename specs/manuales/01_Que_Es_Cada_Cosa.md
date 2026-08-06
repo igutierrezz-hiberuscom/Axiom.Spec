@@ -18,15 +18,15 @@ Un workspace Axiom multi-repo separa responsabilidades por repo:
 - **`spec`**: el conocimiento canónico — specs numeradas 00–08, incrementos, bugs, planes, decisiones. Es donde vive el ciclo de vida de artefactos.
 - **`code`** (uno por rol funcional/de implementación: back, front, qa-e2e, o cualquier nombre custom): el runtime instalable de ese rol.
 
-No confundir con el `functionalProfile` del profile triple (`builder`/`product-owner`), que es un eje distinto — ver [02_Configuracion.md](02_Configuracion.md).
+No confundir con los roles de equipo o las fases del workflow. La configuración funcional efectiva es única (`builder`) y no se selecciona — ver [02_Configuracion.md](02_Configuracion.md).
 
 ## La spec canónica (00–08 + artefactos)
 
 `Axiom.Spec/specs/` sigue una estructura numerada fija: `00_Resumen_Ejecutivo.md` (visión/alcance), `01_Requisitos_Funcionales.md`, `02_Requisitos_No_Funcionales.md`, `03_Modelo_Operativo_y_Datos.md`, `04_Flujos_SDD_y_Ciclo_de_Vida.md`, `05_Interfaces_Operativas.md`, `06_Integraciones_y_Capacidades.md`, `07_Gobierno_y_Seguridad.md`, `08_Glosario.md`. Junto a esos ficheros viven las carpetas de artefacto: `increments/`, `bugs/`, `archive/` (histórico integrado o cerrado). Ver [04_Generar_Spec_y_Contexto_Tecnico.md](04_Generar_Spec_y_Contexto_Tecnico.md) para cómo se scaffoldea/adopta esta estructura en un proyecto nuevo.
 
-## Perfiles funcionales (`builder` / `product-owner`)
+## Configuración funcional (`builder`)
 
-El "profile triple" combina `functionalProfile` (`builder` habilita `code.*` + roles de implementación; `product-owner` queda limitado a spec/SDD, con `code.*` bloqueado) + `operationalOverlay` (`local-only`/`standard`/`enterprise`, el modo de riesgo/compliance) + `adapterTarget`. Se persiste en `axiom.yaml` y se resuelve a un `ResolvedInstallProfile`. Ver [02_Configuracion.md](02_Configuracion.md).
+La configuración efectiva combina `builder` implícito, política `local-only` implícita y `adapterTarget`. Los roles de equipo y las fases del workflow son dimensiones separadas. Se resuelve a un `ResolvedInstallProfile`. Ver [02_Configuracion.md](02_Configuracion.md).
 
 ## Adapters
 
@@ -38,7 +38,7 @@ El launcher es el front de navegador (PWA servida por `axiom app`) que permite o
 
 ## El doctor
 
-`axiom doctor` ejecuta checks de salud estructural y operativa del proyecto (boundaries, policies, manifests, isolation, capability model, gateway) y reporta PASS/FAIL con exit code. El launcher usa el mismo motor como un gate visual antes de lanzar/ejecutar — ver [11_Launcher_Visual.md](11_Launcher_Visual.md).
+`axiom doctor` ejecuta checks de salud estructural y operativa del proyecto (boundaries, policies, manifests, isolation, capability model y tool-routing) y reporta PASS/FAIL con exit code. El launcher usa el mismo motor como un gate visual antes de lanzar/ejecutar — ver [11_Launcher_Visual.md](11_Launcher_Visual.md).
 
 ## El tracker/plugin (concepto)
 

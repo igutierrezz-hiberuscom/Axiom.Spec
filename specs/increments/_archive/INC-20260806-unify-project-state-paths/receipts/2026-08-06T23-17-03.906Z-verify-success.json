@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-unify-project-state-paths",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T23:17:03.906Z",
+  "details": "Verify final: checkpoint remap, toolchain aliases, canonical+multi-alias cleanup, worktree providers, build, doctor, readiness y freeze archived lookup pasaron.",
+  "hash": "70ce7d3ebb3d9393ea190e62e82eed45e306c3e81b5d9924e7506722286e9749"
+}

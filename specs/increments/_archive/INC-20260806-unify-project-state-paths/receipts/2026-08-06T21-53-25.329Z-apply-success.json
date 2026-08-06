@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-unify-project-state-paths",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-06T21:53:25.329Z",
+  "details": "Apply final: projectKey paths, legacy migration, checkpoint remap, toolchain aliases y worktree provider identity.",
+  "hash": "e2cb803b6678ad98acc42ffc157b5094a60866ff35a65bb81b6e7ffca4fad8fa"
+}

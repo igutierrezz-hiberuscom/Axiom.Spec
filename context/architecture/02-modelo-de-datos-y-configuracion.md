@@ -1,6 +1,6 @@
 # Modelo de datos y configuración
 
-Fuente: `Axiom/docs/configuration/**`, `Axiom/docs/generated-files.md`, `Axiom/docs/cli/*.md`, `Axiom/packages/filesystem-truth/src/discovery.ts`, `Axiom/apps/cli/src/commands/init.ts`.
+Fuente: `Axiom/docs/configuration/**`, `Axiom/docs/generated-files.md`, `Axiom/docs/cli/*.md`, `Axiom/packages/filesystem-truth/src/{discovery,state-paths}.ts`, `Axiom/packages/persistence/src/{filesystem-store,isolation}.ts`, `Axiom/packages/versioning/src/checkpoints.ts`, `Axiom/apps/cli/src/commands/init.ts`.
 
 > Reconciliado 2026-07-29: este documento describía dos nombres de carpeta que `INC-20260703-config-folder-renames` (cerrado) ya renombró en el código real — el overlay oculto project-scoped (antiguo prefijo, hoy `.axiom-state`) y la carpeta de catálogo declarativo (antigua `axiom.spec` + subcarpeta `config`, hoy `axiom.config`). Verificado en `packages/filesystem-truth/src/discovery.ts#LOCAL_OVERLAY_DIRNAME`/`AXIOM_CONFIG_DIRNAME` (re-exportados vía `@axiom/core`); no queda ningún literal de los nombres antiguos en el código fuente (solo en `dist/` sin recompilar).
 
@@ -8,24 +8,32 @@ Fuente: `Axiom/docs/configuration/**`, `Axiom/docs/generated-files.md`, `Axiom/d
 
 Generado por `axiom init`. Campos relevantes (`Axiom/docs/configuration/project-structure.md`): `project.name`, `project.status`, `project.product_implementation_status`, `project.mode`, `scopes`, `rules`, `artifact_id_policy`, `lifecycle_commands`, `initial_capabilities`.
 
-Encapsula el **profile triple**:
+Materializa la configuración efectiva `builder` + `local-only` + `adapterTarget`. `builder` y
+`local-only` son implícitos y no seleccionables; los estados legacy se normalizan en
+los bordes de lectura. `adapterTarget` pertenece al conjunto de 10 targets canónicos
+declarados (ver `../architecture/04-adapters-y-model-routing.md`).
 
-- `functionalProfile`: `builder` (más cubierto en runtime) | `product-owner`.
-- `operationalOverlay`: `local-only` (fuerza filesystem, sin gateway) | `standard` (filesystem por defecto, gateway opt-in) | `enterprise` (exige gateway).
-- `adapterTarget`: uno de **10 targets canónicos** declarados (8 "headline"; ver `../architecture/04-adapters-y-model-routing.md` — documento ya vigente, tratarlo como referencia de verdad para adapters/model-routing).
-
-Triple recomendado para primer proyecto: `builder` + `local-only` + `opencode` (`Axiom/docs/first-project-readiness.md`).
-
-Editable con criterio a mano; no editar `init.json`, `install-profile.json`, `last-start.json`, `last-sync.json` salvo diagnóstico (son estado derivado). **`init.json` ya no incluye `projectName`** (`INC-20260703-config-dedup`, cerrado): solo persiste `profileTriple`, `createdAt`, `version` — `projectName` es derivable del nombre del directorio `.axiom-state/<projectName>/` que lo contiene (verificado: `apps/cli/src/commands/init.ts`, comentario junto a la escritura de `init.json`).
+Editable con criterio a mano; no editar `init.json`, `install-profile.json`, `last-start.json`, `last-sync.json` salvo diagnóstico (son estado derivado). **`init.json` ya no incluye `projectName`** (`INC-20260703-config-dedup`, cerrado): solo persiste el campo de compatibilidad `profileTriple` normalizado a `builder` + `local-only` + target, además de `createdAt` y `version`. El segmento físico se deriva de `projectKey`: `projectId` v2 o slug estable de `project.name` v1.
 
 ## `.axiom-state/` — estado project-scoped
 
 > Renombrado desde el antiguo prefijo oculto (`sdd`, con punto delante, sin este sufijo `-state`) por `INC-20260703-config-folder-renames` (cerrado). Verificado: `packages/filesystem-truth/src/discovery.ts#LOCAL_OVERLAY_DIRNAME = '.axiom-state'`.
 
-- `.axiom-state/local/`: overlay NO versionada. Overrides locales, markers (`last-sync.json`). Regida por `local-overlay-policy.yaml`.
-- `.axiom-state/<projectName>/`: `init.json`, `members.yaml`, `install-profile.json`, `last-start.json` y, cuando el proyecto fija versiones del toolchain, `toolchain.lock`.
-- `.axiom-state/config/<projectName>/`: `managed-state.json`, `model-assignments.json`, `components-state.json`, `gateway-state.json`.
-- `.axiom-state/<projectName>/checkpoints/<id>/`: snapshots pre-mutación, últimos 5 conservados.
+- `.axiom-state/local/`: overlay NO versionada exclusivamente local al repo/operador: overrides, bindings de topología y audit trail.
+- `.axiom-state/<projectKey>/`: único namespace físico del estado ligado al proyecto: `init.json`, `members.yaml`, `install-profile.json`, `workspace.json`, `last-start.json`, `last-sync.json`, `toolchain.lock`, `managed-state.json`, `model-assignments.json`, `components-state.json`, workflow, memoria, MCP bindings, plugins, skills pendientes y checkpoints.
+- `.axiom-state/executions/<executionId>/`: estado aislado por ejecución, separado del namespace project-scoped.
+
+La lectura de estado legacy sigue la precedencia canonical, proyecto directo,
+`config`, scope antiguo y archivos conocidos bajo `local/`. `state-paths.ts`
+migra archivos con temp+rename, elimina la fuente solo después de confirmar el
+destino y emite `StatePathWarning` ante conflictos o fallos. El scope API
+`config` se conserva para compatibilidad, pero `resolveScopeDir` lo dirige a la
+raíz del projectKey y no crea `.axiom-state/config/`.
+
+Los checkpoints aplican la misma regla semántica: `list`/`restore` aceptan
+aliases y raíces legacy, y `restoreCheckpoint` remapea los paths del manifest
+al projectKey canónico antes de eliminar el destino antiguo. Esto cubre también
+los buckets legacy conocidos de workflow, memoria, MCP, outputs y local.
 
 ## `axiom.config/*.yaml` — catálogo declarativo esperado dentro del proyecto adoptante
 
@@ -42,11 +50,11 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 ### Bloques de cada YAML relevante (documentados)
 
 - **`capabilities.yaml`**: `capabilities.required/.optional/.postMvpOptional`, `supportLevels`, `degradationPolicy` y, cuando aplica, `mcpOnlyCapabilities`. El modelo provider-routed usa `id`, `domain` (`sdd`|`spec`|`code`|`memory`), `name`, `version`, `compliance`, `requiredTools`, `optionalTools`, `fallbacks`, `deprecated` y `schemaRef`; las tres capabilities MCP-only `axiom.*` se mantienen en su mapa separado.
-- **`providers.yaml`**: registry de providers + perfiles de discovery (`filesystem-first`, `gateway-first`, `local-only`) con `discoveryOrder`, `preferredProviders`, `optionalProviders`, `gatewayExpectation`.
-- **`profiles.yaml`**: `profileBindings` (profile funcional → overlay por defecto, discovery provider profile, `allowedTargets`).
+- **`providers.yaml`**: registry de cuatro providers locales (`filesystem`, `serena`, `cmm`, `engram`) y el único perfil de discovery `local-only`, con `discoveryOrder: [filesystem]` y fallbacks declarados.
+- **`profiles.yaml`**: dato bundleado con el perfil funcional único `builder`, la política operativa única `local-only` y los `adapterTarget` permitidos.
 - **`command-protocol.yaml`**: `explicitCommands`, `runtimeCommands` (nombre, dónde corre, qué lee/escribe, si exige binding explícito de proyecto), `intentCommands`, `safety` (confirmaciones y bloqueos).
 - **`policy-as-code.yaml`**: `sensitivityTags`, `artifactLifecycle`, `tools`/`compliance`, `projectIsolation`, `doctorValidation`.
-- **`telemetry-sinks.yaml`**: `dataSensitivityBoundaries` por overlay, `sinks` (`null-sink`, `log-sink`, `remote-sink`, `audit-trail-sink`).
+- **`telemetry-sinks.yaml`**: política `local-only` y sinks locales (`local-audit-trail` y `local-log`), con audit trail append-only, sidecar SHA-256 y retención `P365D` por defecto.
 - **`onboarding.yaml`**: preguntas/defaults/docs generados de `init`, qué lee/escribe `join`, requisitos de `doctor`/`configure`/`start`, `generatedDocs`, `repairPlaybooks`.
 - **`scaffolding-contract.yaml`**: contrato de qué se siembra en `init` vs `configure`.
 
@@ -56,15 +64,15 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 
 | Comando | Escribe |
 |---|---|
-| `init` | `axiom.yaml`, `.gitignore`, `.axiom-state/local/`, `.axiom-state/<projectName>/`, `init.json` (sin `topology.yaml`) |
-| `join` | `.axiom-state/<projectName>/members.yaml` |
-| `configure` | `.axiom-state/<projectName>/install-profile.json` (+ surfaces del target) |
-| `sync` | `.axiom-state/local/last-sync.json` (+ outputs del adapter) |
-| `start` | `.axiom-state/<projectName>/last-start.json` |
-| `upgrade` | `.axiom-state/config/<projectName>/managed-state.json`, checkpoints |
-| `toolchain upgrade` | `.axiom-state/<projectName>/toolchain.lock` (schema 1), con checkpoint/rollback |
-| `model set/unset/reset` | `.axiom-state/config/<projectName>/model-assignments.json` (+ `.opencode/model-routing.json`) |
-| `components install/uninstall` | `.axiom-state/config/<projectName>/components-state.json` |
+| `init` | `axiom.yaml`, `.gitignore`, `.axiom-state/local/`, `.axiom-state/<projectKey>/`, `init.json` (sin `topology.yaml`) |
+| `join` | `.axiom-state/<projectKey>/members.yaml` |
+| `configure` | `.axiom-state/<projectKey>/install-profile.json` (+ surfaces del target) |
+| `sync` | `.axiom-state/<projectKey>/last-sync.json` (+ outputs del adapter) |
+| `start` | `.axiom-state/<projectKey>/last-start.json` |
+| `upgrade` | `.axiom-state/<projectKey>/managed-state.json`, checkpoints |
+| `toolchain upgrade` | `.axiom-state/<projectKey>/toolchain.lock` (schema 1), con checkpoint/rollback |
+| `model set/unset/reset` | `.axiom-state/<projectKey>/model-assignments.json` (+ `.opencode/model-routing.json`) |
+| `components install/uninstall` | `.axiom-state/<projectKey>/components-state.json` |
 | `roles assign` | Materializa `axiom.config/topology.yaml` de forma perezosa si estaba ausente (nuevo comportamiento, ver nota arriba) |
 
 ## Ficheros generados por adapter target

@@ -1,0 +1,21 @@
+id: INC-20260806-remove-legacy-resolution-modes
+kind: increment
+title: Retire legacy gateway and hybrid resolution modes
+status: archived
+createdAt: '2026-08-06T17:07:00.202Z'
+updatedAt: '2026-08-06T22:13:53.397Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-06T22:13:53.397Z'
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-06T17:07:00.202Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

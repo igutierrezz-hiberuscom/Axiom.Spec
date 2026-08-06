@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-docs-builder-local-only",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-06T10:20:01.136Z",
+  "details": "ACC-019 manuales y templates reconciliados con builder/local-only, providers locales, MCP y audit trail.",
+  "hash": "e8accafdfc860e520cee206860544c7bae16124788e4adf75c2533d1dc140665"
+}

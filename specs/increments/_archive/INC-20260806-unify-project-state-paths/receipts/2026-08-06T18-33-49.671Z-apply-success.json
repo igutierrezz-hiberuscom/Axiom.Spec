@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-unify-project-state-paths",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-06T18:33:49.671Z",
+  "details": "Worker apply y reparacion local: helper projectKey; config sin segmento fisico; migracion legacy; writers project-bound fuera de local; aislamiento P0 alineado.",
+  "hash": "593718f4769f2763a69fec1a919fa080a682dd46e216d1ea04582000c1aff87a"
+}

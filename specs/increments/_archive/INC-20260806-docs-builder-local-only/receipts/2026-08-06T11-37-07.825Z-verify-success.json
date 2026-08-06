@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-docs-builder-local-only",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T11:37:07.825Z",
+  "details": "Verify final: diff check, claims scan, build, doctor PASS, readiness PASS y suite completa 3323/3323.",
+  "hash": "ef9db9363805f0e40a6a9087dfc00128b04f3bcd3c9aabc8cea7beb07e1e6c0c"
+}

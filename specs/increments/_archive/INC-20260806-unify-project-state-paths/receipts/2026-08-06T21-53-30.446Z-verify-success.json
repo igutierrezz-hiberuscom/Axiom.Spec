@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-unify-project-state-paths",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T21:53:30.446Z",
+  "details": "3324 tests, build, doctor, readiness y regresiones de checkpoint/toolchain/worktree pasaron; checkCandidateFreeze OK.",
+  "hash": "4b8faa7444cb57a8e7e41d509531069fe86de73dcbab086be208d0c59e41de21"
+}

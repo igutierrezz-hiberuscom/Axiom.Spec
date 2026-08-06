@@ -18,12 +18,13 @@ init → join → configure → sync → start → audit → doctor
 
 ### `axiom init`
 1. Valida nombre (`^[a-z0-9][a-z0-9-]{0,62}$`).
-2. Determina layout: `self-hosted` (si detecta markers `_builder/`, `Axiom/`) o `installed-multi-repo` (default).
-3. Genera `axiom.yaml` con profile triple.
-4. Crea `.axiom-state/local/` y `.axiom-state/<projectName>/`, `.gitignore` (renombrado desde el prefijo antiguo por `INC-20260703-config-folder-renames`, cerrado).
+2. Determina layout: `self-hosted` (si detecta `_builder/`, `packages/`, `apps/` o los targets bajo `axiom.spec/`) o `installed-multi-repo` (default).
+3. Genera `axiom.yaml` con `builder` + `local-only` + target y escribe `AGENTS.md` de forma aditiva y best-effort.
+4. Crea `.axiom-state/local/` y `.axiom-state/<projectKey>/`, `.gitignore` (renombrado desde el prefijo antiguo por `INC-20260703-config-folder-renames`, cerrado).
 5. Si layout `installed-multi-repo`, ya **no** escribe `topology.yaml` (`INC-20260703-config-dedup`, cerrado): `@axiom/topology#loadTopology` deriva un manifest de fallback desde `axiom.yaml` cuando el fichero está ausente; `topology.yaml` se materializa perezosamente solo cuando el proyecto corre `axiom roles assign`.
 6. Persiste `init.json`.
-Flags: `--name`, `--profile`, `--overlay`, `--layout`, `--target`, `--path`, `--yes`, `--force`.
+7. Intenta registrar el proyecto en el registry user-level; el registro es best-effort y admite opt-out.
+Flags: `--name`, `--layout`, `--role`, `--target`, `--path`, `--yes`, `--force`, `--no-register`. La configuración funcional y la política operativa no tienen flags: son `builder` y `local-only`.
 
 ### `axiom join`
 Registra `--member <id>` (`user:alice`, `agent:sdd`, etc.) en `members.yaml`, deduplicando por igualdad exacta.
@@ -32,19 +33,36 @@ Registra `--member <id>` (`user:alice`, `agent:sdd`, etc.) en `members.yaml`, de
 Lee `init.json` + `profiles.yaml` + `providers.yaml` (+ `provider-overrides.yaml` local opcional), compone `ResolvedInstallProfile`, persiste `install-profile.json`, y materializa surfaces del target activo (p. ej. Copilot instructions vía `@axiom/document-bootstrap`).
 
 ### `axiom sync`
-Lee `init.json`, determina overlay, **valida el gate de telemetría antes de escribir nada**; si falla, aborta sin tocar `last-sync.json`. Si pasa, invoca el materializador del adapter y persiste `last-sync.json`.
+Lee `init.json`, mantiene la política local-only y el audit trail habilitado, invoca el materializador del adapter y persiste `last-sync.json` solo después de una generación correcta.
+
+### Resolución efectiva y estado legacy
+
+`@axiom/project-resolution` publica únicamente `ProjectMode = 'local-only'`.
+Los manifiestos v1/v2 que todavía contienen `gateway` o `hybrid` se aceptan
+como input de compatibilidad y se normalizan a local-only; el raw document se
+conserva solo para consumidores estructurales legacy. No existe una rama
+operativa de gateway en doctor, providers o discovery.
 
 ### `axiom start`
-Resuelve modo de discovery según overlay + flags `--gateway`/`--no-gateway` (`local-only` → siempre filesystem; `standard` → filesystem por defecto, gateway opt-in; `enterprise` → exige gateway). Ejecuta un `routeTool` sintético (`verify-startup`) y persiste `last-start.json`.
+Usa discovery `filesystem`, ejecuta un `routeTool` sintético (`verify-startup`) y persiste `last-start.json`. No acepta flags de gateway, no inicia un daemon y no crea `gateway-state.json`.
+
+### Histórico: `axiom gateway start/status` (retirado en R-04)
+Estas superficies pertenecían al modelo de overlays y gateway local ya retirado. La implementación histórica persistía `gateway-state.json` y comparaba su snapshot con la configuración; no forman parte del flujo actual ni del contrato de doctor.
 
 ### `axiom audit`
 Solo lectura. Calcula SHA-256 del audit trail, cuenta líneas, valida retención, detecta rewrite externo. Estados: `compliant` (exit 0), `absent` (exit 0), `violation` (exit 1).
 
 ### `axiom doctor`
-Ejecuta familias de checks (creció bastante desde el baseline 2026-07-02: boundaries, policies, manifests, isolation, capability model, install-profiles, gateway, tool-routing, topology, workflow-config, toolchain, memory, adapters, skills, agents, artifact-index, write-scope, dogfooding, provider-selection, más gobernanza GC-00x). Soporta `--json` y, opt-in, `--deep` (probes reales de tool/MCP, ver `../architecture/04-adapters-y-model-routing.md`). No muta nada (los probes `--deep` solo `pass`/`warn`/`skip`, nunca `fail`). Detalle completo en `../operations/02-doctor-troubleshooting-y-telemetria.md`.
+Ejecuta familias de checks (creció bastante desde el baseline 2026-07-02: boundaries, policies, manifests, isolation, capability model, install-profiles, tool-routing, topology, workflow-config, toolchain, memory, adapters, skills, agents, artifact-index, write-scope, dogfooding, provider-selection, más gobernanza GC-00x). Soporta `--json` y, opt-in, `--deep` (probes reales de tool/MCP, ver `../architecture/04-adapters-y-model-routing.md`). No muta nada (los probes `--deep` solo `pass`/`warn`/`skip`, nunca `fail`). Detalle completo en `../operations/02-doctor-troubleshooting-y-telemetria.md`.
 
 ### `axiom upgrade`
 `--dry-run` | `--from-checkpoint <id>` | `--target-version <v>` | `--no-sync` | `--no-doctor`. Calcula migraciones aplicables, crea checkpoint pre-upgrade (`init.json`, `install-profile.json`, `managed-state.json`), aplica migraciones en orden con rollback automático si alguna falla, persiste nuevo `ManagedState`, y por defecto encadena `sync` + `doctor` post-upgrade.
+
+El helper `resolveSpecArtifactRelPath` usa el `role: spec` cuando está
+disponible y, para repos v1/runtime con `topology.yaml`, resuelve el
+`specRepo` de la topología como fallback. Así `freeze`, lifecycle e integrate
+leen la misma carpeta canónica, incluso después de mover un incremento a
+`specs/increments/_archive/`.
 
 ## Histórico: TUI (`axiom tui`)
 
@@ -62,7 +80,7 @@ TUI en el runtime.
 ## `axiom model` (routing de modelos por slot)
 
 - `show [--target] [--slot]`: routing efectivo por slot (read-only).
-- `set <slot> <class>` / `unset <slot>` / `reset`: mutación de `.axiom-state/config/<projectName>/model-assignments.json`.
+- `set <slot> <class>` / `unset <slot>` / `reset`: mutación de `.axiom-state/<projectKey>/model-assignments.json`.
 - `validate [--target]`: corre 4 checks de drift (MRC-001 a MRC-004) y proyecta a `.opencode/model-routing.json` si el target es `opencode`.
 
 Slots: `increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archive`. Clases: `cheap`, `medium`, `strong`, `local`.

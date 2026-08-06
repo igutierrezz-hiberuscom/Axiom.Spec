@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-docs-builder-local-only",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-06T10:20:07.376Z",
+  "details": "git diff --check docs/axiom.spec, claims assertions, 6 YAML templates and 119 Markdown files/135 links pass.",
+  "hash": "004879b99c149f741184569bb1de328b7a93219be264203b7c2472b71907488b"
+}

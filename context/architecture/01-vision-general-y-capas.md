@@ -27,7 +27,7 @@ La fuente documental canónica del workspace es el repo sibling `Axiom.Spec/` (m
 | Dominio/Core | `core`, `capability-model`, `config-validation` | Tipos puros + `Result<T,E>` + validación Zod |
 | Descubrimiento/aislamiento | `filesystem-truth`, `project-resolution`, `isolation` | Filesystem read-only, path-guard, resolución de proyecto único/ambiguo |
 | Persistencia | `persistence`, `memory`, `versioning` | Store atómico, curación de memoria, checkpoints/migraciones |
-| Instalación | `install-profiles`, `installer` | Composición pura del profile triple → materialización |
+| Instalación | `install-profiles`, `installer` | Composición pura de `builder` + `local-only` + target → materialización |
 | Adapters | `adapters/{opencode,claude-code,github-copilot,vscode,cursor,litellm,codex,antigravity,visual-studio-2026}` | Generator pattern, contrato común (9 packages, 10 targets canónicos — ver `04-adapters-y-model-routing.md`) |
 | MCP | `mcp-server`, `mcp-tools`, `providers` | Dispatcher JSON-RPC hand-rolled + handlers de capability + registry/discovery de providers (nuevo desde el baseline) |
 | Tooling/manifests | `toolchain`, `topology`, `workflow`, `model-routing`, `tool-routing` | Manifests YAML + state machines + dispatcher |
@@ -44,7 +44,7 @@ Detalle package por package: [../references/01-inventario-de-packages.md](../ref
 - `@axiom/filesystem-truth` es la "fuente de verdad" read-only sobre el árbol Axiom (detecta `axiom.yaml`, `.axiom-state/`).
 - `@axiom/isolation` aplica path-guard y scope por `projectId` sobre cualquier operación.
 - `@axiom/capability-model` modela capabilities/providers/discovery, consumido por `configure`, `start`, `doctor`.
-- `@axiom/install-profiles` es el compositor puro del profile triple.
+- `@axiom/install-profiles` es el compositor puro de la configuración efectiva `builder` + `local-only` + target.
 - `@axiom/adapters-*` (9 packages) son la salida final hacia cada IDE/CLI externo.
 - `@axiom/mcp-server` + `@axiom/mcp-tools` son el servidor MCP propio (nuevo desde el baseline): dispatcher JSON-RPC 2.0 hand-rolled sobre los handlers de `@axiom/mcp-tools`, proyectado a config nativa por `apps/cli/src/commands/native-mcp-config.ts`.
 

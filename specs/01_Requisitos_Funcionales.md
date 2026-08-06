@@ -20,29 +20,48 @@ La topología de repos y el proyecto activo deben poder resolverse tanto desde w
 
 ### RF-AXM-005 Operación con un único rol
 
-La baseline actual debe ser usable por un único rol (`functionalProfile: builder`) sin impedir que el modelo evolucione a roles múltiples más adelante. Confirmado: `Axiom/docs/first-project-readiness.md` recomienda `builder` como perfil más cubierto en runtime hoy; `product-owner` existe como segundo profile declarado pero con menor cobertura runtime.
+La baseline actual debe ser usable con la configuración funcional única `builder`, materializada de forma implícita. Los roles de equipo/código (`backend`, `frontend`, `qa-e2e` o custom) y las fases del workflow siguen siendo dimensiones independientes y no se eliminan por esta simplificación.
 
 ## Requisitos funcionales del producto (ciclo de vida real, verificado en código y docs)
 
 ### RF-AXM-006 Inicialización de proyecto (`axiom init`)
 
-El CLI debe poder inicializar un proyecto validando el nombre (`^[a-z0-9][a-z0-9-]{0,62}$`), determinando el layout (`self-hosted` vs `installed-multi-repo`), aceptando el rol de este repo vía `--role sdd|spec|code` (default `sdd`, validado contra `REPO_ROLES`), generando `axiom.yaml` con `role`/`repoId: <slug>-<role>` y el profile triple (`functionalProfile` + `operationalOverlay` + `adapterTarget`), creando `.axiom-state/local/` y `.axiom-state/<projectName>/`, y persistiendo `init.json` (solo `profileTriple` + `createdAt` + `version`). Los enums canónicos (`REPO_ROLES`, `PROJECT_LAYOUTS`, `FUNCTIONAL_PROFILES`, `OPERATIONAL_OVERLAYS`, `ADAPTER_TARGETS`) están centralizados en `apps/cli/src/commands/init.ts` como const arrays, fuente única para la validación de `init` y para las opciones del launcher de onboarding (ACC-006). `axiom init` YA NO escribe `axiom.config/topology.yaml` (`INC-20260703-config-dedup`; ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)). Fuente: `Axiom/docs/cli/init.md`.
+El CLI debe poder inicializar un proyecto validando el nombre (`^[a-z0-9][a-z0-9-]{0,62}$`), determinando el layout (`self-hosted` vs `installed-multi-repo`), aceptando el rol de este repo vía `--role sdd|spec|code` (default `sdd`, validado contra `REPO_ROLES`), generando `axiom.yaml` con `role`/`repoId: <slug>-<role>` y la configuración efectiva `builder` + `local-only` + `adapterTarget`, creando `.axiom-state/local/` y `.axiom-state/<projectKey>/`, y persistiendo `init.json` normalizado. `projectKey` es `projectId` en v2 y el slug estable de `project.name` en v1. `init` no expone selectores de perfil u overlay y `axiom init` ya no escribe `axiom.config/topology.yaml` (`INC-20260703-config-dedup`). Fuente: `Axiom/docs/cli/init.md`.
+
+### RF-AXM-061 Resolución efectiva y compatibilidad de modos
+
+El runtime debe exponer `ProjectResolution.mode` como el único valor efectivo
+`local-only`. Debe aceptar `gateway` y `hybrid` únicamente como entradas raw
+legacy de `axiom.yaml` v1/v2 y normalizarlas sin activar comportamiento remoto.
+`rawConfig` puede conservar la forma leída para consumidores de compatibilidad,
+pero ningún provider, permiso, discovery o comando vigente debe ramificarse por
+esos literales.
+
+### RF-AXM-062 Namespace único de estado project-bound
+
+Todo writer de estado ligado a un proyecto debe usar
+`.axiom-state/<projectKey>/`, donde `projectKey` es `projectId` en v2 y el
+slug estable de `project.name` en v1. Los lectores deben aceptar las rutas
+legacy directas, bajo `config`, bajo scopes antiguos y los archivos locales
+conocidos con precedencia determinista y migración atómica. `local/` queda
+reservado a datos repo/operador-locales y `executions/<executionId>/` es una
+frontera separada.
 
 ### RF-AXM-007 Registro de miembros (`axiom join`)
 
-El CLI debe registrar miembros del proyecto por id (`user:alice`, `agent:sdd`, etc.) en `.axiom-state/<projectName>/members.yaml`, deduplicando por igualdad exacta. Fuente: `Axiom/docs/cli/join.md`.
+El CLI debe registrar miembros del proyecto por id (`user:alice`, `agent:sdd`, etc.) en `.axiom-state/<projectKey>/members.yaml`, deduplicando por igualdad exacta. Fuente: `Axiom/docs/cli/join.md`.
 
 ### RF-AXM-008 Composición del install profile (`axiom configure`)
 
-El CLI debe leer el profile triple, componer el `ResolvedInstallProfile` real (`@axiom/install-profiles` + `@axiom/installer`) y persistir `install-profile.json`, materializando además surfaces derivadas según el target activo (p. ej. `.github/copilot-instructions.md` vía `@axiom/document-bootstrap`). Fuente: `Axiom/docs/cli/configure.md`.
+El CLI debe leer y normalizar el estado efectivo `builder` + `local-only`, componer el `ResolvedInstallProfile` real (`@axiom/install-profiles` + `@axiom/installer`) y persistir `install-profile.json`, materializando además superficies derivadas según el target activo. Un `profiles.yaml` presente e inválido falla; solo su ausencia activa `DEFAULT_PROFILES`.
 
 ### RF-AXM-009 Sincronización de adapters (`axiom sync`)
 
-El CLI debe reconciliar los outputs del adapter activo contra el filesystem, validando primero el gate de telemetría del overlay activo; si el gate falla, debe abortar antes de escribir cualquier marker. Fuente: `Axiom/docs/cli/sync.md`.
+El CLI debe reconciliar los outputs del adapter activo contra el filesystem. La política local-only mantiene el audit trail habilitado y no bloquea la mutación por señales de overlays retirados; cualquier error real de generación sigue abortando antes de escribir el marker.
 
 ### RF-AXM-010 Arranque de runtime (`axiom start`)
 
-El CLI debe resolver el modo de discovery (`filesystem` | `gateway`) según el overlay y las flags (`--gateway`/`--no-gateway`), ejecutar un primer ruteo sintético de capability/provider y persistir `last-start.json`. Fuente: `Axiom/docs/cli/start.md`.
+El CLI debe usar discovery `filesystem`, ejecutar un primer ruteo sintético de capability/provider y persistir `last-start.json`. No acepta `--gateway` ni `--no-gateway`; las operaciones `axiom.*` pertenecen a los brokers MCP.
 
 ### RF-AXM-011 Auditoría de integridad (`axiom audit`)
 
@@ -50,7 +69,7 @@ El CLI debe verificar en modo solo lectura el audit trail del proyecto (hash SHA
 
 ### RF-AXM-012 Diagnóstico de salud (`axiom doctor`)
 
-El CLI debe ejecutar checks de boundaries, policies, manifests, aislamiento, modelo de capacidades y gateway, devolviendo un resultado agregable (PASS/FAIL) y soportando salida `--json`. `CC-004` debe comprobar el catálogo provider-routed canónico, distinguir capabilities no declaradas de capabilities sin provider y excluir las capabilities MCP-only. Fuente: `Axiom/docs/cli/doctor.md`, package `@axiom/doctor`.
+El CLI debe ejecutar checks de boundaries, policies, manifests, aislamiento, modelo de capacidades y workflow, devolviendo un resultado agregable (PASS/FAIL) y soportando salida `--json`. `CC-004` debe comprobar el catálogo provider-routed canónico, distinguir capabilities no declaradas de capabilities sin provider y excluir las capabilities MCP-only; en Axiom la cobertura vigente es 13/16 y las tres opcionales restantes producen warning no bloqueante.
 
 ### RF-AXM-013 Versionado y upgrade (`axiom upgrade`)
 
@@ -61,7 +80,7 @@ El CLI debe calcular migraciones aplicables entre versiones, crear un checkpoint
 El runtime debe permitir fijar y revisar versiones de tools externas sin convertir el catálogo en una orden implícita de instalación:
 
 - `axiom.config/toolchain-catalog.yaml` debe aceptar schema 2 con `versionExtractor`, canales `stable`/`candidate`/`edge` y restricciones opcionales de compatibilidad; el loader mantiene compatibilidad de lectura con schema 1.
-- `.axiom-state/<project>/toolchain.lock` debe usar schema 1 y registrar, por tool, `id`, `version` y `channel`, con metadatos opcionales del probe (`probeCommand`, `probeOutput`, `probedAt`). Su escritura debe ser atómica y project-scoped.
+- `.axiom-state/<projectKey>/toolchain.lock` debe usar schema 1 y registrar, por tool, `id`, `version` y `channel`, con metadatos opcionales del probe (`probeCommand`, `probeOutput`, `probedAt`). Su escritura debe ser atómica y project-scoped.
 - `extractVersion()` debe extraer la versión desde la salida del probe usando la regex declarada por la entrada del catálogo. Las tools sin contrato local de probe no deben recibir una ejecución inventada.
 - `axiom toolchain show` debe exponer versión instalada, versión locked y canal; `axiom toolchain plan` debe mostrar el diff sin escribir y admitir `--channel` y `--id` repetido; `axiom toolchain upgrade` debe admitir `--dry-run` y exigir `--yes` para persistir.
 - `upgrade` solo debe modificar el lockfile. Debe crear checkpoint y restaurarlo, eliminando el nuevo lockfile si no existía uno previo, ante un fallo de escritura o de verificación posterior.
@@ -143,7 +162,7 @@ Ambas rutas de bootstrap son deliberadamente de alcance mínimo: pasadas mecáni
 
 ### RF-AXM-022 Operaciones `configure`/`upgrade`/`repair`
 
-- **`axiom configure`** re-aplica el perfil persistido (`profileTriple` de `init.json`) y, cuando se proporciona `--providers <csv>`, actualiza además la selección project-scoped de providers en `workspace.json#providers`. La operación de reconfiguración no añade ni elimina repos, adapters, roles o tools por sí sola; esas mutaciones tienen superficies separadas y aditivas: `axiom repo add`, `axiom adapter add <target>`, `axiom provider add <id>` y `axiom role add <roleId> --path <path>`. Las operaciones REMOVE siguen diferidas, conforme a NFR-AXM-015.
+- **`axiom configure`** re-aplica la configuración normalizada de `init.json` (el campo de compatibilidad `profileTriple` contiene `builder`, `local-only` y el target) y, cuando se proporciona `--providers <csv>`, actualiza además la selección project-scoped de providers en `workspace.json#providers`. La operación de reconfiguración no añade ni elimina repos, adapters, roles o tools por sí sola; esas mutaciones tienen superficies separadas y aditivas: `axiom repo add`, `axiom adapter add <target>`, `axiom provider add <id>` y `axiom role add <roleId> --path <path>`. Las operaciones REMOVE siguen diferidas, conforme a NFR-AXM-015.
 - **`axiom upgrade`** avanza `ManagedState` vía la cadena de migraciones registrada, con checkpoint rollback-first (ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)).
 - **`axiom repair`** (general, top-level, `apps/cli/src/commands/repair.ts`) es solo composición: ejecuta `runDoctorChecks`, agrupa hallazgos `fail`/`warn` por categoría, y despacha exactamente 4 categorías conocidas-como-corregibles a funciones ya existentes — `install-profiles` -> `runConfigure`, `artifact-index` -> `runIndexRebuild`, `toolchain` -> `runToolchainRepair`, `memory` (coherencia de bindings MCP, `TC-007`) -> `runMcpRepair`. Toda otra categoría se reporta como "no auto-corregible; requiere revisión manual" — no se escribió lógica de corrección nueva para ninguna de ellas. Soporta `--dry-run`. Es distinto de dos subcomandos previos, narrows y específicos de dominio: `axiom toolchain repair` (re-deriva el estado de detección de una sola tool) y `axiom mcp repair` (verifica una entrada de manifest MCP, no instala físicamente el MCP).
 - `axiom repair` se une a `upgrade` en el contrato vigente de preview y confirmacion del CLI/launcher, ya que ambos mutan el filesystem.

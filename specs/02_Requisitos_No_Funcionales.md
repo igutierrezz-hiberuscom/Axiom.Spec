@@ -40,11 +40,32 @@ Toda escritura de superficies generadas (skills, agents, components, `install-pr
 
 ## NFR-AXM-008 Aislamiento project-scoped
 
-Ninguna ruta, cache, MCP binding o entrada de memoria debe cruzar el `projectId` de origen. Verificado en `@axiom/isolation` (path-guard, `DEFAULT_ALLOWED_MCP_SERVERS`) y en las reglas GATE 0024 (`@axiom/memory`: spec prevalece sobre memoria en conflicto).
+Ninguna ruta, cache, MCP binding o entrada de memoria debe cruzar el `projectKey` de origen. `projectKey` es `projectId` en schema v2 y el slug estable de `project.name` en v1. Verificado en `@axiom/isolation` (path-guard, `DEFAULT_ALLOWED_MCP_SERVERS`) y en las reglas GATE 0024 (`@axiom/memory`: spec prevalece sobre memoria en conflicto).
+
+## NFR-AXM-025 Namespace único de estado runtime
+
+Todo estado ligado a un proyecto debe escribir bajo `.axiom-state/<projectKey>/`.
+El nombre API `config` no crea un segmento físico adicional. `.axiom-state/local/`
+queda reservado para datos repo/operador-locales; `executions/<executionId>/`,
+`axiom.config/` y `~/.axiom/` son fronteras separadas. Lecturas legacy deben
+tener precedencia determinista, migración atómica e idempotente, advertencia
+ante copias conflictivas y ningún writer activo duplicado.
+
+La garantía incluye la restauración semántica: un checkpoint legacy no solo se
+localiza por alias, sino que remapea sus destinos al namespace canónico antes
+de completar el restore. Detección y repair de toolchain, selección de
+providers de worktree y checks de doctor reciben identidad de proyecto
+explícita para no caer en scans globales.
+
+## NFR-AXM-026 Compatibilidad de resolución sin reintroducción de modos
+
+`ProjectResolution.mode` solo puede contener `local-only`. `gateway` y
+`hybrid` se toleran como valores raw de entrada para migración, pero nunca
+como estados efectivos, rutas de provider, permisos o superficies operativas.
 
 ## NFR-AXM-009 Auditabilidad de telemetría
 
-Cada overlay operacional (`local-only`, `standard`, `enterprise`) debe declarar señales mínimas de telemetría (`minimumSignals`) y sinks habilitados; `axiom sync` debe abortar antes de mutar si el gate no se satisface. Verificado en `Axiom/docs/configuration/telemetry-and-isolation.md` y `axiom audit`.
+La política local-only debe mantener el audit trail habilitado por defecto: log append-only, sidecar SHA-256 y retención `P365D`. `axiom audit` es read-only y `axiom sync` no aplica gates de señales pertenecientes a overlays retirados; un fallo real de configuración o generación sí debe abortar antes de mutar.
 
 ## NFR-AXM-010 Cobertura runtime verificable por doctor
 
@@ -54,7 +75,7 @@ Complementariamente, la suite e2e `apps/cli/tests/e2e/` (`INC-20260708-workspace
 
 **Registro histórico de validación (2026-07-30; superado el 2026-08-02):** el requisito de cobertura runtime sigue vigente, pero aquella ejecución global no debe confundirse con el estado actual. El cierre histórico de `INC-20260708-product-repo-self-bootstrap` e `INC-20260708-fix-longstanding-test-failures` registró una suite sin fallos en ese momento; la ejecución independiente del review reportó 328/330 archivos y 3425/3427 tests, con fallos en `packages/doctor/tests/agents.test.ts` y `packages/mcp-tools/tests/capability-routing-roundtrip.test.ts`, fuera del alcance de ese incremento. Después se añadió una prueba focalizada de `extractVersion()` y ambos fallos se reprodujeron aisladamente. En esa fecha, `npm run doctor` y `npm run readiness:first-project` también fallaban en `TC-011` por un `bundleHash` stale de `axiom-reviewer`.
 
-**Registro histórico verificado el 2026-08-02:** `npm run doctor` devolvía `PASS` (46/61 OK, 0 fallos, 3 advertencias, 12 omitidos) y `npm run readiness:first-project` devolvía `PASS`. La medición global de aquella fecha registraba 3489 tests, 3483 verdes y 6 fallos preexistentes caracterizados. Desde R-04 (2026-08-05), el check `CC-004` compara la cobertura provider-routed canónica y el dogfooding devuelve `FAIL` por 7/16 capabilities servidas; la readiness hereda ese diagnóstico hasta que se complete la configuración de providers. Nota de taxonomía reconciliada: el model-routing tiene **7 slots** canónicos (`increment, bug, plan, implementation, qa-e2e, review, archive`), no 10 — cualquier cifra "10 slots" en documentación previa es obsoleta.
+**Registro histórico verificado el 2026-08-02:** `npm run doctor` devolvía `PASS` (46/61 OK, 0 fallos, 3 advertencias, 12 omitidos). La medición global de aquella fecha registraba 3489 tests, 3483 verdes y 6 fallos preexistentes caracterizados. La revalidación R-04 del 2026-08-06 devuelve `doctor PASS` (45/60, 0 fallos) y readiness PASS; `CC-004` sirve 13/16 capabilities y deja warning por `code.symbolSearch`, `code.referenceSearch` y `code.impactAnalysis`. Nota de taxonomía reconciliada: el model-routing tiene **7 slots** canónicos (`increment, bug, plan, implementation, qa-e2e, review, archive`), no 10.
 
 ## NFR-AXM-011 Evolución de schema solo aditiva
 
@@ -106,7 +127,7 @@ Toda alta de un adapter target DEBE tocar 5 sitios, todos compile- o runtime-enf
 
 El versionado de tools debe conservar separación de responsabilidades y fallar de forma acotada:
 
-- El catálogo global (`axiom.config/toolchain-catalog.yaml`) y el manifest habilitado (`axiom.config/toolchain.yaml`) son declarativos; el lockfile (`.axiom-state/<project>/toolchain.lock`) es estado local generado, project-scoped e ignorado junto con `.axiom-state/`.
+- El catálogo global (`axiom.config/toolchain-catalog.yaml`) y el manifest habilitado (`axiom.config/toolchain.yaml`) son declarativos; el lockfile (`.axiom-state/<projectKey>/toolchain.lock`) es estado local generado, project-scoped e ignorado junto con `.axiom-state/`.
 - La persistencia del lockfile debe ser atómica (`tmp` + `rename`), y un upgrade fallido debe dejar exactamente el lockfile previo o restaurar la ausencia previa. No se permite modificar binarios externos como efecto lateral.
 - `plan` debe ser una operación pura. La mera presencia de una tool en el catálogo no debe implicar una alta, descarga o instalación; la CLI planifica el conjunto declarado o lockeado y permite restringirlo con `--id`.
 - Los probes de versión deben ser locales, inyectables en tests y best-effort. La ruta síncrona de doctor mantiene su semántica existente; `doctor --deep` puede añadir advertencias o saltos de probe, pero nunca nuevos fallos duros.

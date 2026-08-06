@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-remove-legacy-resolution-modes",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-06T21:53:09.110Z",
+  "details": "Apply final: resolver local-only, legacy gateway/hybrid normalization, active docs reconciled.",
+  "hash": "26cc28086caee0087bdddc04ff1ef65cece263336b00238578902ed9829864fc"
+}

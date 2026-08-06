@@ -1,0 +1,24 @@
+id: INC-20260806-docs-builder-local-only
+kind: increment
+title: docs-builder-local-only
+status: archived
+createdAt: '2026-08-06T00:00:00.000Z'
+updatedAt: '2026-08-06T11:40:50.188Z'
+externalRefs:
+  - provider: axiom-audit
+    type: action
+    id: ACC-019
+integration:
+  status: integrated
+  integratedAt: '2026-08-06T11:40:50.188Z'
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-06T00:00:00.000Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

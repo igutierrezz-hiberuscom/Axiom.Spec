@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260805-225413-6fx4hs",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-06T11:37:01.224Z",
+  "details": "Apply runtime final integrado: builder/local-only, audit P365D, cuatro providers locales y MCP independiente.",
+  "hash": "410e7c660f8d75acef223e093b51ca175072734ed958c3807cbfa0f659406569"
+}

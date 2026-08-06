@@ -19,7 +19,7 @@ Este bloque conserva una fotografía inicial del repositorio y no es el contrato
 
 ## Estado vigente del runtime
 
-El runtime actual reconoce 10 adapter targets, con 9 paquetes de adapter dedicados y `copilot-vscode` atendido por el writer compartido de instrucciones. El launcher mantiene 9 entradas de routing (8 adapters headline más `cli`). La selección project-scoped ofrece `cmm`, `serena` y `engram`; el registry canónico contiene 6 ids.
+El runtime actual reconoce 10 adapter targets, con 9 paquetes de adapter dedicados y `copilot-vscode` atendido por el writer compartido de instrucciones. El launcher mantiene 9 entradas de routing (8 adapters headline más `cli`). La configuración efectiva es `builder` + `local-only`, ambas implícitas; los roles de equipo y las fases SDD son ejes separados. La selección project-scoped ofrece `cmm`, `serena` y `engram`; el registry canónico contiene 4 providers locales (`filesystem`, `serena`, `cmm`, `engram`).
 
 El server MCP ejecutable admite los kinds `sdd`, `spec`, `memory` y `axiom`, con un registro global de 25 capability ids. La configuración MCP nativa escribe superficies de proyecto para los targets soportados, emite notas user-globales para `codex` y `antigravity`, y deja `litellm` como warning sin schema verificado.
 
@@ -27,9 +27,15 @@ El server MCP ejecutable admite los kinds `sdd`, `spec`, `memory` y `axiom`, con
 
 El toolchain externo mantiene tres responsabilidades separadas: el catálogo global de IDs permitidos, el manifest de tools habilitadas por el proyecto y el estado local de versiones fijadas. `axiom.config/toolchain-catalog.yaml` usa schema 2 y puede declarar `versionExtractor`, versiones por canal (`stable`, `candidate`, `edge`) y compatibilidad mínima de Axiom. El catálogo vigente contiene `serena`, `cmm`, `engram`, `context7`, `rtk`, `caveman` y `autoskills`; ninguna está marcada como `mvp` por defecto.
 
-Las versiones fijadas se persisten en `.axiom-state/<project>/toolchain.lock`, schema 1, con escritura atómica. El lockfile es estado operativo local y no instala ni reemplaza binarios externos. `axiom toolchain plan` calcula, sin escribir, el diff entre las tools declaradas o ya lockeadas y el canal solicitado; `--id` limita el subconjunto. `axiom toolchain upgrade` muestra una vista previa salvo que reciba `--yes` y, cuando escribe, protege el lockfile con checkpoint y rollback ante un fallo de persistencia o de verificación posterior.
+Las versiones fijadas se persisten en `.axiom-state/<projectKey>/toolchain.lock`, schema 1, con escritura atómica. El lockfile es estado operativo local y no instala ni reemplaza binarios externos. `axiom toolchain plan` calcula, sin escribir, el diff entre las tools declaradas o ya lockeadas y el canal solicitado; `--id` limita el subconjunto. `axiom toolchain upgrade` muestra una vista previa salvo que reciba `--yes` y, cuando escribe, protege el lockfile con checkpoint y rollback ante un fallo de persistencia o de verificación posterior.
 
 La detección de versiones usa probes locales best-effort y la regex del catálogo. `axiom doctor` incorpora TC-020..TC-023 para existencia/validez del lockfile, compatibilidad, drift y canales; la comparación real de versión instalada contra la locked se ejecuta de forma opt-in en `axiom doctor --deep` y nunca convierte un fallo de probe en un fallo duro del doctor.
+
+La resolución pública solo expone `ProjectMode: 'local-only'`. Los valores raw
+históricos `gateway` y `hybrid` se aceptan únicamente al leer manifiestos v1/v2
+para normalizarlos a local-only; no activan providers, permisos, discovery ni
+comandos remotos. Todo estado project-bound comparte el namespace físico
+`.axiom-state/<projectKey>/`; `local/` y `executions/` conservan sus fronteras.
 
 ## Qué hace el producto hoy
 
@@ -41,7 +47,7 @@ Para un proyecto que adopta Axiom, el ciclo de vida real es:
 axiom init → axiom join → axiom configure → axiom sync → axiom start → axiom audit → axiom doctor → axiom upgrade
 ```
 
-Cada comando lee/escribe un conjunto concreto de artefactos (`axiom.yaml`, `.axiom-state/<project>/*.json`, `.axiom-state/local/*`) y, según el profile y los adapters seleccionados, genera la superficie portable `.axiom/{agents,commands,skills}/`, salidas específicas como `.opencode/`, `.claude/`, `.codex/`, `.antigravity/`, `.vs/`, `.cursor/`, `.vscode/`, `.github/copilot-instructions.md` y `litellm.config.json`, además de `.axiom/mcp.yml` y la configuración MCP nativa aplicable (`opencode.json`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` o `.vs/mcp.json`). `codex` y `antigravity` reciben notas sobre su configuración user-global y `litellm` un warning sin schema verificado. El detalle completo vive en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y en `context/architecture/`.
+Cada comando lee/escribe un conjunto concreto de artefactos (`axiom.yaml`, `.axiom-state/<projectKey>/*.json`, `.axiom-state/local/*`) y, según el profile y los adapters seleccionados, genera la superficie portable `.axiom/{agents,commands,skills}/`, salidas específicas como `.opencode/`, `.claude/`, `.codex/`, `.antigravity/`, `.vs/`, `.cursor/`, `.vscode/`, `.github/copilot-instructions.md` y `litellm.config.json`, además de `.axiom/mcp.yml` y la configuración MCP nativa aplicable (`opencode.json`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` o `.vs/mcp.json`). `codex` y `antigravity` reciben notas sobre su configuración user-global y `litellm` un warning sin schema verificado. El detalle completo vive en [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y en `context/architecture/`.
 
 ## Reconciliación de superficies operativas (2026-08-04)
 
@@ -61,7 +67,7 @@ verificadas en ACC-004, ACC-006, ACC-007 y ACC-008.
 
 ## Dos modelos distintos que conviven bajo el nombre "Axiom" (evitar confundirlos)
 
-1. **El producto Axiom** (`Axiom/`): el CLI/runtime descrito arriba, que cualquier proyecto externo puede adoptar. Su unidad de configuración es `axiom.yaml` + estado runtime en `.axiom-state/<projectName>/` dentro del proyecto que lo instala, más un catálogo de ~20 YAML de política/capacidad que el propio Axiom espera encontrar en una carpeta `axiom.config/` (minúsculas) en la raíz del proyecto; el contenido de spec vive aparte en `axiom.spec/`. Ambas carpetas fueron renombradas en `INC-20260703-config-folder-renames` (ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [08_Glosario.md](08_Glosario.md)).
+1. **El producto Axiom** (`Axiom/`): el CLI/runtime descrito arriba, que cualquier proyecto externo puede adoptar. Su unidad de configuración es `axiom.yaml` + estado runtime en `.axiom-state/<projectKey>/` dentro del proyecto que lo instala, más un catálogo de ~20 YAML de política/capacidad que el propio Axiom espera encontrar en una carpeta `axiom.config/` (minúsculas) en la raíz del proyecto; el contenido de spec vive aparte en `axiom.spec/`. Ambas carpetas fueron renombradas en `INC-20260703-config-folder-renames` (ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [08_Glosario.md](08_Glosario.md)).
 2. **El workspace de desarrollo de Axiom** (esta raíz: `Axiom/`, `Axiom.SDD/`, `Axiom.Spec/`): el modelo de tres repos desacoplados que `Axiom.SDD/AGENTS.md` establece para construir el propio producto con disciplina SDD ligera (spec en `Axiom.Spec/`, implementación en `Axiom.SDD/`, runtime opcional en `Axiom/`). Este es el "dogfooding" de Axiom sobre sí mismo, y es un concepto de nivel distinto al `axiom.spec/` interno de un proyecto cualquiera.
 
 En este workspace, la topología identifica `Axiom.Spec/` como `specRepo` y fuente documental canónica. `Axiom/axiom.spec/` se conserva como baseline product-owned materializable del runtime dogfoodeado; sus contenidos no sustituyen el repositorio canónico ni deben fusionarse con él (ADR-0032).
@@ -75,11 +81,10 @@ El cierre histórico de `INC-20260708-product-repo-self-bootstrap` y `INC-202607
 **Registro histórico de validación (2026-07-30; superado por la verificación del 2026-08-02):** `npm run doctor` y `npm run readiness:first-project` fallaban en `TC-011` por un `bundleHash` stale de `axiom-reviewer`. La ejecución global independiente del review reportó 328/330 archivos y 3425/3427 tests, con dos fallos fuera del alcance de `INC-20260730-toolchain-versioning`; después se añadió una prueba focalizada de `extractVersion()` y ambos fallos se reprodujeron aisladamente. La verificación posterior devuelve `npm run doctor` en PASS (46/61 OK, 0 fallos, 3 advertencias, 12 omitidos) y `npm run readiness:first-project` en PASS. Las carpetas `axiom.config/` y `axiom.spec/` sí existen en la raíz actual de `Axiom/`.
 
 **Revalidación R-04 (2026-08-05):** la corrección de `CC-004` hace visible que el
-repo dogfooded solo sirve 7 de las 16 capabilities provider-routed. Por eso
-`npm run doctor` y `npm run readiness:first-project` devuelven `FAIL` en
-`CC-004`, con seis capabilities requeridas y tres opcionales sin provider. El
-fallo es el diagnóstico esperado de la configuración incompleta, no una
-regresión del check; la batería dirigida de R-04 y `npm run build` pasan.
+repo dogfooded sirve 13 de las 16 capabilities provider-routed. Las tres
+capabilities opcionales restantes producen `warn` no bloqueante; el check no
+presenta un fallo de cobertura activa. La batería dirigida de R-04 y
+`npm run build` pasan.
 
 ## Ola de endurecimiento 2026-07-10 (auditoría + 10 incrementos, cerrada)
 
@@ -120,9 +125,9 @@ El incremento de planificación `specs/increments/_archive/INC-20260702-axiom-re
 1. Spec first, implementación second.
 2. Separación clara entre builder tooling y product runtime.
 3. Axiom model primero; generated config después.
-4. La trazabilidad enterprise es obligatoria (audit trail, telemetry sinks).
-5. Deben soportarse los modos `local-only`, `standard` y `enterprise` (overlays operacionales).
-6. Las capabilities están guiadas por profiles (`functionalProfile` + `operationalOverlay` + `adapterTarget`); el runtime separa las capabilities provider-routed de las tres lecturas MCP-only `axiom.*`.
+4. La trazabilidad local append-only es transversal y usa audit trail, sidecar SHA-256 y retención `P365D`.
+5. El runtime opera con la política `local-only` implícita; no existe una selección activa de overlays ni gateway.
+6. Las capabilities se materializan con `builder` implícito más un adapter target; el runtime separa 16 capabilities provider-routed de las tres lecturas MCP-only `axiom.*`.
 7. Las integraciones de tooling son adapters opcionales, con niveles de soporte explícitos (`multi-mode`, `single-mode`, `fallback-only`).
 8. Minimizar el gasto de tokens sin reducir la auditabilidad.
 9. Mantener una arquitectura modular y reemplazable (`Result<T,E>` sin excepciones, escritura atómica, path-guard por proyecto).

@@ -1,0 +1,30 @@
+id: INC-20260805-225413-6fx4hs
+kind: increment
+title: unified-builder-local-only
+status: archived
+createdAt: '2026-08-06T00:00:00.000Z'
+updatedAt: '2026-08-06T11:40:43.605Z'
+externalRefs:
+  - provider: axiom-audit
+    type: action
+    id: ACC-017
+  - provider: axiom-audit
+    type: action
+    id: ACC-018
+  - provider: axiom-audit
+    type: action
+    id: ACC-020
+integration:
+  status: integrated
+  integratedAt: '2026-08-06T11:40:43.605Z'
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-06T00:00:00.000Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

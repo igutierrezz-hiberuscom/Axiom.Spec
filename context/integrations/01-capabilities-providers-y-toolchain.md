@@ -2,7 +2,7 @@
 
 Fuente: `Axiom/docs/configuration/providers-and-capabilities.md`, `Axiom/docs/configuration/files/{capabilities,providers}.md`, informe de incrementos 0015-0030, `Axiom/packages/toolchain/src/probe.ts`, `Axiom/axiom.config/toolchain-catalog.yaml`, `Axiom.Spec/decisions/0031-adr-cmm-replaces-graphify-and-codegraph.md`, `Axiom/packages/mcp-server/src/`, `Axiom/packages/mcp-tools/src/`, `Axiom/packages/isolation/src/p0.ts`.
 
-> Reconciliado 2026-07-29: la sección de toolchain y la de MCP de este documento describían un estado superado. `codegraph`/`graphify` fueron removidos (ADR-0031, `cmm` los reemplaza); Axiom ya tiene servidor MCP propio (`@axiom/mcp-server` + `@axiom/mcp-tools`), contrario a lo que decía el baseline 2026-07-02.
+> Reconciliado 2026-08-06: `codegraph`/`graphify` fueron removidos (ADR-0031, `cmm` los reemplaza); Axiom ya tiene servidor MCP propio (`@axiom/mcp-server` + `@axiom/mcp-tools`). La tanda ACC-023 añadió propagación explícita de identidad a toolchain/providers/worktrees y remapeo de checkpoints legacy.
 
 ## Modelo de capabilities
 
@@ -10,11 +10,18 @@ Fuente: `Axiom/docs/configuration/providers-and-capabilities.md`, `Axiom/docs/co
 
 ## Providers y discovery
 
-`providers.yaml` modela el registry de providers y sus perfiles declarativos de discovery. Discovery modes: `filesystem`, `workspace`, `gateway`. Discovery Provider Profiles (`filesystem-first`, `gateway-first`, `local-only`) definen `discoveryOrder`, `preferredProviders`, `optionalProviders`, `gatewayExpectation`, y modo degradado.
+`providers.yaml` modela el registry de cuatro providers locales (`filesystem`, `serena`, `cmm`, `engram`) y el único perfil declarativo de discovery `local-only`, con `discoveryOrder: [filesystem]` y fallbacks explícitos.
 
-Regla del MVP: **Serena** es el baseline de inteligencia de código; el resto de providers son opcionales o evolutivos según capability y entorno. Reglas globales: Serena baseline, providers opcionales post-MVP, defaults MCP de producto, providers prohibidos por defecto.
+Regla vigente: `filesystem` es el provider local siempre disponible; `cmm` aporta code-intel estructural, `serena` navegación semántica y `engram` memoria local. La selección project-scoped de `cmm`/`serena`/`engram` es opcional y una tool ausente degrada de forma tipada, sin convertir el estado de entorno en un fallo de gobierno. `readEnabledProviders` recibe `projectKey` y aliases legacy cuando el caller los conoce; solo hace scan global cuando no hay identidad.
 
 Impacta directamente a: `configure` (compone install profile), `start` (resuelve provider efectivo y modo de discovery), `doctor` (evalúa consistencia del modelo y defaults).
+
+### Histórico: overlays y gateway (retirados en R-04)
+
+El antiguo camino `enterprise` usaba política y estado local para exigir
+gateway, y `axiom gateway start/status` mantenía un snapshot project-scoped.
+No había daemon ni conexión remota. Ese eje fue retirado junto con
+`axiom-gateway`; el contrato actual es siempre local-only.
 
 ## Toolchain externo (`@axiom/toolchain`)
 
@@ -26,7 +33,12 @@ Manifest `toolchain.yaml`: npm/pnpm/yarn/bun, Node, git, python — con detecci�
 
 `axiom.config/toolchain-catalog.yaml` usa `schemaVersion: 2`. Cada entrada puede declarar `versionExtractor`, versiones de política por canal (`stable`, `candidate`, `edge`) y `compatibility.axiomMinVersion`. El catálogo es una allowlist/política: no implica que todas las tools estén habilitadas en `axiom.config/toolchain.yaml` ni que deban instalarse.
 
-El estado de versiones fijadas vive en `.axiom-state/<project>/toolchain.lock`, un YAML `schemaVersion: 1` ignorado junto con `.axiom-state/`. El lock contiene `projectId`, `lockedAt` y `tools`; cada entrada registra `id`, `version`, `channel` y, opcionalmente, `probeCommand`, `probeOutput` y `probedAt`. `loadToolchainLock` devuelve un lock vacío para proyectos que aún no han fijado versiones y valida schema, IDs, versiones y canales; `saveToolchainLock` persiste mediante `tmp` + `rename` (`packages/toolchain/src/lockfile.ts`).
+El estado de versiones fijadas vive en `.axiom-state/<projectKey>/toolchain.lock`, un YAML `schemaVersion: 1` ignorado junto con `.axiom-state/`. El lock contiene `projectId`, `lockedAt` y `tools`; cada entrada registra `id`, `version`, `channel` y, opcionalmente, `probeCommand`, `probeOutput` y `probedAt`. `loadToolchainLock` devuelve un lock vacío para proyectos que aún no han fijado versiones y valida schema, IDs, versiones y canales; `saveToolchainLock` persiste mediante `tmp` + `rename` (`packages/toolchain/src/lockfile.ts`).
+
+`detectToolState`, `detectToolStateWithProbe` y `repairTool` aceptan aliases
+legacy. Repair mueve un marker antiguo al destino canónico sin dejar copias
+duplicadas. El provisioning de worktree pasa `Execution.projectId` al lector de
+providers, de modo que dos proyectos en el mismo repo fuente no se mezclan.
 
 `probeAllToolVersions` solo ejecuta un contrato local conocido y extrae la versión con la regex `versionExtractor`; hoy conoce probes para `serena`, `cmm` y `engram`. `context7`, `rtk`, `caveman` y `autoskills` no reciben un comando supuesto. Las observaciones fallidas se omiten y no elevan por sí mismas el estado a `installed-working`.
 
@@ -41,7 +53,7 @@ Comandos: `axiom toolchain repair [--id <id>]` (idempotente), `axiom toolchain a
 > **Corrección 2026-07-29**: el baseline 2026-07-02 afirmaba "Axiom no expone hoy un servidor MCP propio y genérico" — esa afirmación es **stale**. Desde entonces se añadieron `@axiom/mcp-server` y `@axiom/mcp-tools`.
 
 - **`@axiom/mcp-server`** (`packages/mcp-server/src/`): dispatcher JSON-RPC 2.0 **hand-rolled** (deliberadamente sin `@modelcontextprotocol/sdk`), transporte-agnóstico (`createMcpServer`), más un transporte stdio newline-delimited (`runStdioServer`), sobre los handlers de `@axiom/mcp-tools`.
-- **`@axiom/mcp-tools`** (`packages/mcp-tools/src/`): handlers agrupados por dominio (`sdd.*`, `spec.*`, `memory.*`, `axiom.*`) — cada `McpToolRegistryEntry` declara su `domain`, que determina a qué "server kind" pertenece. Los ids `axiom.*` son MCP-only en el capability model; que el broker use `axiom-gateway` como proceso no los convierte en providers tradicionales.
+- **`@axiom/mcp-tools`** (`packages/mcp-tools/src/`): handlers agrupados por dominio (`sdd.*`, `spec.*`, `memory.*`, `axiom.*`) — cada `McpToolRegistryEntry` declara su `domain`, que determina a qué "server kind" pertenece. Los ids `axiom.*` son MCP-only en el capability model y no se convierten en providers tradicionales por el hecho de vivir en el broker unificado.
 - **Server kinds** (`packages/mcp-server/src/tool-sets.ts`): `sdd` (server `sdd-mcp-server`, expone `sdd.*`), `spec` (server `spec-mcp-broker`, expone `spec.*`), `memory` (server `memory-mcp-server`, expone `memory.*`, único kind async — puede spawnear un subproceso `engram mcp` local), y `axiom` (broker unificado `axiom-mcp-broker`, `INC-20260724-unified-axiom-mcp`: UNIÓN de todo `spec.*` + el subset de escritura `sdd.transitionApply`/`sdd.gitCommitSync` + los 3 reads nuevos `axiom.topologyRead`/`axiom.migrationManifestRead`/`axiom.adoptionStateRead`).
 - **Proyección a config nativa** (`apps/cli/src/commands/native-mcp-config.ts`, `writeNativeMcpConfig`): hoy solo proyecta los **dos** servers managed `sdd-mcp-server`/`spec-mcp-broker` (no `memory`/`axiom` todavía) al schema nativo VERIFICADO de cada tool (`.mcp.json` claude-code, `.cursor/mcp.json` cursor, `.vscode/mcp.json` vscode/copilot-vscode/github-copilot, `opencode.json` opencode, `.vs/mcp.json` visual-studio-2026 como asunción documentada); `codex`/`antigravity` reciben solo una nota informativa (config user-global, no project-scoped); `litellm` no tiene schema nativo verificado. Ver `../architecture/04-adapters-y-model-routing.md` para la tabla completa.
 - **`.axiom/mcp.yml`**: fichero leído por el probe `TC-019` (MCP liveness) de `axiom doctor --deep` — contiene el `command`/`args` de lanzamiento real de los servers managed.
@@ -56,4 +68,4 @@ Curación auto/manual por `MemoryKind` (`decision`, `bug`, `learning`, `pattern`
 
 ## Extensiones opcionales: app plugins y bridge externo
 
-`@axiom/app` (incremento 0030) implementa un sistema de plugins project-scoped con discovery en `.axiom-state/<project>/app-plugins/*.json` (renombrado desde el prefijo antiguo, `INC-20260703-config-folder-renames`; schema guard tolerante: malformados → warnings, no abort; IDs únicos por proyecto) y un bridge declarativo hacia Azure DevOps. El contrato vigente separa schema, discovery, resolución y ejecución: solo handlers estáticos allowlisted pueden ejecutarse; `command` es una etiqueta informativa. Read es read-only; `local-mutation`/`external-mutation` requieren preview y `confirmed: true`; valores, opciones y envelopes se validan antes del handler. El catálogo y resultados se proyectan sin propiedades desconocidas, secretos, userinfo ni query de URLs. `kind: none` usa `NullTracker` sin red; `kind: ado` usa los ports/fakes del tracker. No hay integración con Jira/Confluence implementada.
+`@axiom/app` (incremento 0030) implementa un sistema de plugins project-scoped con discovery en `.axiom-state/<projectKey>/app-plugins/*.json` (renombrado desde el prefijo antiguo, `INC-20260703-config-folder-renames`; schema guard tolerante: malformados → warnings, no abort; IDs únicos por proyecto) y un bridge declarativo hacia Azure DevOps. El contrato vigente separa schema, discovery, resolución y ejecución: solo handlers estáticos allowlisted pueden ejecutarse; `command` es una etiqueta informativa. Read es read-only; `local-mutation`/`external-mutation` requieren preview y `confirmed: true`; valores, opciones y envelopes se validan antes del handler. El catálogo y resultados se proyectan sin propiedades desconocidas, secretos, userinfo ni query de URLs. `kind: none` usa `NullTracker` sin red; `kind: ado` usa los ports/fakes del tracker. No hay integración con Jira/Confluence implementada.

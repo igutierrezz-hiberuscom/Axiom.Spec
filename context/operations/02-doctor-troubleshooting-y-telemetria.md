@@ -15,8 +15,7 @@ Familias de checks verificadas (prefijo de check ID entre paréntesis; el prefij
 | manifests | `MC-001/002` | `axiom.yaml` válido, `.axiom-state/local/` protegida por `.gitignore` |
 | isolation | `IC-001..003` | invariantes project-scoped, restricciones MCP |
 | capability-model | `CC-001..006` | consistencia del modelo declarativo y cobertura provider-routed de capabilities |
-| install-profiles | `IP-001..004` | consistencia del profile triple resuelto |
-| gateway | `GW-001` | `gateway-state.json` vs drift contra `providers.yaml`/`profiles.yaml`/`install-profile.json` |
+| install-profiles | `IP-001..004` | consistencia de `builder` + `local-only` + target resueltos |
 | tool-routing | `TR-001..004` | consistencia del dispatcher de `ToolCall` |
 | topology | `TC-001..003` | `axiom.config/topology.yaml` (o su derivación por fallback) |
 | toolchain | `TC-004..006` | `toolchain-catalog.yaml`, detección/registro de tools |
@@ -52,14 +51,13 @@ Las checks de lockfile **TC-020..TC-023** son project-scoped: TC-020 valida exis
 
 **`axiom configure`**
 - No encuentra `init.json` → ejecutar `axiom init` primero.
-- Falla al escribir surfaces de Copilot → revisar `axiom.spec/templates/copilot-instructions.template.md`, `product.manifest.yaml`, `axiom.yaml`, `providers.yaml`, overlay local.
+- Falla al escribir surfaces de Copilot → revisar `axiom.spec/templates/copilot-instructions.template.md`, `product.manifest.yaml`, `axiom.yaml`, `providers.yaml` y `.axiom-state/local/`.
 
 **`axiom sync`**
-- `telemetrySinkMissing`: overlay exige señales mínimas sin sink habilitado → revisar `telemetry-sinks.yaml`, overlay activo, re-ejecutar `configure`.
 - `adapterGenerationFailed`: falta `install-profile.json` (se corrió `sync` antes de `configure`).
 
 **`axiom start`**
-- Conflicto overlay/flags de gateway (`enterprise` prohíbe `--no-gateway`; `standard` lo trata como opt-in; `local-only` siempre filesystem).
+- `start` usa siempre discovery `filesystem`; las flags de gateway ya no forman parte del contrato.
 - Warning por capability model no cargado (`capabilities.yaml`/`providers.yaml` faltantes o incompletos).
 
 **`axiom audit`**
@@ -81,13 +79,14 @@ fallo explícito con la ruta y la causa.
 Impacta: `sync` (valida gate antes de regenerar outputs), `audit` (usa mirror de retención), boot del CLI (carga sinks habilitados).
 
 - `dataSensitivityBoundaries` por overlay: tags permitidos, tags redactados, nivel de redacción, flujo cross-project permitido, ventana de retención.
-- `sinks`: `null-sink`, `log-sink`, `remote-sink`, `audit-trail-sink`.
-- Regla práctica: si un overlay exige señales mínimas (`minimumSignals`) y no hay sink habilitado que las cubra, `sync` aborta **antes** de escribir.
+- `sinks`: entradas declarativas por `kind`; la configuración activa usa `local-audit-trail` (`audit`) y `local-log` (`log`).
+- El loader construye un `AuditTrailSink` real para el sink `audit`, que cubre `lineage` y `verification`; la política `local-only` lo habilita por defecto con retención `P365D`.
+- El audit trail es transversal y no depende de un overlay ni de transporte externo; `sync` ya no evalúa `minimumSignals` de overlays retirados.
 - No documentado explícitamente: un mecanismo formal de opt-out completo de telemetría. Tratar como ausente, no como implementado silenciosamente.
 
 ## Aislamiento (`@axiom/isolation`, doctor)
 
-`doctor` valida: que las rutas project-scoped contengan el `projectId`; que `backend-mcp`/`frontend-mcp` sigan bloqueados en MVP; que el modo local pueda operar sin gateway cuando corresponde.
+`doctor` valida: que las rutas project-scoped contengan el `projectId`; que `backend-mcp`/`frontend-mcp` sigan bloqueados en MVP; y que los providers y capabilities locales sean coherentes.
 
 `integrations.yaml` declara: si el sistema está scoped por proyecto, cómo se resuelve el proyecto, catálogo y modo de política, defaults gestionados por Axiom, decisiones de instalación aprobadas, y el bloque `projectIsolation` (qué contaminación cross-project debe bloquearse).
 

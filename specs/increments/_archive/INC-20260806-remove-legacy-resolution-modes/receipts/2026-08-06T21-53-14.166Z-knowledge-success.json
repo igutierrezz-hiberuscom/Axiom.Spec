@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260806-remove-legacy-resolution-modes",
+  "phase": "knowledge",
+  "status": "success",
+  "timestamp": "2026-08-06T21:53:14.166Z",
+  "details": "Integración canónica preparada: specs 00..08 y context describen local-only y compatibilidad raw legacy.",
+  "hash": "4320b10b1750684e7fb3e8171293e786a031884db2a1a82a50631aa9e97263c5"
+}
