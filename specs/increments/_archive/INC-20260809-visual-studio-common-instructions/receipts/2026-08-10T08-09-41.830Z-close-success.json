@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-visual-studio-common-instructions",
+  "phase": "close",
+  "status": "success",
+  "timestamp": "2026-08-10T08:09:41.830Z",
+  "details": "Increment archived with integration.status=integrated; final freeze and canonical spec/context integration verified by autopilot.",
+  "hash": "2618ce35110c4391318030e0be32cd0e801f6a997042e2d23583a1c7b0f49eb5"
+}

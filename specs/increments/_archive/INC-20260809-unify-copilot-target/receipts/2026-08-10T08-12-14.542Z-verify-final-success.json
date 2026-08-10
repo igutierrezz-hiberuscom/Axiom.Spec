@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-unify-copilot-target",
+  "phase": "verify-final",
+  "status": "success",
+  "timestamp": "2026-08-10T08:12:14.542Z",
+  "details": "Independent final verification passed: candidateHash=16f761a9b6613b8799c91a3a82ff946394d46407bd4c0fd9cc2cb6a19078b934; build, archive metadata, receipts, and active-spec reconciliation verified.",
+  "hash": "2f443913d8467ee6c66699b24d8243ab5ea9b989404a717baa88a6222326f899"
+}

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-unify-copilot-instruction-surfaces",
+  "phase": "knowledge",
+  "status": "success",
+  "timestamp": "2026-08-09T20:06:55.708Z",
+  "details": "Integración estable aplicada una vez en specs 02, 03, 05, 06, 08 y context/architecture 02 y 04; plan R-06 y ACC-024 reconciliados.",
+  "hash": "89f0e961ca6fd81e5c8d71aebc83ab6b1903af630ab2a103bc5acf8e4f984c9f"
+}

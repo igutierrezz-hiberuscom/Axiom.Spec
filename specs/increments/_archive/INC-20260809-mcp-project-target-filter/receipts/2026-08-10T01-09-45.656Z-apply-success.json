@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-mcp-project-target-filter",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-10T01:09:45.656Z",
+  "details": "Review repair applied: worktree provisioning now passes project filter and native writers remove only stale Axiom-managed IDs.",
+  "hash": "34c682efcf79bad3a16c2352b54353810dd30ae413ae86cdffb775efffd7a6fe"
+}

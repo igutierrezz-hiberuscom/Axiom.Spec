@@ -2,7 +2,9 @@
 
 Fuente: `Axiom/packages/adapters/README.md`, `Axiom/docs/cli/support-matrix.md`, `@axiom/model-routing`, `@axiom/launcher`, `apps/cli/src/commands/native-mcp-config.ts`.
 
-> Actualizado por la tanda `INC-20260726-*` (paridad de adapters + front de onboarding + doctor deep). Antes había 6 packages de adapter y 3 targets sin package; hoy hay **9 packages** y **10 targets canónicos**.
+> Reconciliado por ACC-025..ACC-029 (2026-08-09). El runtime mantiene 8
+> targets activos con 8 packages dedicados; `copilot-vscode` es alias legacy de
+> `github-copilot` y LiteLLM fue retirado.
 
 ## Contrato común de adapters
 
@@ -19,15 +21,18 @@ const result = await generateOpencodeConfig({
 });
 ```
 
-## Registro canónico de targets (10)
+## Registro activo de targets (8)
 
 Fuente única reconciliada en `apps/cli/src/commands/init.ts#ADAPTER_TARGETS`, `Axiom/axiom.yaml#capabilities.adapters` (los 8 headline), `@axiom/model-routing#SUPPORT_MATRIX`/`MVP_TARGETS` e `@axiom/install-profiles`:
 
-`opencode`, `copilot-vscode`, `claude-code`, `antigravity`, `visual-studio-2026`, `cursor`, `github-copilot`, `litellm`, `vscode`, `codex`.
+`opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `codex`,
+`antigravity`, `visual-studio-2026`.
 
-`DEFAULT_TARGET` sigue siendo `opencode`. Los 8 **headline** (los que el launcher ofrece y el `axiom.yaml` lista) son: `claude-code`, `github-copilot`, `vscode`, `opencode`, `cursor`, `antigravity`, `visual-studio-2026`, `codex`. `copilot-vscode` y `litellm` quedan como targets internos reconocidos.
+`DEFAULT_TARGET` sigue siendo `opencode`. `copilot-vscode` solo se admite
+durante la migracion de estados y se normaliza a `github-copilot`; LiteLLM no
+se acepta como target activo.
 
-## Adapters con package dedicado (9, todos operativos)
+## Adapters con package dedicado (8, todos operativos)
 
 | Target | Package | Nivel de soporte | Superficie de instrucciones |
 |---|---|---|---|
@@ -36,16 +41,33 @@ Fuente única reconciliada en `apps/cli/src/commands/init.ts#ADAPTER_TARGETS`, `
 | `github-copilot` | `@axiom/adapters-github-copilot` | `fallback-only` | instrucciones Copilot |
 | `vscode` | `@axiom/adapters-vscode` | `fallback-only` | superficie VS Code |
 | `cursor` | `@axiom/adapters-cursor` | `fallback-only` | superficie Cursor |
-| `litellm` | `@axiom/adapters-litellm` | `fallback-only` | router LiteLLM (P1 pendiente) |
 | `codex` | `@axiom/adapters-codex` | `fallback-only` | `.codex/AGENTS.md` (INC-20260726) |
 | `antigravity` | `@axiom/adapters-antigravity` | `fallback-only` | `.antigravity/AGENTS.md` (INC-20260726) |
-| `visual-studio-2026` | `@axiom/adapters-visual-studio-2026` | `fallback-only` | `.vs/AXIOM.md` (INC-20260726) |
+| `visual-studio-2026` | `@axiom/adapters-visual-studio-2026` | `fallback-only` | alias de `.github/copilot-instructions.md` |
 
-`codex`, `antigravity` y `visual-studio-2026` pasaron de placeholder fino (`writeThinCanonicalAgentsMd`, hoy código muerto) a **generadores de primera clase** que mirroran el patrón single-file de `claude-code`.
+`codex` y `antigravity` usan generators single-file dedicados. Visual Studio
+conserva su package por compatibilidad, pero delega en el writer común de
+Copilot y no genera `.vs/AXIOM.md`.
 
 ## Targets declarados sin adapter dedicado
 
 Solo `copilot-vscode`: no tiene package propio pero comparte el schema nativo de VS Code con `github-copilot`/`vscode`. Cae a `fallback-only` en `SUPPORT_MATRIX`.
+
+## Superficie común de instrucciones Copilot (ACC-024)
+
+GitHub Copilot, Copilot CLI, VS Code y Visual Studio comparten el documento
+general `.github/copilot-instructions.md`. `copilot-vscode` es alias legacy;
+`vscode` reserva `.vscode/` para `settings.json`, `extensions.json` y
+`mcp.json`. Las process surfaces por ruta usan
+`.github/instructions/*.instructions.md`.
+
+El writer común vive en `@axiom/document-bootstrap` y recibe el template
+versionado del proyecto con fallback bundleado. Reemplaza solo el bloque
+`AXIOM:GENERATED`, conserva byte a byte el preámbulo, la cola humana y
+`TEAM:CUSTOM`, y migra `.vscode/copilot-instructions.md` solo después de
+escribir y confirmar el destino. Si las zonas humanas divergen, conserva la
+fuente legacy y devuelve una advertencia. La selección conjunta de aliases se
+deduplica de forma determinista.
 
 ## Superficie portable de skills/agents (adapter-agnóstica)
 
@@ -53,19 +75,25 @@ Solo `copilot-vscode`: no tiene package propio pero comparte el schema nativo de
 
 ## Config MCP nativo (`native-mcp-config.ts`)
 
-`writeNativeMcpConfig` proyecta los dos servers managed de Axiom (`sdd-mcp-server`, `spec-mcp-broker`) al schema nativo VERIFICADO de cada tool, merge-preservando lo que el usuario ya tenga:
+`writeNativeMcpConfig` proyecta servers managed de Axiom solo después de que
+`filterProjectBoundMcpServers` confirme el proyecto, `mcp.yml`, el manifest,
+`enabled` y `targetRepo`. Los writers reconcilian IDs gestionados y preservan
+servidores custom:
 
 | Target | Fichero nativo | Shape | Estado |
 |---|---|---|---|
 | `claude-code` | `.mcp.json` | `{ mcpServers }` | verificado |
 | `cursor` | `.cursor/mcp.json` | `{ mcpServers }` | verificado |
-| `copilot-vscode` / `github-copilot` / `vscode` | `.vscode/mcp.json` | `{ servers, type:'stdio' }` | verificado |
+| `github-copilot` / `vscode` | `.vscode/mcp.json` | `{ servers, type:'stdio' }` | verificado |
 | `opencode` | `opencode.json` | `{ mcp, type:'local' }` | verificado |
-| `visual-studio-2026` | `.vs/mcp.json` | `{ servers, type:'stdio' }` | **ASUNCIÓN DOCUMENTADA** override-able (VS 2022 17.14+/2026 lee MCP a nivel solución; no re-verificado contra VS real). Se eligió `.vs/mcp.json` y no `.mcp.json` raíz para no colisionar con `claude-code`. |
+| `visual-studio-2026` | — | — | sin schema MCP verificado; warning, no escritura |
 | `codex` / `antigravity` | — (ninguno) | nota informativa | config USER-GLOBAL (`~/.codex/config.toml` `[mcp_servers]` / `~/.gemini/config/mcp_config.json`); no se escribe fichero de proyecto |
-| `litellm` | — | warning genérico | sin schema nativo verificado |
 
-`NATIVE_MCP_TARGETS` = los 7 con fichero. `NATIVE_MCP_INFORMATIVE_TARGETS` = `codex`, `antigravity`. Disciplina invariante: **nunca se inventa un schema no verificado** — si no hay schema, se emite una nota, no un fichero.
+`NATIVE_MCP_TARGETS` = `claude-code`, `cursor`, `github-copilot`, `opencode` y
+`vscode`. `NATIVE_MCP_INFORMATIVE_TARGETS` = `codex`, `antigravity`; no se
+escribe ni recomienda configuración global sin binding seguro. Visual Studio
+queda fuera por schema no verificado. Disciplina invariante: **nunca se inventa
+un schema no verificado**.
 
 ## Routing de adapters en el launcher (`@axiom/launcher#AXIOM_ADAPTER_ROUTING`)
 
@@ -75,14 +103,14 @@ El prompt generado (`prompt-builder.ts`) incluye un bloque adapter-neutral **"He
 
 ## GATE 0031 / cobertura de adapters en doctor
 
-`@axiom/doctor` corre `TC-009-adapter-runtime-coverage`: los **9** packages `@axiom/adapters-<target>` deben tener `src/generator.ts` y `dist/index.js` materializados; si falta alguno, el doctor falla. La support matrix refleja comportamiento real verificado, no aspiracional.
+`@axiom/doctor` corre `TC-009-adapter-runtime-coverage`: los **8** packages activos `@axiom/adapters-<target>` deben tener `src/generator.ts` y `dist/index.js` materializados; si falta alguno, el doctor falla. La support matrix refleja comportamiento real verificado, no aspiracional. (ACC-025 retiró `litellm`; el conteo pasó de 9 a 8.)
 
 ### Probes de runtime (opt-in, `axiom doctor --deep` / launcher `?deep=1`)
 
 `runDoctorChecksDeep` (`packages/doctor/src/deep-checks.ts`) añade, sin modificar el doctor síncrono y **sin poder nunca hacer FAIL** (solo `pass`/`warn`/`skip`):
 
 - **TC-018** (tool functional): corre `--version` para los tools con contrato de probe (`serena`, `cmm`→`codebase-memory-mcp`, `engram`); `skip` honesto para los skill-invoked sin binario (`rtk`, `caveman`).
-- **TC-019** (MCP liveness): handshake `initialize` JSON-RPC REAL contra `sdd-mcp-server` / `spec-mcp-broker` (reutiliza `createStdioMcpClient` de `@axiom/providers`), leyendo `command`/`args` de `.axiom/mcp.yml`. `warn` si no hay `.axiom/mcp.yml`, si el comando no resuelve o si el handshake expira.
+- **TC-019** (MCP liveness): descubrimiento `server/discover` MCP `2026-07-28` REAL contra `axiom-mcp-broker` (reutiliza `createStdioMcpClient` de `@axiom/providers`), leyendo `command`/`args` de `.axiom/mcp.yml`. `warn` si no hay `.axiom/mcp.yml`, si el comando no resuelve o si el descubrimiento expira.
 
 Ambos usan probers inyectables (los tests nunca lanzan procesos reales).
 

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-sync-all-adapters",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-10T00:23:53.816Z",
+  "details": "Delegated implementation completed; sync dispatches all active generators and records writtenFiles/warnings.",
+  "hash": "ed211c6aedb53d629acddd6ea81f080399568ef086f5fb353c41f60e1b8bdba7"
+}

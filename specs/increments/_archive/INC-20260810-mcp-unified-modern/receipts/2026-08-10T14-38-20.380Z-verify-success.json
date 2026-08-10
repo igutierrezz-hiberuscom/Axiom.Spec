@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260810-mcp-unified-modern",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-10T14:38:20.380Z",
+  "details": "Build PASS, doctor PASS sin fallos, suites MCP/worktree/launcher/providers verificadas; fallos de adapters IP-003/TC-009 clasificados como ACC-025 preexistentes.",
+  "hash": "e6beade1101376471fdadf75ca4c73a7d645c9acc5a955497696bf9aa3e2530e"
+}

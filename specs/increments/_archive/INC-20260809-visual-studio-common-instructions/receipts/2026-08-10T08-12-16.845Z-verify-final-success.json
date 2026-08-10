@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-visual-studio-common-instructions",
+  "phase": "verify-final",
+  "status": "success",
+  "timestamp": "2026-08-10T08:12:16.845Z",
+  "details": "Independent final verification passed: candidateHash=9ef8589ba2291c9eb2a2b2a5f79bc609f686672f8985db7455b0dcb55419948b; build, archive metadata, receipts, and active-spec reconciliation verified.",
+  "hash": "d4584d499328c9b4bf335ee9a744594a8e053a6412f5d0f9f2378a2e9987ea7e"
+}

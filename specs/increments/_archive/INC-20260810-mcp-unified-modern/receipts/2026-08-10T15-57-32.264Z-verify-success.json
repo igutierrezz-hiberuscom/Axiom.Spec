@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260810-mcp-unified-modern",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-10T15:57:32.264Z",
+  "details": "Verificación final post-allowlist: build PASS, doctor PASS (0 fallos), 71/73 archivos y 709/711 tests PASS; solo TC-009/IP-003 preexistentes de ACC-025; dist symlink guard PASS; docs/context y isolation allowlist reconciliados.",
+  "hash": "39a844c16ef4c046a6cc7d35789a33a3d87ab1bea8cc034a48fc027fbd329fb0"
+}

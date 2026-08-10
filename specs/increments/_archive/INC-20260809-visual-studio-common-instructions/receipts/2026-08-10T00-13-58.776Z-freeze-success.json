@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-visual-studio-common-instructions",
+  "phase": "freeze",
+  "status": "success",
+  "timestamp": "2026-08-10T00:13:58.776Z",
+  "details": "Pre-apply freeze was verified before delegation; final freeze revalidated after implementation with current candidate hash 5e3f061e3ce10398282042bdd5bf302fed6f8aa090b98eb0a682fb765d5c4295.",
+  "hash": "f0aeb779b47228d102980bb65bad3e251f2c6d67647d6cf34ef58d7f04753e86"
+}

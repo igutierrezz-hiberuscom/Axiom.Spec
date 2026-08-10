@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-sync-all-adapters",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-10T01:09:42.431Z",
+  "details": "Review repair applied: Cursor potential output registry reconciled with axiom-common.mdc no-clobber behavior.",
+  "hash": "66fd8fb372d89dd944fa64f86578687088a365dbf77171ff3121d559921eb29b"
+}

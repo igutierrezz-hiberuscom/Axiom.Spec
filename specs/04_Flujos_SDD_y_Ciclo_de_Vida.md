@@ -44,11 +44,11 @@ Modelo de datos tras el init (fuente única de verdad): `axiom.yaml` es la fuent
 
 1. un solo rol funcional cubierto en profundidad (`functionalProfile: builder`);
 2. soporte multi-repo dentro de un proyecto vía `@axiom/topology` (`installed-multi-repo` layout), no todavía como separación de repos de Axiom-el-producto;
-3. ejecución local (`local-only`) implícita y adapters hacia 10 targets: 9 con paquete dedicado y `copilot-vscode` como único target sin paquete dedicado, servido por el writer compartido de Copilot.
+3. ejecución local (`local-only`) implícita y adapters hacia 8 targets activos, todos con paquete dedicado; `copilot-vscode` se conserva como alias legacy de `github-copilot`.
 
 ## Registro histórico: fuera de la baseline inicial del MVP
 
-Según la documentación inicial de readiness, los overlays `standard`/`enterprise`, `visual-studio-2026` y los providers que entonces se consideraban post-MVP (`engram`, `codegraph`, `graphify`) no eran requisitos de entrada. Este bloque conserva ese contexto histórico y no limita la baseline operativa actual: `engram` está implementado, `cmm` sustituyó a `codegraph`/`graphify` y el registro vigente cubre 10 targets. Siguen fuera del alcance inicial los bridges externos/plugins/lanes paralelos avanzados y la instalación user-level del binario como paso obligatorio.
+Según la documentación inicial de readiness, los overlays `standard`/`enterprise` y los providers que entonces se consideraban post-MVP (`engram`, `codegraph`, `graphify`) no eran requisitos de entrada. Este bloque conserva ese contexto histórico y no limita la baseline operativa actual: `engram` está implementado, `cmm` sustituyó a `codegraph`/`graphify`, LiteLLM fue retirado y el registro vigente cubre 8 targets activos. Siguen fuera del alcance inicial los bridges externos/plugins/lanes paralelos avanzados y la instalación user-level del binario como paso obligatorio.
 
 ## Punto de partida de un repo de spec recién creado (setup de workspace)
 
@@ -164,8 +164,8 @@ Un proyecto que precede a Axiom puede ADOPTARSE al instalar, sin recrear su hist
 
 El ciclo de vida se materializa como **tres flujos operativos por rol**, cada uno respaldado por un skill/agent de proceso (el HOW) del catálogo, **generado por rol y por adapter** en cada repo del workspace por `axiom workspace setup` / `adopt` (ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md), `INC-20260713-ns1-process-skills` / `INC-20260713-ns2-adapter-generation`):
 
-- **ANALISTA** (`axiom-spec-author`, en el **repo de spec**): descubre antes de escribir, cierra ambigüedades y autora contenido de spec en estado seguro (draft); toma el HOW del **sdd-MCP** (`sdd.skillIndexRead`) y expande el increment/bug vía las lecturas `spec.*Read` + `sdd.transitionApply` confirm-gated.
-- **ARQUITECTO** (`axiom-role-planner`, en el **repo de spec**): lee spec + contexto técnico y emite **un plan por rol registrado** con repos destino y `allowedWriteScope`, usando el **contexto del spec-MCP** + code-intel (`cmm`/`serena`) con **fallback físico** (Read/Grep) cuando el code-intel MCP no está disponible.
+- **ANALISTA** (`axiom-spec-author`, en el **repo de spec**): descubre antes de escribir, cierra ambigüedades y autora contenido de spec en estado seguro (draft); toma el HOW del broker MCP único (`axiom-mcp-broker`, `sdd.skillIndexRead`) y expande el increment/bug vía las lecturas `spec.*Read` + `sdd.transitionApply` confirm-gated.
+- **ARQUITECTO** (`axiom-role-planner`, en el **repo de spec**): lee spec + contexto técnico y emite **un plan por rol registrado** con repos destino y `allowedWriteScope`, usando el broker MCP único (`axiom-mcp-broker`) + code-intel (`cmm`/`serena`) con **fallback físico** (Read/Grep) cuando el code-intel MCP no está disponible.
 - **IMPLEMENTADOR** (`axiom-role-implementer`, en el **repo de código del rol**): consume el bundle WHAT vía `spec.implementationContextRead`, carga las **skills repo-local**, usa code-intel con fallback físico, se mantiene dentro del write-scope, valida y conduce git confirm-gated.
 
 La **ruta de spec-scope converge** en los tres flujos (`INC-20260713-fix-spec-scope-path` / `INC-20260713-fix-impl-context-path`): en un **repo de spec dedicado** (`axiom.yaml role === 'spec'`) los artefactos viven en la RAÍZ del scope (`<scope>/increments|plans|bugs`, sin segmento `axiom.spec`) y son MCP-queryable; el resto (single-repo / self-hosted / co-located) mantiene `axiom.spec` sin cambios. El helper puro `resolveSpecRelPathForScope(role)` (`@axiom/workflow`) es la única fuente de verdad de esa decisión, y `spec.implementationContextRead` ahora puebla `plan`/`relatedSpec`/`allowedWriteScope` sobre un repo de spec dedicado. Detalle de capacidad en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).

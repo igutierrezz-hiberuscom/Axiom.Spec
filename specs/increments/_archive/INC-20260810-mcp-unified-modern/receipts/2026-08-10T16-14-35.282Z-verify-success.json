@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260810-mcp-unified-modern",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-10T16:14:35.282Z",
+  "details": "Verificación post-archivo y post-re-freeze: candidate freeze reproducible d8fff3415772fb0f6922996d3bcb8dea9578f9d8fbf11ea48c7e440e8940803a; build PASS; doctor --deep PASS con 0 fallos; batería 71/73 archivos y 709/711 tests PASS; TC-009/IP-003 preexistentes de ACC-025; claims históricos MCP reconciliados.",
+  "hash": "d44d3ccce7ec2abed09160019470e6d4b8bc992fe2efdf1646cc9e1dba0d0d09"
+}

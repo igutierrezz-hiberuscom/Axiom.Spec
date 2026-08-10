@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260810-mcp-unified-modern",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-10T14:38:18.192Z",
+  "details": "Broker MCP único axiom implementado; protocolo 2026-07-28, binding fail-closed, guards de scope, writers y E2E migrados.",
+  "hash": "d5924c4434b23d4d34bfbaec65dd6f7697766a96a28a6cb9d615e30d6e05d6fc"
+}

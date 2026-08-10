@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-remove-litellm-target",
+  "phase": "freeze-final",
+  "status": "success",
+  "timestamp": "2026-08-10T08:12:11.013Z",
+  "details": "Final archived freeze verified: candidateHash=8b757a6e68e1d8bc8521585745d9ca6e3c9fe07ebdaf0bff5896a095c5e8f32a; metadata=archived; integration=integrated.",
+  "hash": "dd892999ec9d6d412bac42eb0ba4df62528ca571c7bb257d8609682455e7274f"
+}

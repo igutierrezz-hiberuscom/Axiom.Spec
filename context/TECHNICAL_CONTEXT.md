@@ -1,6 +1,6 @@
 # TECHNICAL_CONTEXT
 
-Puerta de entrada obligatoria al conocimiento técnico estable del producto Axiom, tal como existe en el código real de `Axiom/`. Baseline original: 2026-07-02; reconciliado el 2026-08-03 (ver "Fuentes auditadas y última validación" abajo). Cada documento enlazado aquí cita su fuente (código, README de package, docs oficiales o `Axiom.Spec/decisions/`) y distingue explícitamente entre estado verificado y planificación futura.
+Puerta de entrada obligatoria al conocimiento técnico estable del producto Axiom, tal como existe en el código real de `Axiom/`. Baseline original: 2026-07-02; reconciliado el 2026-08-10 (ver "Fuentes auditadas y última validación" abajo). Cada documento enlazado aquí cita su fuente (código, README de package, docs oficiales o `Axiom.Spec/decisions/`) y distingue explícitamente entre estado verificado y planificación futura.
 
 ## Propósito del contexto técnico
 
@@ -10,11 +10,11 @@ Para QUÉ debe hacer el producto (requisitos, alcance, principios), ver `specs/0
 
 ## Estado real del producto (resumen)
 
-- Monorepo npm workspaces en `Axiom/`: `apps/cli` + **43 packages** bajo `packages/*` — **34 top-level** (verificado: `ls packages/*/package.json | wc -l` → 34; `packages/adapters/` en sí mismo NO tiene `package.json` propio, es solo un directorio contenedor) + **9 sub-packages de `packages/adapters/*`** (verificado: `ls packages/adapters/*/package.json | wc -l` → 9: `opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `litellm`, `codex`, `antigravity`, `visual-studio-2026`). Packages nuevos desde el baseline 2026-07-02 (no estaban en el inventario de 28): `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado`.
+- Monorepo npm workspaces en `Axiom/`: `apps/cli` + **42 packages activos** bajo `packages/*` — **34 top-level** (`packages/adapters/` no tiene `package.json` propio) + **8 adapters activos** (`opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `codex`, `antigravity`, `visual-studio-2026`). `@axiom/adapters-litellm` fue retirado y `copilot-vscode` es alias legacy sin package. Packages nuevos desde el baseline 2026-07-02 incluyen `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado`.
 - Runtime MVP cerrado 2026-06-25; oleadas post-MVP (0019-0039) cerradas hasta 2026-07-01/02; evolución posterior continua (renames de carpetas de config, dedup de `init.json`/`topology.yaml`, launcher como front por defecto, scaffolding de adopción, paridad de adapters, servidores MCP propios, `cmm` reemplaza `codegraph`/`graphify`, retirada de la TUI pública — ver `references/02-historial-de-incrementos.md`).
 - CLI real con **81 ficheros** en `apps/cli/src/commands/*.ts` (verificado: `ls apps/cli/src/commands/*.ts | wc -l` → 81; de esos, 10 son helpers compartidos con prefijo `_` — p. ej. `_shared.ts`, `_tracker-status.ts` — no comandos por sí mismos), de los cuales solo una minoría tiene página de documentación operativa dedicada en `Axiom/docs/cli/`. Familias nuevas relevantes: `workspace*` (16 ficheros, incl. `workspace-setup.ts`/`workspace-adopt.ts`), `app*`/`app-launcher*` (front operador = launcher), `member-install.ts`, `native-mcp-config.ts`, `tracker`-backed commands (`_tracker-status.ts`, `app-launcher-ado.ts`, `external-sync.ts`).
 - Renombres de carpetas de estado/config ya cerrados y verificados en código: `.sdd/` → **`.axiom-state/`** y `axiom.spec/config/` → **`axiom.config/`** (`packages/filesystem-truth/src/discovery.ts#LOCAL_OVERLAY_DIRNAME`/`AXIOM_CONFIG_DIRNAME`, re-exportado vía `@axiom/core`). Cualquier mención a `.sdd/` o `axiom.spec/config/` como ruta actual en este contexto es un residuo del baseline 2026-07-02 y fue corregida en la reconciliación 2026-07-29.
-- Axiom ya no carece de servidor MCP propio: existen `@axiom/mcp-server` (dispatcher JSON-RPC 2.0 hand-rolled, sin SDK) y `@axiom/mcp-tools` (handlers), proyectados a config nativa de cada tool por `apps/cli/src/commands/native-mcp-config.ts` (servers gestionados `sdd-mcp-server` / `spec-mcp-broker`). Ver `integrations/01-capabilities-providers-y-toolchain.md`.
+- Axiom ya no carece de servidor MCP propio: existen `@axiom/mcp-server` (dispatcher MCP `2026-07-28` hand-rolled, sin SDK) y `@axiom/mcp-tools` (handlers), proyectados a config nativa de cada tool por `apps/cli/src/commands/native-mcp-config.ts` como un único server gestionado `axiom-mcp-broker`. Ver `integrations/01-capabilities-providers-y-toolchain.md`.
 - El toolchain versionado usa `axiom.config/toolchain-catalog.yaml` schema 2 y `.axiom-state/<projectKey>/toolchain.lock` schema 1. `@axiom/toolchain` carga/escribe el lockfile de forma atómica, extrae versiones con regex declaradas y expone planner/upgrade; `@axiom/doctor` añade TC-020..TC-023, con drift real opt-in en `doctor --deep`. Detect/probe/repair aceptan aliases legacy y repair migra markers al namespace canónico. Ver `integrations/01-capabilities-providers-y-toolchain.md`, `operations/02-doctor-troubleshooting-y-telemetria.md` y `architecture/02-modelo-de-datos-y-configuracion.md`.
 - La resolución pública de proyecto expone solo `ProjectMode: 'local-only'`. `gateway` y `hybrid` se toleran como input raw v1/v2 para normalización, pero no son modos efectivos ni ramas activas de provider, permiso o discovery. Fuente: `Axiom/packages/project-resolution/src/resolver.ts` y `Axiom/packages/doctor/src/checks.ts`.
 - El namespace project-bound único es `.axiom-state/<projectKey>/`; `config` es un label API sin carpeta física, `local/` es repo/operador-local y `executions/<executionId>/` mantiene su aislamiento. `state-paths.ts` implementa precedencia/migración legacy; `checkpoints.ts` remapea destinos legacy durante restore; worktree provisioning pasa `Execution.projectId` al lector de providers.
@@ -26,7 +26,7 @@ Para QUÉ debe hacer el producto (requisitos, alcance, principios), ver `specs/0
 - `architecture/` — cómo está construido el runtime: capas, modelo de datos/configuración, ciclo de vida CLI/orquestación, adapters y model routing.
 - `operations/` — cómo se instala, onboarda, diagnostica y audita un proyecto real.
 - `integrations/` — capabilities, providers, toolchain externo (Serena, cmm, etc.) y servidores/bridges MCP.
-- `references/` — material de consulta puntual: inventario de los 43 packages, historial de incrementos 0015-0030 + resumen de oleadas posteriores, y riesgos/brechas conocidas verificadas.
+- `references/` — material de consulta puntual: inventario de los 42 packages, historial de incrementos 0015-0030 + resumen de oleadas posteriores, y riesgos/brechas conocidas verificadas.
 
 ### Índice de documentos
 
@@ -99,6 +99,14 @@ Ver detalle completo en [references/03-riesgos-y-brechas-conocidas.md](reference
 	`architecture/03`, `integrations/01`, y los claims activos de specs 00..08;
 	las referencias a `config/<projectName>`, `local` project-bound y modos
 	`gateway`/`hybrid` quedan solo como compatibilidad o historia explícita.
+- Reconciliación R-07 (2026-08-10, `ACC-025..ACC-029`): el runtime activo
+	queda en 8 adapters; LiteLLM se retiró, Copilot/VS Code/Visual Studio usan
+	`.github/copilot-instructions.md`, `sync` cubre los generators activos,
+	Cursor declara su regla potencial no-clobber y la proyección MCP valida el
+	proyecto antes del writer, limpia solo IDs gestionados y no escribe ni
+	recomienda MCP global para Codex/Antigravity sin binding. Build, suites
+	dirigidas y review independiente pasan; los claims anteriores quedan solo
+	en secciones históricas explícitas.
 - Responsable humano: pendiente de asignar por el equipo (no declarado en el momento de esta redacción).
 
 ## Regla crítica

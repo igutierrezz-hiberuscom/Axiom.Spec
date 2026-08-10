@@ -10,7 +10,7 @@ Generado por `axiom init`. Campos relevantes (`Axiom/docs/configuration/project-
 
 Materializa la configuración efectiva `builder` + `local-only` + `adapterTarget`. `builder` y
 `local-only` son implícitos y no seleccionables; los estados legacy se normalizan en
-los bordes de lectura. `adapterTarget` pertenece al conjunto de 10 targets canónicos
+los bordes de lectura. `adapterTarget` pertenece al conjunto de 8 targets activos
 declarados (ver `../architecture/04-adapters-y-model-routing.md`).
 
 Editable con criterio a mano; no editar `init.json`, `install-profile.json`, `last-start.json`, `last-sync.json` salvo diagnóstico (son estado derivado). **`init.json` ya no incluye `projectName`** (`INC-20260703-config-dedup`, cerrado): solo persiste el campo de compatibilidad `profileTriple` normalizado a `builder` + `local-only` + target, además de `createdAt` y `version`. El segmento físico se deriva de `projectKey`: `projectId` v2 o slug estable de `project.name` v1.
@@ -77,21 +77,29 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 
 ## Ficheros generados por adapter target
 
-> 9 packages de adapter / 10 targets canónicos / 8 "headline" — ver `../architecture/04-adapters-y-model-routing.md` para el detalle completo y actualizado (incluye `codex` y las superficies portables `.axiom/agents|commands|skills/`, no repetidas aquí).
+> 8 packages de adapter activos / 8 targets activos — ver `../architecture/04-adapters-y-model-routing.md` para el detalle completo y actualizado (incluye `codex` y las superficies portables `.axiom/agents|commands|skills/`, no repetidas aquí).
 
 | Target | Archivos |
 |---|---|
 | `opencode` | `.opencode/AGENTS.md`, `.opencode/skills-lock.yaml` |
 | `claude-code` | `.claude/AGENTS.md` |
-| `github-copilot` / `copilot-vscode` | `.github/copilot-instructions.md` (+ `.vscode/settings.json`, `.vscode/extensions.json` en `copilot-vscode`) |
-| `vscode` | `.vscode/settings.json` |
+| `github-copilot` / `copilot-vscode` | `.github/copilot-instructions.md` (`copilot-vscode` solo alias legacy) |
+| `vscode` | `.vscode/settings.json`, `.vscode/extensions.json` |
 | `cursor` | `.cursor/settings.json`, `.cursor/AGENTS.md` |
-| `litellm` | `litellm.config.json` |
+| `cursor` (regla opcional) | `.cursor/rules/axiom-common.mdc` en cold start, no-clobber |
 | `codex` | `.codex/AGENTS.md` (generador de primera clase desde `INC-20260726-adapter-mcp-parity`) |
 | `antigravity` | `.antigravity/AGENTS.md` |
-| `visual-studio-2026` | `.vs/AXIOM.md` |
+| `visual-studio-2026` | `.github/copilot-instructions.md` (alias de compatibilidad) |
 
-Caso especial Copilot: `configure` puede escribir `.github/copilot-instructions.md` vía `@axiom/document-bootstrap`, usando template versionado en `axiom.spec/templates/`, resolviendo variables del proyecto y preservando el bloque `TEAM:CUSTOM` con escritura atómica.
+Caso especial Copilot: `configure`, `sync`, `workspace setup` y el adapter
+`github-copilot` escriben la instrucción general compartida en
+`.github/copilot-instructions.md` vía `@axiom/document-bootstrap`. El template
+versionado de `axiom.spec/templates/` gana cuando es legible y el bundle actúa
+como fallback. El writer conserva el contenido humano fuera de
+`AXIOM:GENERATED` y `TEAM:CUSTOM`, usa escritura atómica y migra de forma
+conservadora la ruta legacy `.vscode/copilot-instructions.md`. `.vscode/` queda
+para `settings.json`, `extensions.json` y `mcp.json`; las instrucciones por
+ruta se escriben en `.github/instructions/*.instructions.md`.
 
 ## Instalación user-level (fuera del proyecto)
 

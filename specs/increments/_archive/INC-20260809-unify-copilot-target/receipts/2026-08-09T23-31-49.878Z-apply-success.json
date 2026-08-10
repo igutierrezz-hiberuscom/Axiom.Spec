@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-unify-copilot-target",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-09T23:31:49.878Z",
+  "details": "Delegated implementation completed; github-copilot canonical, copilot-vscode legacy alias, vscode editor-only.",
+  "hash": "a0503320b045b49f17d2ea824d53afb5826a15a409ab3e8cc45c51c857098a46"
+}

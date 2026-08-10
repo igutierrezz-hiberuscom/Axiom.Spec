@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-remove-litellm-target",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-09T21:51:00.285Z",
+  "details": "Delegated implementation completed; pre-apply candidate freeze hash 79df5311b8b639da51c8de87ef55db781369ac117d645c9d72f85ef55db781369ac117d645c9d72f85ef55db7b3cccedf verified before apply.",
+  "hash": "6b5a57535cb325b76d11ece30177d18476f39775e2f5711a6c9a572a5e0fe4a3"
+}

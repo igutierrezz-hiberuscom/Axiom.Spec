@@ -1,0 +1,21 @@
+id: INC-20260809-mcp-project-target-filter
+kind: increment
+title: mcp-project-target-filter
+status: archived
+createdAt: '2026-08-09T21:25:05.089Z'
+updatedAt: '2026-08-10T08:06:52.680Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-10T08:06:52.680Z'
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-09T21:25:05.089Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

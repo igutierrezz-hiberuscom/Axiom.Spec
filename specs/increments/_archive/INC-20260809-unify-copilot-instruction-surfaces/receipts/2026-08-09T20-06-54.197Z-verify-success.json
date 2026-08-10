@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-unify-copilot-instruction-surfaces",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-09T20:06:54.197Z",
+  "details": "Verificación final: npm run build PASS; batería focalizada 13 archivos/146 tests PASS; npm ci --dry-run PASS; templates byte-equivalent y get_errors sin errores.",
+  "hash": "d09c9b4c3105293acc577aa752578ec89ae6f76990ebd1c97920c3c5dea675ab"
+}

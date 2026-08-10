@@ -18,9 +18,9 @@ Axiom es un CLI Node/TypeScript (`axiom`) que coordina, para un proyecto adoptan
 
 La fuente documental canónica del workspace es el repo sibling `Axiom.Spec/` (mayúsculas), cuyo `decisions/` contiene los ADR y decisiones estructurales. `Axiom/axiom.spec/` es una baseline product-owned legítima del runtime dogfoodeado; no es un alias ni una segunda ubicación que deba fusionarse con `Axiom.Spec/` (ADR-0032).
 
-## Capas por responsabilidad (43 packages + `apps/cli`)
+## Capas por responsabilidad (42 packages + `apps/cli`)
 
-> Conteo verificado 2026-07-29: `ls packages/*/package.json | wc -l` → **34** top-level (`packages/adapters/` en sí no cuenta, no tiene `package.json` propio) + `ls packages/adapters/*/package.json | wc -l` → **9** adapters = **43** total. El baseline 2026-07-02 documentaba 28; nuevos desde entonces: `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado`.
+> Conteo verificado 2026-08-09: `ls packages/*/package.json | wc -l` → **34** top-level (`packages/adapters/` en sí no cuenta, no tiene `package.json` propio) + **8** adapters activos. El package de LiteLLM fue retirado; `copilot-vscode` es alias legacy y no tiene package propio.
 
 | Capa | Packages | Patrón dominante |
 |---|---|---|
@@ -28,7 +28,7 @@ La fuente documental canónica del workspace es el repo sibling `Axiom.Spec/` (m
 | Descubrimiento/aislamiento | `filesystem-truth`, `project-resolution`, `isolation` | Filesystem read-only, path-guard, resolución de proyecto único/ambiguo |
 | Persistencia | `persistence`, `memory`, `versioning` | Store atómico, curación de memoria, checkpoints/migraciones |
 | Instalación | `install-profiles`, `installer` | Composición pura de `builder` + `local-only` + target → materialización |
-| Adapters | `adapters/{opencode,claude-code,github-copilot,vscode,cursor,litellm,codex,antigravity,visual-studio-2026}` | Generator pattern, contrato común (9 packages, 10 targets canónicos — ver `04-adapters-y-model-routing.md`) |
+| Adapters | `adapters/{opencode,claude-code,github-copilot,vscode,cursor,codex,antigravity,visual-studio-2026}` | Generator pattern, contrato común (8 packages activos; ver `04-adapters-y-model-routing.md`) |
 | MCP | `mcp-server`, `mcp-tools`, `providers` | Dispatcher JSON-RPC hand-rolled + handlers de capability + registry/discovery de providers (nuevo desde el baseline) |
 | Tooling/manifests | `toolchain`, `topology`, `workflow`, `model-routing`, `tool-routing` | Manifests YAML + state machines + dispatcher |
 | Catálogos | `skills`, `components`, `agents` | Materialización idempotente (tmp+rename) |
@@ -45,11 +45,11 @@ Detalle package por package: [../references/01-inventario-de-packages.md](../ref
 - `@axiom/isolation` aplica path-guard y scope por `projectId` sobre cualquier operación.
 - `@axiom/capability-model` modela capabilities/providers/discovery, consumido por `configure`, `start`, `doctor`.
 - `@axiom/install-profiles` es el compositor puro de la configuración efectiva `builder` + `local-only` + target.
-- `@axiom/adapters-*` (9 packages) son la salida final hacia cada IDE/CLI externo.
+- `@axiom/adapters-*` (8 packages activos) son la salida final hacia cada IDE/CLI externo; `copilot-vscode` es alias legacy y LiteLLM fue retirado.
 - `@axiom/mcp-server` + `@axiom/mcp-tools` son el servidor MCP propio (nuevo desde el baseline): dispatcher JSON-RPC 2.0 hand-rolled sobre los handlers de `@axiom/mcp-tools`, proyectado a config nativa por `apps/cli/src/commands/native-mcp-config.ts`.
 
 ## Qué NO es Axiom hoy (límites verificados)
 
 - No hay separación física de repos "sdd/spec/code" por proyecto adoptante como default obligatorio — el roadmap de rediseño que exploraba esto (`INC-20260702-axiom-redesign-roadmap`) ya cerró y está archivado; su resultado estable vive en `specs/00_Resumen_Ejecutivo.md`-`specs/08_Glosario.md`, no en este documento.
-- Axiom **ya no carece** de servidor MCP propio (afirmación stale del baseline 2026-07-02): existen `@axiom/mcp-server` (dispatcher) + `@axiom/mcp-tools` (handlers), con dos servers gestionados (`sdd-mcp-server`, `spec-mcp-broker`) proyectados a la config nativa de cada tool. Ver `../integrations/01-capabilities-providers-y-toolchain.md`.
+- Axiom **ya no carece** de servidor MCP propio (afirmación stale del baseline 2026-07-02): existen `@axiom/mcp-server` (dispatcher) + `@axiom/mcp-tools` (handlers), con un único server gestionado (`axiom-mcp-broker`) project-scoped y proyectado a la config nativa de cada tool. Ver `../integrations/01-capabilities-providers-y-toolchain.md`.
 - No hay runtime persistente de larga vida para `start` (documentado explícitamente como fuera del MVP en `overview.md`).

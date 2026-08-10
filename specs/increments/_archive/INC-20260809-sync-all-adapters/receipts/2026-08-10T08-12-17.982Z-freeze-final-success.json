@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-sync-all-adapters",
+  "phase": "freeze-final",
+  "status": "success",
+  "timestamp": "2026-08-10T08:12:17.982Z",
+  "details": "Final archived freeze verified: candidateHash=33977d647dcd15ab77e9dc1651487986ac31a865ab84a10146ba82fa0d1162cd; metadata=archived; integration=integrated.",
+  "hash": "a286139d84f7d07b2ddda838579fa78da5277581a72092da4f8ab5fc4a31477a"
+}

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-visual-studio-common-instructions",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-10T00:13:59.920Z",
+  "details": "Independent verification: npm run build passed; focused Vitest 36 files/377 tests passed; get_errors clean; unverified VS MCP emits warning without file.",
+  "hash": "137b3f77811af769c148bbf8826cda861ac87eae2d130d5e42bf25db04f6d259"
+}

@@ -21,7 +21,7 @@ Familias de checks verificadas (prefijo de check ID entre paréntesis; el prefij
 | toolchain | `TC-004..006` | `toolchain-catalog.yaml`, detección/registro de tools |
 | toolchain versioning | `TC-020..023` | lockfile, compatibilidad de versiones, drift y canales |
 | memory | `TC-007/008` | backend de memoria, invariantes de recall |
-| adapters | `TC-009` | los 9 packages `@axiom/adapters-<target>` tienen `src/generator.ts` + `dist/index.js` materializados |
+| adapters | `TC-009` | los 8 packages activos `@axiom/adapters-<target>` tienen `src/generator.ts` + `dist/index.js` materializados |
 | skills | `TC-010/012/013` | `skills-catalog.yaml`, lockfile, `bundleHash` |
 | agents | `TC-011` | `axiom.config/agents-catalog.yaml`, cada entry con agent válido |
 | workflow-config | `TC-014/015` | config de workflow/lifecycle |
@@ -35,7 +35,7 @@ Salida `--json` disponible. No muta nada en el modo síncrono. Detalle de MRC-00
 
 ### `axiom doctor --deep` (probes opt-in de runtime)
 
-`runDoctorChecksDeep` (`packages/doctor/src/deep-checks.ts`) añade probes reales que **nunca** pueden fallar (solo `pass`/`warn`/`skip`): **TC-018** (tool functional: `--version` real para `serena`/`cmm`/`engram`; `skip` honesto para `rtk`/`caveman`), **TC-019** (MCP liveness: handshake `initialize` JSON-RPC real contra `sdd-mcp-server`/`spec-mcp-broker`, leyendo `.axiom/mcp.yml`) y el drift profundo de toolchain (**TC-022**). Para TC-022, `runToolchainVersionDriftDeepCheck` compara la observación de versión contra `toolchain.lock`; una versión no observable o distinta produce `warn`, nunca `fail`. La ruta síncrona deja TC-022 como indicación informativa de que hace falta `--deep`. Ver `../architecture/04-adapters-y-model-routing.md` para el detalle completo.
+`runDoctorChecksDeep` (`packages/doctor/src/deep-checks.ts`) añade probes reales que **nunca** pueden fallar (solo `pass`/`warn`/`skip`): **TC-018** (tool functional: `--version` real para `serena`/`cmm`/`engram`; `skip` honesto para `rtk`/`caveman`), **TC-019** (MCP liveness: descubrimiento `server/discover` MCP `2026-07-28` real contra `axiom-mcp-broker`, leyendo `.axiom/mcp.yml`) y el drift profundo de toolchain (**TC-022**). Para TC-022, `runToolchainVersionDriftDeepCheck` compara la observación de versión contra `toolchain.lock`; una versión no observable o distinta produce `warn`, nunca `fail`. La ruta síncrona deja TC-022 como indicación informativa de que hace falta `--deep`. Ver `../architecture/04-adapters-y-model-routing.md` para el detalle completo.
 
 Las checks de lockfile **TC-020..TC-023** son project-scoped: TC-020 valida existencia/forma del lockfile y trata su ausencia como información; TC-021 valida que la versión locked satisface el canal del catálogo; TC-022 representa el drift diferido a probe real; TC-023 valida versión y canales `stable`/`candidate`/`edge`. Las checks de versión no instalan ni reparan binarios.
 

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-visual-studio-common-instructions",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-10T00:13:59.352Z",
+  "details": "Delegated implementation completed; Visual Studio delegates to common Copilot instructions and legacy .vs/AXIOM.md is migrated conservatively.",
+  "hash": "1fb06020f769b1ef2797ead7f7897c4ad1f96781ace792d00a0fa6ec47e4b330"
+}

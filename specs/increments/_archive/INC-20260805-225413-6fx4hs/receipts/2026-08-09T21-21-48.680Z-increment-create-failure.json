@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260805-225413-6fx4hs",
+  "phase": "increment-create",
+  "status": "failure",
+  "timestamp": "2026-08-09T21:21:48.680Z",
+  "details": "[axiom increment] El increment ya fue creado (state='archived'). No se puede volver a crear.",
+  "hash": "918cc9e561ed1844efb6abbcfe7001b16ef2360b8e2db7b628dae65ff9167fa1"
+}

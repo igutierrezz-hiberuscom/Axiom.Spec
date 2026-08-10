@@ -13,7 +13,7 @@ Cada proyecto que adopta Axiom tiene un único `axiom.yaml` en su raíz. Campos 
 - `lifecycle_commands`;
 - `initial_capabilities`.
 
-Se genera con `axiom init` y persiste la configuración efectiva `builder` + `local-only` + `adapterTarget` (uno de 10 targets declarados). `builder` y `local-only` son implícitos; estados antiguos se normalizan al leerlos y los selectores de perfil/overlay ya no forman parte de la interfaz.
+Se genera con `axiom init` y persiste la configuración efectiva `builder` + `local-only` + `adapterTarget` (uno de 8 targets activos; los aliases legacy se normalizan). `builder` y `local-only` son implícitos; estados antiguos se normalizan al leerlos y los selectores de perfil/overlay ya no forman parte de la interfaz.
 
 ## Estado project-scoped: `.axiom-state/`
 
@@ -58,7 +58,7 @@ No todos se consumen hoy con el mismo nivel de profundidad en runtime, pero form
 
 ### `profiles.yaml`: dato producto canónico con default bundleado (no scaffoldeado)
 
-> `BUG-20260703-configure-needs-bundled-profiles`. A diferencia del resto del catálogo (que documenta política del proyecto adoptante), `profiles.yaml` es dato **producto** — idéntico entre proyectos, no específico de cada uno. `axiom init` **no** lo scaffoldea. `@axiom/install-profiles` exporta `DEFAULT_PROFILES: ProfilesYaml` con el perfil funcional único `builder`, la política única `local-only` y los 10 adapter targets soportados por el CLI.
+> `BUG-20260703-configure-needs-bundled-profiles`. A diferencia del resto del catálogo (que documenta política del proyecto adoptante), `profiles.yaml` es dato **producto** — idéntico entre proyectos, no específico de cada uno. `axiom init` **no** lo scaffoldea. `@axiom/install-profiles` exporta `DEFAULT_PROFILES: ProfilesYaml` con el perfil funcional único `builder`, la política única `local-only` y los 8 adapter targets activos por el CLI; `copilot-vscode` solo es alias legacy y LiteLLM está retirado.
 >
 > - `installProfile` (`@axiom/installer`) usa `axiom.config/profiles.yaml` del proyecto cuando existe y es válido (override). Solo cae a `DEFAULT_PROFILES` cuando el archivo está ausente; si el archivo presente no se puede leer, no es YAML válido o no cumple el schema, devuelve `invalid-profiles-yaml`.
 > - `axiom init` no expone selector de perfil u overlay; siempre persiste `builder` + `local-only` y conserva el target elegido.
@@ -93,12 +93,23 @@ el primer `workspace.json` o marker de otro namespace.
 |---|---|
 | `opencode` | `.opencode/AGENTS.md`, `.opencode/skills-lock.yaml` |
 | `claude-code` | `.claude/AGENTS.md` |
-| `github-copilot` / `copilot-vscode` | `.github/copilot-instructions.md` (+ `.vscode/settings.json`, `.vscode/extensions.json` en `copilot-vscode`) |
-| `vscode` | `.vscode/settings.json` |
+| `github-copilot` / `copilot-vscode` | `.github/copilot-instructions.md` (`copilot-vscode` solo como alias legacy) |
+| `vscode` | `.vscode/settings.json`, `.vscode/extensions.json` |
 | `cursor` | `.cursor/settings.json`, `.cursor/AGENTS.md` |
-| `litellm` | `litellm.config.json` |
+| `cursor` (regla opcional) | `.cursor/rules/axiom-common.mdc` en cold start, no-clobber |
 | `antigravity` | `.antigravity/AGENTS.md` |
-| `visual-studio-2026` | `.vs/AXIOM.md` |
+| `visual-studio-2026` | `.github/copilot-instructions.md` (alias de compatibilidad) |
+| `codex` | `.codex/AGENTS.md` |
+
+La instrucción general de `github-copilot`, Copilot CLI, VS Code y Visual Studio
+usa una única fuente: `.github/copilot-instructions.md`. `copilot-vscode` solo
+se normaliza como alias legacy; `vscode` reserva `.vscode/` para
+`settings.json`, `extensions.json` y `mcp.json`. Las instrucciones específicas
+por superficie se escriben bajo `.github/instructions/<id>.instructions.md`.
+`configure`, `sync`, `workspace setup` y los adapters de Copilot/Visual Studio
+usan el writer común de `@axiom/document-bootstrap`, con fallback bundleado y
+preservación de las zonas humanas. Una selección simultánea de aliases se
+deduplica de forma determinista.
 
 ## Regla sobre YAML globales
 
@@ -219,7 +230,7 @@ La segunda tanda de incrementos de workspace añade cuatro clases de artefacto p
 
   El campo `providers` (`INC-20260708-wizard-configure-provider-selection`) persiste la SELECCIÓN de providers LOCALES habilitados del proyecto (subconjunto de `cmm`/`serena`/`engram`; `[]` = ninguno, solo `filesystem` always-on). Es la ÚNICA fuente de verdad de "qué providers habilitó este proyecto" — distinta del REGISTRY canónico local de 4 ids de `axiom.config/providers.yaml` (schema-locked, nunca recortado). Lo escriben tanto el step `providers` del wizard como `axiom configure --providers <csv>` (merge-write) y las operaciones incrementales `provider add`. Lo lee `buildProjectProviderRegistry` (`@axiom/providers`) para registrar exactamente los clientes code-intel habilitados. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 
-- **`install-profile.json` por repo** — `generateWorkspaceAdapters` resuelve un `ResolvedInstallProfile` por repo del workspace (vía `installProfile`, un solo call por repo con `adapters[0]` como primario), persistido en el `.axiom-state/<projectId>/` de ese repo, con el mismo shape que ya escribe `axiom configure` (ver "Ficheros generados por comando"). Los ficheros de adapter derivados (`.opencode/AGENTS.md`, `.claude/AGENTS.md`, `.antigravity/AGENTS.md`, `.vs/AXIOM.md`, etc.) se escriben en **cada** repo por adapter seleccionado, según la tabla de despacho `target -> generador` de [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+- **`install-profile.json` por repo** — `generateWorkspaceAdapters` resuelve un `ResolvedInstallProfile` por repo del workspace (vía `installProfile`, un solo call por repo con `adapters[0]` como primario), persistido en el `.axiom-state/<projectId>/` de ese repo, con el mismo shape que ya escribe `axiom configure` (ver "Ficheros generados por comando"). Los ficheros derivados activos (`.opencode/AGENTS.md`, `.claude/AGENTS.md`, `.antigravity/AGENTS.md`, `.codex/AGENTS.md`, `.cursor/*`, `.github/copilot-instructions.md` y `.vscode/*`) se escriben en **cada** repo por adapter seleccionado; Visual Studio delega en `.github/copilot-instructions.md`.
 
 - **Baseline de skills en el repo de control** (`INC-20260705-workspace-sdd-skills`), solo cuando el repo de control se crea recién:
   - `axiom.config/skills-catalog.yaml` (`schemaVersion: 1`) — catálogo semilla de 5 ids con `bundleHash` byte-exacto por entrada (`computeSkillBundleHash`); las fuentes de cada skill se escriben bajo `axiom.spec/target-axiom-skills/<id>.md`. Es el mismo `SkillsCatalog` que consume el check `TC-010` de doctor (ver [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)).
@@ -259,7 +270,7 @@ Formas de datos añadidas por esta tanda (el comportamiento vive en [06_Integrac
 
 - **Artefactos de la capa de reglas** (`INC-20260708-rules-layer`): `axiom.config/rules/<scope>.md` — `common.md` (siempre) + `<language>.md` por lenguaje inferido (`typescript`/`python`/`csharp`/`angular`). Ubicación canónica análoga a `axiom.config/skills-*`, escrita por `scaffoldRules` best-effort no-clobber por fichero. El `AGENTS.md` canónico gana un campo `CanonicalAgentsMdIdentity.ruleScopes?` (poblado por el caller leyendo disco en tiempo de render) que lista los scopes presentes. Proyección nativa opcional: `.cursor/rules/axiom-common.mdc` (solo `common`, no-clobber).
 
-- **Scaffold canónico del propio repo `Axiom/`** (`INC-20260708-product-repo-self-bootstrap`): el repo de producto ganó en su raíz el set canónico que su runtime/tests esperaban — `axiom.config/` con contenido schema-válido real (`skills-catalog.yaml`, `agents-catalog.yaml`, `model-routing-policy.yaml`, `profiles.yaml`, `providers.yaml`, `capabilities.yaml`, `integrations.yaml`, `policy-as-code.yaml`, `mcp-manifest.yaml`, `telemetry-sinks.yaml`), `axiom.spec/target-axiom-skills/*.md` (20), `axiom.spec/target-axiom-agents/*.md` (14), `axiom.spec/templates/` (copiadas de `Axiom.Spec/templates/`), `AGENTS.md` y `axiom.skills.lock`. El cierre de aquella tanda registró `readiness:first-project` y `doctor` verdes; esa fotografía histórica fue superada por la verificación del 2026-08-02, que devuelve ambos comandos en `PASS` (ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)). `profiles.yaml#allowedTargets` declara los 10 targets canónicos validados por `IP-003`: 5 `mvp:true` y 5 `mvp:false`.
+- **Scaffold canónico del propio repo `Axiom/`** (`INC-20260708-product-repo-self-bootstrap`): el repo de producto ganó en su raíz el set canónico que su runtime/tests esperaban — `axiom.config/` con contenido schema-válido real (`skills-catalog.yaml`, `agents-catalog.yaml`, `model-routing-policy.yaml`, `profiles.yaml`, `providers.yaml`, `capabilities.yaml`, `integrations.yaml`, `policy-as-code.yaml`, `mcp-manifest.yaml`, `telemetry-sinks.yaml`), `axiom.spec/target-axiom-skills/*.md` (20), `axiom.spec/target-axiom-agents/*.md` (14), `axiom.spec/templates/` (copiadas de `Axiom.Spec/templates/`), `AGENTS.md` y `axiom.skills.lock`. El cierre de aquella tanda registró `readiness:first-project` y `doctor` verdes; esa fotografía histórica fue superada por la verificación del 2026-08-02, que devuelve ambos comandos en `PASS` (ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)). `profiles.yaml#allowedTargets` declara los 8 targets activos validados por `IP-003`; los aliases legacy solo se aceptan en los bordes de migración.
 
 - **Idempotencia de las operaciones incrementales** (`INC-20260708-incremental-operations`): `axiom repo/adapter/provider/role add` mutan los MISMOS artefactos del modelo multi-repo reusando los helpers exportados de `workspace-setup.ts` (`buildRoleAwareAxiomYaml`, `writeOneRepo`, `buildTopologyManifest`/`writeTopologyManifest`, `relativeRef`, `axiomYamlPathFor`, `tryReadExistingProjectId` — ampliados de module-private a exportados, sin cambio de comportamiento en `runWorkspaceSetup`). `repo add` re-deriva el bloque `paths` de CADA repo del proyecto (recíproco), actualiza `topology.yaml`, hace `upsertProjectReposV2` y genera adapters/MCP/skills/rules solo para el repo nuevo; `adapter add` hace append-dedup en `workspace.json#adapters` y regenera ese adapter en todos los repos; `provider add` hace append-dedup en `workspace.json#providers`. Re-ejecutar con los mismos args es no-op/merge (sin entradas duplicadas, sin clobber). Si no existe `workspace.json`, `adapter add`/`provider add` crean uno mínimo (schemaVersion 1, arrays vacíos) en vez de fallar.
 
@@ -267,11 +278,11 @@ Formas de datos añadidas por esta tanda (el comportamiento vive en [06_Integrac
 
 ### `mcp.yml` (config MCP por proyecto) vs `mcp-manifest.yaml`
 
-`mcp.yml` es una declaración **por proyecto** de qué procesos servidor MCP expone un proyecto — genuinamente distinta del `mcp-manifest.yaml` preexistente (spec 0024). Las dos responden preguntas distintas y no deben fusionarse (decisión Q-mcp-1, declinada explícitamente):
+`mcp.yml` es una declaración **por proyecto** del único proceso servidor MCP gestionado que expone un proyecto: `axiom-mcp-broker` — genuinamente distinta del `mcp-manifest.yaml` preexistente (spec 0024). Las dos responden preguntas distintas y no deben fusionarse:
 
 | | `mcp-manifest.yaml` (spec 0024) | `mcp.yml` |
 |---|---|---|
-| Responde | "¿qué capabilities MCP declara el catálogo de este proyecto, y están vinculadas las obligatorias?" | "¿qué procesos servidor MCP están habilitados, en qué scope, para que los adapters generen config runtime?" |
+| Responde | "¿qué capability MCP declara el catálogo del proyecto y está vinculada?" | "¿está habilitado el único broker Axiom y a qué repo project-scoped apunta para que los adapters generen config runtime?" |
 | Forma | `McpEntry {id, displayName, capabilities, installMode, projectBinding, readonly}` | `McpServerEntry {id, type, scope, targetRepo?, enabled}` |
 | Resolución | `@axiom/memory#resolveMemoryScope` | `getProjectV2` (registro v2) |
 | Consumidor | `axiom mcp list\|validate\|repair\|inventory` | Generadores `mcp.json` por adapter |
@@ -287,7 +298,7 @@ interface McpProjectConfig {
 }
 interface McpServerEntry {
   id: string;
-  type: string;            // abierto: 'axiom' | 'serena' | 'integration' | ...
+  type: 'axiom';           // único tipo de broker gestionado por Axiom
   scope: 'project' | 'repo';
   targetRepo?: string;     // obligatorio si scope === 'repo'
   enabled: boolean;
@@ -297,13 +308,13 @@ interface McpServerEntry {
 }
 ```
 
-Los tres campos `command`/`args`/`env` son **opcionales y puramente aditivos** (`INC-20260708-mcp-launch-config-wiring`): `isMcpServerEntryLike` solo los valida por forma cuando están presentes (string / string[] / Record<string,string>), sin añadir ninguna regla semántica nueva a las reglas de `validateMcpProjectConfig`. Backward-compatible: una entrada sin ellos valida y se proyecta byte a byte igual que antes.
+Los tres campos `command`/`args`/`env` describen el lanzamiento de `axiom mcp serve --kind axiom`; `validateMcpProjectConfig` y `filterProjectBoundMcpServers` exigen además la identidad única, `type: axiom`, `scope: repo`, `targetRepo` registrado y coincidencia con el proyecto actual.
 
 **Forma REAL committed de `mcp-manifest.yaml` vs forma rica interna** (`INC-20260710-schema-reconciliation`): el `axiom.config/mcp-manifest.yaml` que el propio repo `Axiom/` tiene committed declara solo la forma **minimal** `{id, server?, projectBinding}` — NO los campos ricos (`displayName`, `capabilities`, `installMode`, `readonly`) de la fila `Forma` de la tabla arriba, que sigue siendo el shape público (`McpEntry`) que el resto del comando `axiom mcp` consume. El reader (`apps/cli/src/commands/mcp.ts`) acepta ambas: valida la forma minimal (`id` + `projectBinding` obligatorios; el resto opcional-si-presente-debe-tipar) y luego DERIVA los campos ricos ausentes (`displayName ← id`, `capabilities ← []`, `installMode ← 'project-scoped'`, `readonly ← false`). Una entrada que sí declare los campos ricos explícitamente se respeta tal cual (no se pisan). `@axiom/doctor`'s TC-007 tiene su propio parser inline independiente, ya tolerante a la forma minimal desde antes de este incremento — no necesitó cambios.
 
 `loadMcpProjectConfig(path)` lee + parsea YAML + valida forma únicamente (sin validación semántica). `validateMcpProjectConfig(config, homeDir)` corre seis reglas acumulativas: `schema-version`, `unknown-project`, `duplicate-server-id`, `missing-target-repo`, `unknown-target-repo`, `unexpected-target-repo`, `duplicate-type-target-repo`. Los generadores custom-shape por adapter (`generateOpencodeMcpJson`/`generateClaudeCodeMcpJson`) escriben los servers `enabled: true` verbatim en el antiguo formato custom-shape `.opencode/mcp.json`/`.claude/mcp.json`, con el mismo patrón atómico tmp-write-then-rename usado en el resto del producto; siguen exportados y testeados en sus paquetes, pero **`INC-20260708-mcp-native-config-mapping` retiró su call site de la ruta de workspace** (ver abajo y [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)). Desde `INC-20260708-mcp-launch-config-wiring` **sí** se emiten los campos de lanzamiento `command`/`args`/`env` cuando están presentes (spread condicional por entrada, preservando el orden de clave `id, type, scope, targetRepo?, command?, args?, env?`) — esto supersede la nota previa de "no se inventan campos de transporte": los que emite `runWorkspaceSetup` apuntan al comando real `axiom mcp serve` (ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)). El aislamiento es por scoping simple de filesystem — no requiere código de `@axiom/isolation`.
 
-El **call site generador vivo** hoy es el setup de workspace multi-repo (`runWorkspaceSetup`, INC-20260705-workspace-mcp-generation), que escribe `.axiom/mcp.yml` en el repo de control como fuente canónica — ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) para el detalle, los dos servers (`sdd-mcp-server`/`spec-mcp-broker`) y el caveat de que `.axiom/` está gitignoreado. **`INC-20260708-mcp-native-config-mapping` cambió qué config de herramienta produce esta ruta**: en vez del custom-shape `.opencode/mcp.json`/`.claude/mcp.json`, `runWorkspaceSetup` emite ahora el **schema MCP NATIVO real** de cada herramienta seleccionada — `opencode.json` (`{ $schema, mcp:{ <id>:{ type:'local', command:[cmd,...args], enabled, environment? } } }`), `.mcp.json` y `.cursor/mcp.json` (`{ mcpServers:{ <id>:{ command, args, env? } } }`), `.vscode/mcp.json` (`{ servers:{ <id>:{ type:'stdio', command, args, env? } } }`) — por cada repo del workspace × cada adapter seleccionado, merge-preserving y atómico (`native-mcp-config.ts`); antigravity/visual-studio-2026/litellm degradan a warning sin fichero. El custom-shape queda superseded para la ruta de workspace; `.axiom/mcp.yml` permanece canónico y sin cambios de forma. Fuera de esa ruta el estado previo se mantiene: `runConfigure`/`sync` **no** llaman a los generadores, y `.opencode/mcp.json`/`.claude/mcp.json` siguen intencionalmente excluidos de `GENERATED_FILES_BY_TARGET` para la ruta `configure`/`sync` (deferral TR-005 intacto).
+El **call site generador vivo** hoy es el setup de workspace multi-repo (`runWorkspaceSetup`, `ACC-030`), que escribe `.axiom/mcp.yml` en el repo de control como fuente canónica. Antes de proyectar a un adapter, `filterProjectBoundMcpServers` valida el `projectId`, el registro, `mcp.yml`, `mcp-manifest.yaml`, `enabled` y `targetRepo`; ante cualquier incertidumbre devuelve cero servers y warning. La ruta emite schemas MCP nativos project-scoped para `opencode`, `claude-code`, `cursor`, `github-copilot` y `vscode`; Visual Studio no recibe un schema MCP no verificado, y Codex/Antigravity no reciben configuración global automática. Los writers son merge-preserving y eliminan solo IDs gestionados por Axiom cuando dejan de estar permitidos, preservando servidores custom y archivos JSON inválidos. `.axiom/mcp.yml` permanece canónico, el broker fija el proyecto al arrancar y worktree provisioning usa el mismo filtro antes de escribir.
 
 ### Versionado, upgrades y migración de schema (`@axiom/versioning`)
 

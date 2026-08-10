@@ -1,0 +1,21 @@
+id: INC-20260810-mcp-unified-modern
+kind: increment
+title: mcp-unified-modern
+status: archived
+createdAt: '2026-08-10T00:00:00.000Z'
+updatedAt: '2026-08-10T16:04:44.674Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-10T16:04:44.674Z'
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-10T00:00:00.000Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-REVISION-INTEGRAL-AXIOM

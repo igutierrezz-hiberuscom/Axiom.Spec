@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-mcp-project-target-filter",
+  "phase": "close",
+  "status": "success",
+  "timestamp": "2026-08-10T08:09:45.603Z",
+  "details": "Increment archived with integration.status=integrated; final freeze and canonical spec/context integration verified by autopilot.",
+  "hash": "0354b2b24f34a9df260c5fc8d95192f7e7f38043f3cb657ace68805690d3f0c0"
+}

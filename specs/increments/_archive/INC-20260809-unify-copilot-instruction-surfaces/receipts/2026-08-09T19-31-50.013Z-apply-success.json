@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-unify-copilot-instruction-surfaces",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-09T19:31:50.013Z",
+  "details": "Implementación del slice ACC-024 completada: writer común, migración legacy, rutas Copilot/VS Code reconciliadas, process surfaces bajo .github/instructions; build OK y batería independiente 11 archivos/107 tests OK.",
+  "hash": "f7a135dd884fcb46176508f9f16011360088b5dc748407393a3ec0a2b012320c"
+}

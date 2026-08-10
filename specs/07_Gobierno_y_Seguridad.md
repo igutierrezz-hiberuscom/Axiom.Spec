@@ -93,7 +93,13 @@ Las checks `TC-020..TC-023` hacen visible el estado de reproducibilidad sin conv
 
 El lockfile es estado local project-scoped, su escritura es atómica y el upgrade usa checkpoint/rollback. La política de gobierno prohíbe presentar `plan` o `upgrade` como instaladores: Axiom no descarga, sustituye ni hace rollback de binarios externos.
 
-Todo check de doctor futuro para validez de `mcp.yml`, o para el registro de capability/provider de `@axiom/mcp-tools`, queda diferido. El setup de workspace multi-repo (`runWorkspaceSetup`, INC-20260705-workspace-mcp-generation) ya escribe un `mcp.yml` real a un proyecto, pero valida en línea reusando `validateMcpProjectConfig` (no vía un check de doctor); no existe todavía instalador/scaffold que escriba `capabilities.yaml`/`providers.yaml` a un proyecto real, así que para esos no hay call site de producción que un check de doctor deba comprobar.
+La validez de `mcp.yml` se comprueba en línea durante setup/proyección mediante
+`validateMcpProjectConfig` y el filtro project-bound; no existe un check de
+doctor dedicado para el registro de capability/provider de
+`@axiom/mcp-tools`. El filtro bloquea la proyección nativa si el proyecto, el
+manifest, `enabled` o `targetRepo` no pueden confirmarse. No existe todavía un
+instalador/scaffold que escriba `capabilities.yaml`/`providers.yaml` a un
+proyecto real, así que no se inventa un check de doctor para esos artefactos.
 
 ## Trazabilidad de write-scope y ownership (ángulo de gobierno)
 
@@ -107,16 +113,34 @@ Los pasos aditivos de la segunda tanda de setup de workspace (INC-20260705-*) he
 
 Robustez de registro sin pérdida de ownership ni de datos (round 3, `INC-20260705-workspace-setup-registry-robustness`): un fallo de registro o un registry legado v1 sin migrar **ya no aborta silenciosamente el install** — el scaffolding local completa siempre, best-effort, y `registryRegistered` refleja la realidad sin ocultar un install medio-completado. La auto-migración v1→v2 (`migrateLegacyRegistryV1ToV2`) **nunca borra datos de usuario**: preserva el `registry.json` legado renombrándolo a `registry.json.migrated` en vez de eliminarlo, de modo que la evolución de schema es aditiva y reversible por el usuario. Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
 
-## Aislamiento MCP por proyecto (enforced) — INC-20260708-mcp-project-isolation-hardening
+## Aislamiento MCP por proyecto (enforced) — ACC-030 sobre los guards previos
 
-El server MCP ejecutable (`@axiom/mcp-server`, lanzado por proyecto vía `axiom mcp serve --kind <sdd|spec|memory|axiom> --project-root <path>`, ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)) ahora **hace cumplir** el aislamiento project-scoped a nivel de código, no solo por convención. Esto es una garantía de ownership/seguridad de aislamiento equivalente a la que `@axiom/memory` ya aplica sobre `projectId` (GATE 0024), llevada a la capa de input-builders del MCP.
+El server MCP ejecutable (`@axiom/mcp-server`, lanzado por proyecto vía `axiom mcp serve --kind axiom --project-root <path>`, ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)) **hace cumplir** el aislamiento project-scoped a nivel de código, no solo por convención. Esto es una garantía de ownership/seguridad de aislamiento equivalente a la que `@axiom/memory` ya aplica sobre `projectId` (GATE 0024), llevada a la capa de input-builders del MCP.
 
 - **Vulnerabilidad cerrada (fuga cross-project)**: los input-builders por capability resolvían la identidad de proyecto con el patrón `str(args,'projectId') ?? context.projectId` (y equivalentes para `projectRoot`/`rootPath`/`specScopeAbsolutePath`), de modo que un llamador (el agente conectado al server del proyecto A) podía pasar un `projectId`/`projectRoot` ajeno en los argumentos de `tools/call` y leer los datos del proyecto B a través del mismo proceso servidor. Era una fuga real cross-project (datos, existencia de proyectos, nombres, paths de repos).
 - **Pinning al `context` propio**: cada campo que identifica proyecto (`projectId`, `homeDir`, `projectRoot`, `specScopeAbsolutePath`, `sddScopeAbsolutePath`) se **fija (pin)** al `context` que el server resolvió al arrancar (`resolveMcpServerContext({ projectRoot })`). El valor del llamador ya no se usa nunca verbatim: si lo omite, se usa el del `context`; si lo pasa igual, la llamada procede; si lo pasa **distinto**, se rechaza.
 - **Rechazo con `isError`**: un valor cross-project que difiera del `context` devuelve un `tools/call` con `isError: true` y el mensaje `"Cross-project access blocked: this MCP server is scoped to project '<id>'. Launch the MCP server for the target project instead."`. El rechazo solo dispara ante un **mismatch real** contra un `context` resuelto — si `context.projectId` no resuelve (proyecto no registrado), no hay opinión de contexto con la que entrar en conflicto y se conserva el contrato preexistente de "campo requerido faltante".
 - **`sdd.projectRegistryRead` acotado al proyecto propio**: esta capability ya no enumera el registro machine-wide (`listProjectsV2`); su salida se filtra a la entrada cuyo `id === context.projectId` (o `[]` si no resuelve). Un server project-scoped enumerando proyectos ajenos era en sí mismo una fuga.
-- **Selectores dentro-de-proyecto intactos**: los argumentos que nombran algo INTERNO al proyecto ya fijado (`id`, `planId`, `skillId`, `specRelPath`, `role`/`roleOrKind`, `taskTags`, `includeStale`, `contextBudget`, `targetRepoId`) siguen siendo caller-supplied, sin cambios funcionales.
+- **Selectores dentro-de-proyecto validados**: los argumentos que nombran algo INTERNO al proyecto ya fijado (`id`, `planId`, `skillId`, `specRelPath`, `role`/`roleOrKind`, `taskTags`, `includeStale`, `contextBudget`, `targetRepoId`) siguen siendo caller-supplied, pero los IDs deben ser segmentos seguros y `specRelPath`/paths de skills no pueden escapar de las raíces registradas del proyecto.
 - **Alcance y límites**: los artefactos de config en disco ya eran project-scoped; el registro es metadata-only. La corrección es completa a nivel de handler (no queda ninguna ruta donde un identificador de proyecto del llamador se use verbatim para leer datos). El guard de aislamiento en el arranque vía `@axiom/isolation` (`checkMcpAllowed`/`assertProjectIsolation`) se **difirió** deliberadamente: requeriría sintetizar un `ProjectResolution` a partir de un `McpServerContext` (adapter especulativo) y no es necesario para cerrar la vulnerabilidad confirmada — el pinning a nivel de handler es el fix no negociable y suficiente.
+
+## Filtro MCP por proyecto y target (ACC-029)
+
+La proyección a configuraciones nativas tiene una barrera anterior al writer:
+`filterProjectBoundMcpServers` confirma el `projectId` en el registry v2,
+valida `mcp.yml` y `mcp-manifest.yaml`, reconcilia el id lógico `axiom` con
+`axiom-mcp-broker`, y compara `enabled`, tipo, scope y `targetRepo`. Ante un
+error devuelve cero servidores y un warning accionable. El provisioning de
+worktrees usa la misma barrera y deriva el `targetRepo` real del binding, por
+lo que no existe un camino paralelo que pueda escribir un broker sin binding.
+
+Los writers nativos mantienen un allowlist de IDs gestionados por Axiom y
+eliminan solo esos IDs cuando dejan de estar permitidos; los servidores y
+claves ajenos del usuario se conservan. Un JSON ilegible queda intacto con
+warning. Codex y Antigravity, cuyos ficheros son user-globales, no reciben
+escritura ni recomendación automática sin binding seguro. Esta combinación
+evita que un MCP de KVP25 aparezca como disponible para EMT por compartir la
+máquina o una configuración global.
 
 ## Postura de gobierno de la tanda INC-20260708-* (auto-validación, LOCAL-only, aislamiento preservado)
 
@@ -154,7 +178,7 @@ Postura de gobierno/seguridad de la graduación a *full product lifecycle*. Form
 - **Aislamiento por worktree y no-filtración de secretos** (`INC-20260724-worktree-provisioning` / `-worktree-provider-isolation`): el provisioning es **portable-only** — copia exactamente 3 ficheros no-secretos (`init.json`/`install-profile.json`/`workspace.json`); `.axiom-state/local/**` y cualquier otro proyecto **nunca** se leen ni copian (probado con un scan recursivo de un "secreto" plantado). Cada worktree tiene su propio índice/caché de code-intel (nunca un grafo mutable compartido); `teardownWorktreeCodeIntel` solo borra el estado derivado del worktree indicado y **nunca** toca el índice del repo principal.
 - **Cleanup seguro del worktree** (`INC-20260724-worktree-harvest-cleanup` / `-worktree-close-correctness`): orden estricto **kill → harvest → teardown → remove**; harvest SIEMPRE precede a cualquier borrado (los datos harvesteados sobreviven al borrado del worktree). Un worktree con trabajo real sin integrar es **hard stop** — nunca se fuerza por defecto. El cierre neutraliza solo los ficheros que el propio provisioning generó (registrados en `Execution.provisionedPaths`) antes del dirty check, de modo que trabajo genuino sigue bloqueando; si el cierre hace hard-stop, un rollback compensatorio evita dejar el rol `archived` junto a un worktree huérfano.
 - **Push acotado, nunca repo-wide** (`INC-20260724-sdd-artifact-freshness`): la escritura de artefactos SDD hace `git add -- <paths>` acotado a la carpeta del incremento/bug (nunca `git add -A`) — cada worktree/ejecución empuja solo lo suyo, sin arrastrar otros artefactos.
-- **Aislamiento MCP preservado en el broker unificado** (`INC-20260724-unified-axiom-mcp`): el broker `axiom` mantiene los pins project-scoped por-campo de los brokers previos (cada input-builder fija `projectRoot`/`specScopeAbsolutePath` al contexto del server); el subconjunto de escritura es exactamente `sdd.transitionApply` + `sdd.gitCommitSync` (no expone `sdd.gitRoleBranch`).
+- **Aislamiento MCP preservado en el broker unificado** (`ACC-030`): el broker `axiom` mantiene los pins project-scoped por-campo y expone la unión completa del registry, incluidas `sdd.transitionApply`, `sdd.gitRoleBranch` y `sdd.gitCommitSync`; todas las mutaciones conservan preview/confirmación y sus guards existentes.
 - **Genericidad sin fuga de gobierno**: todo el contenido nuevo es adapter/stack-agnóstico; la profundidad específica de cada proyecto se inyecta como DATO por proyecto (`skills-index/<role>.yaml` + contexto técnico), no en el producto — sin hardcodear reglas de un stack ni credenciales. Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
 ## Gobierno verificable de flujos desatendidos (2026-08-02) — tanda `INC-20260730-*`
 

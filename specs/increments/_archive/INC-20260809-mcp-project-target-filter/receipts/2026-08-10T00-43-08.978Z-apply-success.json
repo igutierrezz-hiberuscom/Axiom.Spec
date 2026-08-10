@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-mcp-project-target-filter",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-10T00:43:08.978Z",
+  "details": "Delegated implementation completed; fail-closed project/target MCP filter added before native writers and global targets remain non-writing.",
+  "hash": "f35c05544194e7467d31401712ab5293d3682a1bb325b6c5b44bda29f31193b2"
+}

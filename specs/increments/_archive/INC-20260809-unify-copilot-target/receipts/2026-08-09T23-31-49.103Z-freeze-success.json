@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-unify-copilot-target",
+  "phase": "freeze",
+  "status": "success",
+  "timestamp": "2026-08-09T23:31:49.103Z",
+  "details": "Pre-apply freeze was verified before delegation; final freeze revalidated after implementation with current candidate hash 15b670f0a9f49f6a2b4cb33d68179ab304f250d13b2015422819f436fab64120.",
+  "hash": "76e4fd6d7e19aa481735298543443fe258407dae32330a9cff5180577d1ddf9f"
+}

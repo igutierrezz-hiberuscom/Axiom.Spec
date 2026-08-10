@@ -2,7 +2,7 @@
 
 Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `src/` cuando no. Fecha de relevamiento inicial: 2026-07-02; reconciliado 2026-07-29 (conteos y packages nuevos verificados por `ls`/grep directo, ver nota de conteo abajo).
 
-> **Conteo verificado 2026-07-29**: `ls packages/*/package.json | wc -l` → **34** top-level (`packages/adapters/` es solo un directorio contenedor, sin `package.json` propio, no cuenta como package) + `ls packages/adapters/*/package.json | wc -l` → **9** adapters = **43 packages totales**. El baseline documentaba 28. Packages nuevos verificados por `ls packages/`: `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado` (8 nuevos — la nota original del incremento mencionaba 7, pero `telemetry` también es nuevo y no estaba en el inventario 2026-07-02).
+> **Conteo verificado 2026-08-10**: `ls packages/*/package.json | wc -l` → **34** top-level (`packages/adapters/` es solo un directorio contenedor, sin `package.json` propio, no cuenta como package) + `ls packages/adapters/*/package.json | wc -l` → **8** adapters activos = **42 packages totales**. El baseline documentaba 28. LiteLLM fue retirado y `copilot-vscode` es alias legacy sin package propio. Packages nuevos verificados por `ls packages/`: `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado` (8 nuevos — la nota original del incremento mencionaba 7, pero `telemetry` también es nuevo y no estaba en el inventario 2026-07-02).
 
 ## Capa dominio/core
 
@@ -18,7 +18,7 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 |---|---|---|---|---|
 | `@axiom/filesystem-truth` | Descubrimiento read-only del árbol Axiom (`axiom.yaml`, `.axiom-state/`), path validation; exporta también `LOCAL_OVERLAY_DIRNAME`/`AXIOM_CONFIG_DIRNAME` | `discoverAxiomRoot`, `readFileContent`, `buildScopeInfo`, `getLocalOverlayPath` | No documentados | Sin escritura |
 | `@axiom/project-resolution` | Resolución de proyecto único/ambiguo | `resolveProject`, `assertUnambiguous`, `ProjectResolution`, `ProjectStatus`, `ProjectMode` | No documentados | Package minimal |
-| `@axiom/isolation` | Contexto de aislamiento por proyecto, path-guard, MCP permitidos (**3 por defecto**, verificado en `src/p0.ts`: `sdd`, `spec`, `serena` — corrige la cifra "28" del baseline, que era incorrecta) | `buildProjectScopedPaths`, `checkMcpAllowed`, `assertProjectIsolation`, `DEFAULT_ALLOWED_MCP_SERVERS` | No documentados | README disponible (no citado en detalle) |
+| `@axiom/isolation` | Contexto de aislamiento por proyecto, path-guard y único MCP gestionado permitido por defecto (`axiom-mcp-broker`) | `buildProjectScopedPaths`, `checkMcpAllowed`, `assertProjectIsolation`, `DEFAULT_ALLOWED_MCP_SERVERS` | No documentados | README disponible (no citado en detalle) |
 
 ## Capa persistencia
 
@@ -35,9 +35,9 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 | `@axiom/install-profiles` | Compositor puro de `builder` + `local-only` + target → `ResolvedInstallProfile` | `resolveInstallProfile`, `loadProfilesData`, `FUNCTIONAL_PROFILES`, `OPERATIONAL_OVERLAYS` (nombres de API conservados por compatibilidad) | No documentados | README disponible (spec 0018-A4) |
 | `@axiom/installer` | Materializa el perfil resuelto, persiste `install-profile.json` | `installProfile`, `GENERATED_FILES_BY_TARGET`, `EXTERNAL_DEPS_BY_CAPABILITY` | Sí | README disponible (spec 0018-A4) |
 
-## Capa adapters (9 sub-packages de `packages/adapters/`, verificado 2026-07-29)
+## Capa adapters (8 sub-packages activos de `packages/adapters/`, verificado 2026-08-09)
 
-> Baseline documentaba 6; `codex`, `antigravity`, `visual-studio-2026` se añadieron en `INC-20260726-adapter-mcp-parity`. Detalle completo y vigente en `../architecture/04-adapters-y-model-routing.md` (9 packages / 10 targets canónicos / 8 headline).
+> Baseline documentaba 6; `codex`, `antigravity` y `visual-studio-2026` se añadieron después. LiteLLM fue retirado y `copilot-vscode` es alias legacy sin package propio. Detalle completo y vigente en `../architecture/04-adapters-y-model-routing.md`.
 
 | Package | Target | Nivel de soporte | Notas |
 |---|---|---|---|
@@ -46,10 +46,9 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 | `@axiom/adapters-github-copilot` | `github-copilot` | `fallback-only` | Operativo 0031/B |
 | `@axiom/adapters-vscode` | `vscode` | `fallback-only` | Operativo 0031/C |
 | `@axiom/adapters-cursor` | `cursor` | `fallback-only` | Operativo 0031/D.1; integración profunda P1 pendiente |
-| `@axiom/adapters-litellm` | `litellm` | `fallback-only` | Operativo 0031/D.2; router P1 pendiente |
 | `@axiom/adapters-codex` | `codex` | `fallback-only` | `.codex/AGENTS.md`; generador de primera clase desde `INC-20260726-adapter-mcp-parity` |
 | `@axiom/adapters-antigravity` | `antigravity` | `fallback-only` | `.antigravity/AGENTS.md`; ídem |
-| `@axiom/adapters-visual-studio-2026` | `visual-studio-2026` | `fallback-only` | `.vs/AXIOM.md`; ídem |
+| `@axiom/adapters-visual-studio-2026` | `visual-studio-2026` | `fallback-only` | Alias de compatibilidad; delega en `.github/copilot-instructions.md` |
 
 Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResult, AdapterGeneratorError>>`.
 
@@ -67,7 +66,7 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 
 | Package | Responsabilidad | Exports/tipos clave | Notas |
 |---|---|---|---|
-| `@axiom/mcp-server` | Dispatcher JSON-RPC 2.0 hand-rolled (sin SDK externo) + transporte stdio | `createMcpServer`, `runStdioServer`, `toolDescriptorsForKind` | `INC-20260708-mcp-runnable-server`; kinds `sdd`/`spec`/`memory`/`axiom` |
+| `@axiom/mcp-server` | Dispatcher MCP `2026-07-28` hand-rolled (sin SDK externo) + transporte stdio | `createMcpServer`, `runStdioServer`, `toolDescriptorsForKind` | `ACC-030`; único kind `axiom`, broker `axiom-mcp-broker` |
 | `@axiom/mcp-tools` | Handlers de capability agrupados por dominio (`sdd.*`, `spec.*`, `memory.*`, `axiom.*`) | `MCP_TOOL_HANDLERS`, tipos de registry | Consumido por `@axiom/mcp-server` y por `native-mcp-config.ts` |
 | `@axiom/providers` | Registry/discovery de providers, cliente MCP stdio, code-intel | `createStdioMcpClient`, registry de providers | Usado por `axiom doctor --deep` (TC-019) |
 
@@ -119,6 +118,6 @@ El mismo pase operativo dejó `npm run doctor` en `PASS` (`45/60`, 0 fallos) y `
 
 Advertencia metodológica confirmada en esta medición: una ejecución única de la suite **no** es evidencia suficiente — dos corridas del mismo árbol dieron 9 y 6 fallos respectivamente, y una tercera murió con `Segmentation fault` en `npx` devolviendo un exit code engañoso. Contrastar siempre contra varias corridas antes de atribuir un fallo a un cambio.
 
-Tests por escenario en `orchestrator`, `persistence`, `agents`, `skills`; tests de validación en `config-validation`. La mayoría de los 43 packages **no documentan** su conteo de tests en README — no asumir cobertura sin verificarlo en el repo real antes de decisiones críticas.
+Tests por escenario en `orchestrator`, `persistence`, `agents`, `skills`; tests de validación en `config-validation`. La mayoría de los 42 packages **no documentan** su conteo de tests en README — no asumir cobertura sin verificarlo en el repo real antes de decisiones críticas.
 
 Nota estructural relevante para cualquier garantía basada en tipos: los `tsconfig.json` de cada package usan `"include": ["src/**/*"]`, por lo que **`tsc -b` no typechequea los ficheros de test** y vitest transpila sin typecheck. Un build verde no prueba que los tests compilen ni que respeten los contratos de tipos.

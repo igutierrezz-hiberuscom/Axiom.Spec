@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-unify-copilot-instruction-surfaces",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-09T20:06:50.140Z",
+  "details": "Apply final: writer común, migración legacy conservadora, deduplicación Copilot, process surfaces .github/instructions, lockfile y templates alineados.",
+  "hash": "e87eec5dc8c51ec6ac83f828a99198baef4be9d4b9fa2aab65911e7e6a5b7b7a"
+}

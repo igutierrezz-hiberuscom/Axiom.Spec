@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260809-sync-all-adapters",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-10T01:09:44.012Z",
+  "details": "Repair independently verified: installer/cursor 23 tests, adapter E2E 3 tests, npm run build and get_errors passed.",
+  "hash": "aaabba61ba8d98a92c569fa958ac7d8f51bada366be374b072ad12627ab5f5d8"
+}

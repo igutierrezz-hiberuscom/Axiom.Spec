@@ -10,7 +10,7 @@ Varias brechas de este documento (redactado el 2026-07-02) ya están resueltas; 
 - **Brecha 4 — RESUELTA**: el roadmap de rediseño quedó cerrado y archivado (23/24 incrementos ejecutados; INC-24 Workbench sigue diferido).
 - **Ola 2026-07-10 (10 incrementos)** — resolvió además: drift de schemas en `mcp-manifest.yaml`/`integrations.yaml` (CLI `mcp`/`toolchain` ya funcionan contra los artefactos reales; con tests que los cargan de verdad, no fixtures); ausencia de `workflows.yaml`/`topology.yaml` en el propio repo (dogfooding); roles fijos → registro dinámico de roles de equipo (1..N) con validador reconciliado; planes sin separación por rol; contexto técnico que el MCP servía como `null` (ahora indexado y servido); paridad de comandos del antiguo wizard interactivo; separación arquitecto↔miembro (compartido/committeado vs personal/gitignored) con `member install`/`bindings`; y correctitud (`archive` mueve carpeta, `self-update`, estados reales de toolchain, código muerto del orchestrator). Ver [../../specs/00_Resumen_Ejecutivo.md](../../specs/00_Resumen_Ejecutivo.md) §"Ola de endurecimiento 2026-07-10".
 - **Brecha 2 — VIGENTE**: hay 81 ficheros de comando CLI y solo una minoría tiene página operativa dedicada.
-- **Brecha 3 — VIGENTE**: la mayoría de los 43 packages no tiene README propio y su descripción requiere contrastar `src/` y `package.json`.
+- **Brecha 3 — VIGENTE**: la mayoría de los 42 packages no tiene README propio y su descripción requiere contrastar `src/` y `package.json`.
 - **Brecha 5 — MITIGADA (ADR-0032, 2026-08-03)**: la similitud de nombres `Axiom.Spec/` vs `axiom.spec/` sigue siendo un riesgo de lectura, pero el ownership ya está decidido y verificado. `Axiom.Spec/` es el repo canónico del workspace; `Axiom/axiom.spec/` es baseline product-owned consumida por el runtime y se conserva en su ubicación actual.
 
 ### Límites vigentes del versionado de toolchain (`INC-20260730-toolchain-versioning`)
@@ -78,8 +78,8 @@ para un comando concreto.
 
 ## 3. Inferencia de responsabilidad en packages sin README
 
-El runtime actual tiene **43 packages**: 34 packages de primer nivel y 9
-sub-packages bajo `packages/adapters/`. Algunos tienen README propio, pero la
+El runtime actual tiene **42 packages**: 34 packages de primer nivel y 8
+sub-packages activos bajo `packages/adapters/`. Algunos tienen README propio, pero la
 mayoría sigue caracterizándose a partir de `src/` y `package.json`. Las tablas
 de `../references/01-inventario-de-packages.md` son una aproximación técnica
 trazable, no un contrato firmado por cada package.
@@ -127,13 +127,19 @@ verificar primero los conteos y las rutas citadas.
 
 El caso concreto quedó cerrado (las 7 superficies están alineadas), pero la clase de riesgo sigue vigente: **existen 7 copias del mismo orquestador sin un generador único**, mantenidas a mano. Cualquier cambio normativo futuro debe aplicarse a las 7, y nada lo verifica automáticamente hoy. Candidato natural a un check de doctor o a un generador de superficie única.
 
-### Hallazgo 2026-08-02: el freeze no alcanza incrementos archivados
+### Hallazgo histórico 2026-08-02: el freeze no alcanzaba incrementos archivados (resuelto)
 
-Al intentar re-congelar `INC-20260730-candidate-freeze` tras el pase de integración, `axiom freeze --increment <id>` falló con "Directorio del incremento no existe". Causa: tanto `registerFreezeCommand` como `checkCandidateFreeze` resuelven exclusivamente `<specRepo>/specs/increments/<id>` y **no contemplan `specs/increments/_archive/<id>/`**, que es donde vive el incremento una vez cerrado.
+La implementación anterior de `axiom freeze --increment <id>` y
+`checkCandidateFreeze` resolvía exclusivamente
+`<specRepo>/specs/increments/<id>`. Tras archivar un incremento, no podía
+re-congelarse ni verificarse, y una edición posterior de su `README.md` dejaba
+el `candidate-freeze.json` como registro histórico no comprobable.
 
-Consecuencias prácticas:
-
-- Un candidate archivado **no puede re-congelarse ni verificarse**. Su `candidate-freeze.json` queda como registro histórico no comprobable.
-- El `candidate-freeze.json` de `INC-20260730-candidate-freeze` quedó **stale a propósito y sin posibilidad de refresco**: el pase de integración reescribió su `README.md` (cambiando `specsHash`) y el archivado posterior dejó la ruta fuera del alcance del comando. Se documenta en vez de simularse un estado válido.
-
-No es un bloqueo del ciclo — el freeze es un gate *previo al apply*, y un incremento archivado ya no recibe applies — pero sí un límite real de la trazabilidad post-cierre. Candidato a incremento futuro: que ambas funciones resuelvan también la ruta archivada, en línea con `resolveArchivedArtifactDir`, que ya existe en `@axiom/workflow` y que `INC-20260730-phase-receipts` usa exactamente para este problema en la emisión de receipts.
+ACC-030 resolvió esta brecha: `Axiom/apps/cli/src/commands/freeze.ts` busca
+primero el incremento activo y después
+`specs/increments/_archive/<id>/`. La comprobación actual acepta candidatos
+archivados; el freeze final de `INC-20260810-mcp-unified-modern` es reproducible
+con hash `d8fff3415772fb0f6922996d3bcb8dea9578f9d8fbf11ea48c7e440e8940803a`
+y `checkCandidateFreeze` devuelve `ok: true`. El `candidate-freeze.json` antiguo
+de `INC-20260730-candidate-freeze` se conserva como evidencia histórica de la
+limitación que existía entonces.
