@@ -42,7 +42,7 @@ Ingiere ese contexto a `technical-context/*` con un `TechnicalContextIndex` en e
 
 ## Indexado de contexto técnico
 
-`axiom context status` muestra el estado del proyecto activo (nombre, rootPath, profile triple, capabilities) y, de forma best-effort, un bloque de "lecciones recientes" (aprendizaje continuo) y sugerencias de delegación. `axiom context refresh` re-deriva el `ResolvedInstallProfile` y lo persiste. Todos los artefactos adoptados (código o spec legada) aterrizan en estado seguro (`draft`/`proposed`) y requieren revisión humana como cualquier artefacto nuevo — ver [09_Revisiones.md](09_Revisiones.md).
+`axiom context status` muestra el estado del proyecto activo (nombre, rootPath, configuración efectiva `builder` + `local-only` + target y capabilities) y, de forma best-effort, un bloque de "lecciones recientes" (aprendizaje continuo) y sugerencias de delegación. `axiom context refresh` re-deriva el `ResolvedInstallProfile` normalizado y lo persiste. Todos los artefactos adoptados (código o spec legada) aterrizan en estado seguro (`draft`/`proposed`) y requieren revisión humana como cualquier artefacto nuevo — ver [09_Revisiones.md](09_Revisiones.md).
 
 ## Relacionado
 

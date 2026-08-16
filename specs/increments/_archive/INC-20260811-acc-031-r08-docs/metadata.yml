@@ -1,0 +1,21 @@
+id: INC-20260811-acc-031-r08-docs
+kind: increment
+title: acc-031-r08-docs
+status: closed
+createdAt: '2026-08-11T00:00:00.000Z'
+updatedAt: '2026-08-11T00:00:00.000Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-11T00:00:00.000Z'
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-11T00:00:00.000Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-REVISION-INTEGRAL-AXIOM

@@ -15,7 +15,7 @@ Varias brechas de este documento (redactado el 2026-07-02) ya están resueltas; 
 
 ### Límites vigentes del versionado de toolchain (`INC-20260730-toolchain-versioning`)
 
-- El lockfile (`.axiom-state/<project>/toolchain.lock`) es local, project-scoped e ignorado junto con `.axiom-state/`; no es un mecanismo de distribución compartida ni una instalación global.
+- El lockfile (`.axiom-state/<projectKey>/toolchain.lock`) es local, project-scoped e ignorado junto con `.axiom-state/`; no es un mecanismo de distribución compartida ni una instalación global.
 - `axiom toolchain plan` y `axiom toolchain upgrade` no descargan, instalan, sustituyen ni revierten binarios externos. El upgrade solo actualiza el lockfile y sus checkpoints.
 - Los probes de versión no están disponibles para todas las tools del catálogo: el contrato local actual cubre `serena`, `cmm` y `engram`; `context7`, `rtk`, `caveman` y `autoskills` no reciben un comando inventado y pueden quedar sin versión observable.
 - Las versiones `stable`/`candidate`/`edge` del catálogo son baselines de política de Axiom, no evidencia por sí mismas de releases upstream, mirrors ni provenance firmada.

@@ -7,7 +7,7 @@ El tracker instalado en este workspace: qué completar al crear incrementos/bugs
 El plugin de Azure DevOps se activa por proyecto mediante un fichero de estado runtime (no versionado):
 
 ```
-.axiom-state/<project>/tracker.json
+.axiom-state/<projectKey>/tracker.json
 ```
 
 Forma exacta:

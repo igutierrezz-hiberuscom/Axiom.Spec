@@ -6,20 +6,20 @@ Dónde vive la configuración de Axiom y cómo cambiarla, capa por capa.
 
 La configuración de Axiom no es un único archivo, se reparte en:
 
-- **`axiom.yaml`** (raíz del repo): manifiesto autoral del proyecto — identidad (`projectId`/`name`/`repoId`/`role`), `paths` recíprocos hacia repos hermanos, y el profile triple. Es la fuente única de verdad; `topology.yaml` se deriva de él.
+- **`axiom.yaml`** (raíz del repo): manifiesto autoral del proyecto — identidad (`projectId`/`name`/`repoId`/`role`), `paths` recíprocos hacia repos hermanos y la configuración efectiva `builder` + `local-only` + target. Es la fuente única de verdad; `topology.yaml` se deriva de él.
 - **`axiom.config/*.yaml`** (versionado): profiles/overlays/capabilities/providers/políticas — p. ej. `profiles.yaml`, `providers.yaml`, `topology.yaml`.
 - **`~/.axiom/projects.yml`** (registro de usuario, machine-level): el registro v2 de proyectos conocidos por esta máquina, un `repos: { <role>: { role, path } }` por proyecto. Sustituyó al legado `~/.axiom/registry.json` (migración automática, ver `08_Glosario.md`).
 - **`.axiom-state/<projectKey>/`** (estado runtime, no versionado): `init.json`, `install-profile.json`, checkpoints, `workspace.json`, `tracker.json` (ver [12_Plugin_Azure_DevOps.md](12_Plugin_Azure_DevOps.md)). `.axiom-state/local/` queda reservado para bindings, overrides y audit trail realmente locales.
 
 ## Cómo cambiar la configuración
 
-- **`axiom configure`**: relee el profile triple desde `init.json`, recompone el install profile completo y persiste `install-profile.json`, materializando las surfaces derivadas del target activo (p. ej. `.github/copilot-instructions.md` para Copilot). Es single-shot: reaplica TODO el perfil persistido, no admite cambios incrementales de un solo campo. Repetilo cuando cambies `profiles.yaml`, el target activo, o templates/manifests usados para surfaces derivadas.
+- **`axiom configure`**: relee la configuración normalizada `builder` + `local-only` + target desde `init.json`, recompone el install profile completo y persiste `install-profile.json`, materializando las surfaces derivadas del target activo (p. ej. `.github/copilot-instructions.md` para Copilot). Es single-shot: reaplica TODO el perfil persistido, no admite cambios incrementales de un solo campo. Repetilo cuando cambies `profiles.yaml`, el target activo, o templates/manifests usados para surfaces derivadas.
 - **Operaciones incrementales ADD** (`axiom repo add`, `axiom adapter add <target>`, `axiom provider add <id>`, `axiom role add <roleId> --path <path>`): añaden UN elemento nuevo a un workspace ya inicializado, de forma idempotente y no-clobber, sin re-correr todo el setup. Los REMOVE equivalentes aún no existen (diferido).
 - **`axiom workspace <granular>`** (`spec-base`, `adapters`, `skills`, `rules`, `mcp-config`, `config-scaffold`): re-aplica/repara UNA PARTE de un install ya existente (nunca añade algo nuevo al registro).
 
 ## Roles (team/code roles)
 
-`axiom roles list` lista tanto los perfiles funcionales canónicos (`profiles.yaml`) como los team/code roles registrados en `topology.yaml#roles` — son dos ejes distintos. Para agregar y asignar un rol de equipo/código a un repo:
+`axiom roles list` lista los team/code roles registrados en `topology.yaml#roles`. La configuración funcional ya es única e implícita; estos roles describen qué equipo o repositorio es responsable del código. Para agregar y asignar un rol de equipo/código a un repo:
 
 ```bash
 axiom roles register --id <roleId> --path <path>

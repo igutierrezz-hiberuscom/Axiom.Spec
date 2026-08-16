@@ -13,7 +13,7 @@
 
 ## Seguridad operativa y compliance (verificado en runtime)
 
-1. **GATEs verificables por doctor**: GATE 0031 (9 adapter packages deben tener `src/generator.ts` + `dist/index.js`), GATE 0024 (memoria no es fuente de verdad; spec prevalece en conflicto), GATE 0033 (agents como contratos materializables, sin ejecución). El audit trail local es transversal y no depende de un gate enterprise.
+1. **GATEs verificables por doctor**: GATE 0031 (8 adapter packages activos deben tener `src/generator.ts` + `dist/index.js`), GATE 0024 (memoria no es fuente de verdad; spec prevalece en conflicto), GATE 0033 (agents como contratos materializables, sin ejecución). El audit trail local es transversal y no depende de un gate enterprise.
 2. **Aislamiento project-scoped**: `@axiom/isolation` aplica path-guard y una lista de MCP servers permitidos por defecto; ninguna cache, binding o entrada de memoria debe cruzar `projectKey` (`projectId` v2 o slug estable v1). El server MCP ejecutable **hace cumplir** este aislamiento a nivel de handler, no solo por convención — ver "Aislamiento MCP por proyecto (enforced)" más abajo.
 	El mismo principio se aplica a checkpoints, markers de toolchain y
 	selección de providers: buscar un alias legacy no autoriza restaurar o leer

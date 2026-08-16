@@ -10,8 +10,9 @@ Generado por `axiom init`. Campos relevantes (`Axiom/docs/configuration/project-
 
 Materializa la configuración efectiva `builder` + `local-only` + `adapterTarget`. `builder` y
 `local-only` son implícitos y no seleccionables; los estados legacy se normalizan en
-los bordes de lectura. `adapterTarget` pertenece al conjunto de 8 targets activos
-declarados (ver `../architecture/04-adapters-y-model-routing.md`).
+los bordes de lectura. `adapterTarget` pertenece al conjunto de 8 targets canónicos
+activos (ver `../architecture/04-adapters-y-model-routing.md`); `copilot-vscode` es alias
+legacy de `github-copilot` y `litellm` fue retirado.
 
 Editable con criterio a mano; no editar `init.json`, `install-profile.json`, `last-start.json`, `last-sync.json` salvo diagnóstico (son estado derivado). **`init.json` ya no incluye `projectName`** (`INC-20260703-config-dedup`, cerrado): solo persiste el campo de compatibilidad `profileTriple` normalizado a `builder` + `local-only` + target, además de `createdAt` y `version`. El segmento físico se deriva de `projectKey`: `projectId` v2 o slug estable de `project.name` v1.
 
@@ -77,19 +78,18 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 
 ## Ficheros generados por adapter target
 
-> 8 packages de adapter activos / 8 targets activos — ver `../architecture/04-adapters-y-model-routing.md` para el detalle completo y actualizado (incluye `codex` y las superficies portables `.axiom/agents|commands|skills/`, no repetidas aquí).
+> 8 packages de adapter / 8 targets canónicos activos — ver `../architecture/04-adapters-y-model-routing.md` para el detalle completo y actualizado (incluye `codex` y las superficies portables `.axiom/agents|commands|skills/`, no repetidas aquí). LiteLLM fue retirado y `visual-studio-2026` delega en la instrucción común de Copilot.
 
 | Target | Archivos |
 |---|---|
 | `opencode` | `.opencode/AGENTS.md`, `.opencode/skills-lock.yaml` |
 | `claude-code` | `.claude/AGENTS.md` |
-| `github-copilot` / `copilot-vscode` | `.github/copilot-instructions.md` (`copilot-vscode` solo alias legacy) |
-| `vscode` | `.vscode/settings.json`, `.vscode/extensions.json` |
-| `cursor` | `.cursor/settings.json`, `.cursor/AGENTS.md` |
-| `cursor` (regla opcional) | `.cursor/rules/axiom-common.mdc` en cold start, no-clobber |
+| `github-copilot` / `copilot-vscode` | `.github/copilot-instructions.md` (+ `.vscode/settings.json`, `.vscode/extensions.json` en `copilot-vscode`) |
+| `vscode` | `.vscode/settings.json` |
+| `cursor` | `.cursor/settings.json`, `.cursor/AGENTS.md`, `.cursor/rules/axiom-common.mdc` (potencial no-clobber) |
 | `codex` | `.codex/AGENTS.md` (generador de primera clase desde `INC-20260726-adapter-mcp-parity`) |
 | `antigravity` | `.antigravity/AGENTS.md` |
-| `visual-studio-2026` | `.github/copilot-instructions.md` (alias de compatibilidad) |
+| `visual-studio-2026` | `.github/copilot-instructions.md` (común; no genera `.vs/AXIOM.md`) |
 
 Caso especial Copilot: `configure`, `sync`, `workspace setup` y el adapter
 `github-copilot` escriben la instrucción general compartida en

@@ -95,7 +95,7 @@ Slots: `increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archiv
 `apps/cli/src/commands/` tiene **81 ficheros** (verificado: `ls apps/cli/src/commands/*.ts | wc -l` → 81; de esos, 10 son helpers internos con prefijo `_` — `_adapter-labels.ts`, `_cross-repo-plan.ts`, `_execution-mode.ts`, `_functional-verify.ts`, `_repo-affinity.ts`, `_role-review.ts`, `_shared.ts`, `_spec-scope.ts`, `_tracker-status.ts`, `_worktree-execution.ts` — no comandos invocables por sí mismos). Muy por encima del baseline 2026-07-02 (36). Familias completas que no existían entonces:
 
 - `workspace*` (16 ficheros): `workspace.ts`, `workspace-setup.ts`, `workspace-adopt.ts`, `workspace-adapters.ts`, `workspace-adapter-templates.ts`, `workspace-autoskills.ts`, `workspace-catalog-scaffold.ts`, `workspace-code-intel.ts`, `workspace-config-scaffold.ts`, `workspace-incremental.ts`, `workspace-mcp.ts`, `workspace-process-surfaces.ts`, `workspace-rules.ts`, `workspace-skills.ts`, `workspace-spec-base.ts`, `workspace-worktree-provision.ts`.
-- `app*` / launcher: `app.ts` (abre el launcher como front por defecto, ver más abajo), `app-api.ts`, `app-onboarding.ts`, `app-launcher.ts`, `app-launcher-panels.ts`, `app-launcher-ado.ts`, `app-plugins.ts`, `app-plugins-azure-devops.ts`.
+- `app*` / launcher: `app.ts` (abre el launcher como front por defecto, ver más abajo), `app-api.ts`, `app-onboarding.ts`, `app-launcher.ts`, `app-launcher-panels.ts`, `app-launcher-ado.ts`, `app-launcher-telemetry.ts` (panel de telemetría/auditoría read-only, `INC-20260811-acc-032-launcher-telemetry`), `app-plugins.ts`, `app-plugins-azure-devops.ts`.
 - `member-install.ts` (instalación multi-repo por miembro de equipo).
 - `native-mcp-config.ts` (proyección de los servers MCP gestionados a la config nativa de cada tool).
 - Comandos backed por `@axiom/tracker`/`@axiom/tracker-ado`: `_tracker-status.ts`, `external-sync.ts`, además de `app-launcher-ado.ts`.
@@ -105,7 +105,26 @@ Los comandos documentados en el baseline (`init`, `join`, `configure`, `sync`, `
 
 ## `@axiom/cli-commands` (barrel)
 
-Reexporta funciones `runX` desde el owner físico `packages/cli-commands/src/commands/*` y publica `dist/index.js`/`dist/index.d.ts` con ownership único para CLI, launcher y MCP. No contiene lógica de negocio ni depende de una interfaz TUI.
+Reexporta funciones `runX` y wrappers `registerX` desde el owner físico `packages/cli-commands/src/commands/*` y publica `dist/index.js`/`dist/index.d.ts` con ownership único para CLI, launcher y MCP. `apps/cli/src/index.ts` consume los `registerX` para registrar los comandos con Commander; los consumidores que solo ejecutan lógica (launcher, MCP) usan los `runX`. No contiene lógica de negocio ni depende de una interfaz TUI.
+
+## Scaffolding de artefactos y superficies generadas
+
+`axiom scaffold increment|bug|plan` es un wrapper de los flujos de creación;
+la generación del árbol documental pertenece a `@axiom/workflow` y a su
+`scaffoldArtifact`. El generador resuelve primero `templates/` del scope del
+proyecto y usa el contenido bundleado como fallback, escribe cada archivo con
+no-clobber y deja `metadata.yml` bajo la responsabilidad del artifact store.
+La misma separación se aplica al workspace setup: sus writers independientes
+preparan repos, estado, topología, adapters, process surfaces, catálogos y la
+base de spec como pasos best-effort, sin reemplazar contenido preexistente.
+
+Para Copilot, la superficie general se comparte en
+`.github/copilot-instructions.md`; el writer de
+`@axiom/document-bootstrap` reemplaza solo `AXIOM:GENERATED`, preserva las
+zonas humanas y migra de forma conservadora la ruta legacy
+`.vscode/copilot-instructions.md`. Las process surfaces por ruta se escriben
+en `.github/instructions/*.instructions.md`; `.vscode/` queda para
+configuración y MCP.
 
 ## Gobierno verificable en el ciclo (2026-08-02) — tanda `INC-20260730-*`
 

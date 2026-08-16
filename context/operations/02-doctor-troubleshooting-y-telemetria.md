@@ -51,7 +51,15 @@ Las checks de lockfile **TC-020..TC-023** son project-scoped: TC-020 valida exis
 
 **`axiom configure`**
 - No encuentra `init.json` → ejecutar `axiom init` primero.
-- Falla al escribir surfaces de Copilot → revisar `axiom.spec/templates/copilot-instructions.template.md`, `product.manifest.yaml`, `axiom.yaml`, `providers.yaml` y `.axiom-state/local/`.
+- Falla al escribir surfaces de Copilot → revisar el destino canónico
+  `.github/copilot-instructions.md`, `product.manifest.yaml`, `axiom.yaml`,
+  `providers.yaml` y `.axiom-state/local/`. El template de
+  `axiom.spec/templates/copilot-instructions.template.md` se usa como override
+  cuando es legible; su ausencia no debe producir por sí sola
+  `template-missing`, porque `@axiom/document-bootstrap` usa el fallback
+  bundleado. Si existe una copia legacy en
+  `.vscode/copilot-instructions.md`, revisar también el warning de migración y
+  cualquier divergencia de contenido humano.
 
 **`axiom sync`**
 - `adapterGenerationFailed`: falta `install-profile.json` (se corrió `sync` antes de `configure`).
@@ -82,7 +90,29 @@ Impacta: `sync` (valida gate antes de regenerar outputs), `audit` (usa mirror de
 - `sinks`: entradas declarativas por `kind`; la configuración activa usa `local-audit-trail` (`audit`) y `local-log` (`log`).
 - El loader construye un `AuditTrailSink` real para el sink `audit`, que cubre `lineage` y `verification`; la política `local-only` lo habilita por defecto con retención `P365D`.
 - El audit trail es transversal y no depende de un overlay ni de transporte externo; `sync` ya no evalúa `minimumSignals` de overlays retirados.
+- El gate `gateOnTelemetrySink` (`packages/cli-commands/src/commands/_shared.ts`) existe como pre-condición de mutación en `sync`/`configure`, pero con la política única `local-only` (`MINIMUM_SIGNALS_BY_OVERLAY['local-only'] = []`) **siempre pasa** por `local-only-bypass`: hoy no bloquea ninguna mutación. Es la única pieza que podría bloquear una operación, y está inerte por diseño.
+- **Emisores reales**: los eventos se emiten desde `packages/tool-routing/src/events.ts` (`emitResolvedEvent`/`emitDegradedEvent`/`emitDispatchEvent` para dispatch de `ToolCall`) y desde `packages/workflow/src/hooks.ts` (`emitTelemetryEvent` para hooks de workflow SDD). Ambos envían al `TelemetryBus` activo vía `getTelemetryBus().emitTelemetry(...)`.
+- **Consumidor de contenido**: el audit trail se escribe siempre (cada mutación), pero su contenido solo se explota por `axiom learn capture --from-audit` (opt-in, no conectado automáticamente) y por `axiom context` (bloque `recentLessons`). Los contadores del bus (`getTelemetryBus().getCounters()`) no tienen superficie pública fuera del panel del launcher y los tests.
 - No documentado explícitamente: un mecanismo formal de opt-out completo de telemetría. Tratar como ausente, no como implementado silenciosamente.
+
+### Panel de telemetría/auditoría en el launcher (`INC-20260811-acc-032-launcher-telemetry`)
+
+El launcher web (`axiom app`) expone un panel de telemetría/auditoría read-only
+que explota los datos que el runtime ya escribe y verifica, sin nuevo engine:
+
+- `GET /launcher/telemetry` proyecta `auditTrailVerify` (estado del audit
+  trail: `compliant`/`absent`/`violation`, SHA-256, line count, retention
+  violations, external rewrite), agrega el `audit.log` reciente por
+  `capabilityId`/`signalType` + eventos recientes, y expone
+  `getTelemetryBus().getCounters()`.
+- `POST /launcher/telemetry/lessons` captura una lección explícita
+  (`axiom learn capture --text`) con preview→confirmación, reusando
+  `runLearnList`/`runLearnCapture`.
+
+El panel es read-only sobre el audit trail (el launcher nunca escribe en el
+audit log); la única mutación es la captura de una lección explícita,
+confirm-gated. Fuente: `Axiom/apps/cli/src/commands/app-launcher-telemetry.ts`,
+`Axiom/apps/cli/src/commands/app-api.ts`, `Axiom/apps/cli/static/launcher/`.
 
 ## Aislamiento (`@axiom/isolation`, doctor)
 

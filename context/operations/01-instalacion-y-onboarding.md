@@ -41,6 +41,11 @@ npx axiom start
 npx axiom doctor
 ```
 
+`axiom init` escribe `axiom.yaml`, `AGENTS.md` canónico (aditivo, best-effort),
+`.gitignore`, `.axiom-state/local/` y `.axiom-state/<projectKey>/init.json`, y
+además intenta registrar el proyecto en el registry user-level de forma
+best-effort con opt-out `--no-register`.
+
 `axiom configure` usa `DEFAULT_PROFILES` únicamente cuando
 `axiom.config/profiles.yaml` está ausente. Si el archivo existe pero no se
 puede leer, contiene YAML inválido o no cumple `InstallProfilesYamlSchema`,
