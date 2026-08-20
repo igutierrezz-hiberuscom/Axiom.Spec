@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc045-unify-workflow-resolution",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-18T13:47:09.458Z",
+  "details": "R-10 final: resolución fail-closed común verificada sin bloqueo global; build, suite 330/3289, doctor y readiness PASS.",
+  "hash": "b127cba5952534e28979986d51a6bc79d49cbb60b74837f3b1ed8127e6b23059"
+}

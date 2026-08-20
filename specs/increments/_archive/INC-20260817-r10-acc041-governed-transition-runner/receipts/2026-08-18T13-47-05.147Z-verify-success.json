@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc041-governed-transition-runner",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-18T13:47:05.147Z",
+  "details": "R-10 final: runner común, preview, confirmación, compensación y receipts verificados; build, suite 330/3289, doctor y readiness PASS.",
+  "hash": "160b55f8cc525b2a0221debcae4527a50cfeb256c14782f39363def754ad8425"
+}

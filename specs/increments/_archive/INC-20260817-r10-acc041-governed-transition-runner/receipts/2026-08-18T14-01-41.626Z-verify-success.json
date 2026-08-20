@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc041-governed-transition-runner",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-18T14:01:41.626Z",
+  "details": "Corrección final de identidad por metadataId verificada: build, 77 tests focalizados y preview Core por artefacto.",
+  "hash": "6162767ac991c184988ffcff16bc6c53ee5c21698faf4c4fb8bf3a3fbc0f9afa"
+}

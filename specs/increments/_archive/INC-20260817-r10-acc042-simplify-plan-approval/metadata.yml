@@ -1,0 +1,18 @@
+id: INC-20260817-r10-acc042-simplify-plan-approval
+kind: increment
+title: R-10 ACC-042 simplify plan approval
+status: archived
+createdAt: '2026-08-17T21:52:19.274Z'
+updatedAt: '2026-08-18T14:09:43.180Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-17T21:52:19.274Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

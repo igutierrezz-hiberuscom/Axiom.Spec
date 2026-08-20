@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc040-retire-cavekit",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-18T13:47:04.717Z",
+  "details": "R-10 final: Cavekit retirado; antecedente 0015 preservado y Decision Core vinculada; build, suite 330/3289, doctor y readiness PASS.",
+  "hash": "8ef859a58d15ce7cd75e061b0873a4891aabbac385d05a01d53c6515266ad94a"
+}

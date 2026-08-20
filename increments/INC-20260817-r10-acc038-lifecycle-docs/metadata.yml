@@ -1,0 +1,18 @@
+id: INC-20260817-r10-acc038-lifecycle-docs
+kind: increment
+title: R-10 ACC-038 lifecycle documentation alignment
+status: specifying
+createdAt: '2026-08-17T15:16:19.826Z'
+updatedAt: '2026-08-17T15:16:19.826Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-17T15:16:19.826Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

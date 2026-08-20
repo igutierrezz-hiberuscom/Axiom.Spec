@@ -1,0 +1,23 @@
+id: DEC-20260818-134600-3jfjak
+kind: decision
+title: Retirada de Cavekit supera el antecedente 0015
+status: proposed
+createdAt: '2026-08-18T13:46:00.619Z'
+updatedAt: '2026-08-18T19:14:41.279Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-18T13:46:00.619Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  ACC-040 verificó que @axiom/cavekit-discipline no tiene consumidores runtime y fue retirado; el antecedente histórico
+  0015 se preserva sin reescritura.
+links:
+  incrementId: INC-20260818-r10-closure-correction
+  planId: null
+  adrId: null

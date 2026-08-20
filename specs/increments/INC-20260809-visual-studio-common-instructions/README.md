@@ -18,6 +18,12 @@ para Copilot Chat. No confirma `.vs/AXIOM.md`; ese path es una convencion
 interna de Axiom. El adapter actual tambien trata `.vs/mcp.json` como una
 suposicion documentada, no como un schema verificado en Visual Studio real.
 
+**Aclaración histórica (R-10):** Esta entrega conserva la salida común
+`.github/copilot-instructions.md`, pero la denominación «alias de compatibilidad»
+empleada en este documento fue corregida: `visual-studio-2026` siguió siendo un
+target canónico distinto, no un alias migrable, y delega y reutiliza el writer
+de `github-copilot` para esa salida compartida.
+
 ## Dependencias
 
 - `INC-20260809-unify-copilot-target` define el target y writer canonicos.

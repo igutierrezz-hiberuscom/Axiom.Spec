@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260805-225413-6fx4hs",
+  "phase": "increment-refine",
+  "status": "failure",
+  "timestamp": "2026-08-17T15:15:37.555Z",
+  "details": "[axiom increment] Transición inválida para sub-command 'refine': No transition for command 'increment-refine' from state 'archived'. No transitions available (state is terminal)",
+  "hash": "b244506e17dfe7fe0b18d92bd26428f48bdf4ce7a2943a92109573bd300f80fa"
+}

@@ -11,8 +11,11 @@ Generado por `axiom init`. Campos relevantes (`Axiom/docs/configuration/project-
 Materializa la configuración efectiva `builder` + `local-only` + `adapterTarget`. `builder` y
 `local-only` son implícitos y no seleccionables; los estados legacy se normalizan en
 los bordes de lectura. `adapterTarget` pertenece al conjunto de 8 targets canónicos
-activos (ver `../architecture/04-adapters-y-model-routing.md`); `copilot-vscode` es alias
-legacy de `github-copilot` y `litellm` fue retirado.
+activos (ver `../architecture/04-adapters-y-model-routing.md`). Si un `init.json` ya
+persistido contiene el literal histórico `copilot-vscode` en
+`profileTriple.adapterTarget`, sólo `axiom configure` lo migra y persiste como
+`github-copilot` antes de instalar o despachar; no es un alias ni una entrada pública.
+LiteLLM fue retirado.
 
 Editable con criterio a mano; no editar `init.json`, `install-profile.json`, `last-start.json`, `last-sync.json` salvo diagnóstico (son estado derivado). **`init.json` ya no incluye `projectName`** (`INC-20260703-config-dedup`, cerrado): solo persiste el campo de compatibilidad `profileTriple` normalizado a `builder` + `local-only` + target, además de `createdAt` y `version`. El segmento físico se deriva de `projectKey`: `projectId` v2 o slug estable de `project.name` v1.
 
@@ -84,7 +87,7 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 |---|---|
 | `opencode` | `.opencode/AGENTS.md`, `.opencode/skills-lock.yaml` |
 | `claude-code` | `.claude/AGENTS.md` |
-| `github-copilot` / `copilot-vscode` | `.github/copilot-instructions.md` (+ `.vscode/settings.json`, `.vscode/extensions.json` en `copilot-vscode`) |
+| `github-copilot` | `.github/copilot-instructions.md` |
 | `vscode` | `.vscode/settings.json` |
 | `cursor` | `.cursor/settings.json`, `.cursor/AGENTS.md`, `.cursor/rules/axiom-common.mdc` (potencial no-clobber) |
 | `codex` | `.codex/AGENTS.md` (generador de primera clase desde `INC-20260726-adapter-mcp-parity`) |

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-build-coherence-repair",
+  "phase": "increment-create",
+  "status": "failure",
+  "timestamp": "2026-08-18T18:52:06.309Z",
+  "details": "No transition for command 'increment-create' from state 'archived'. No transitions available (state is terminal)",
+  "hash": "d1d2913dc43486bd0509d4888aa5f8636bb35699655887b3b6cbec23bdf0ec05"
+}

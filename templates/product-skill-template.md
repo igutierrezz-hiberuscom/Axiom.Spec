@@ -25,7 +25,7 @@ type: <tag-de-contexto>
 # 6 applicableRepoTypes: subconjunto cerrado y no vacio de {product-owner, builder}
 applicableRepoTypes: [<product-owner|builder>]
 # 7 compatibleHarnesses: set cerrado, NO vacio (R-V5)
-compatibleHarnesses: [<copilot-vscode|opencode|claude-code|antigravity|visual-studio-2026>]
+compatibleHarnesses: [<opencode|claude-code|github-copilot|vscode|cursor|antigravity|visual-studio-2026|codex>]
 # 8 requiredCapabilities: patron ^(sdd|spec|code|memory)\.[a-z][a-zA-Z0-9]+$
 requiredCapabilities: [<sdd.workflow|spec.read|code.symbolSearch|memory.decisionRecall>]
 # 9 optionalTools: exigen contraparte en `fallbacks` (Regla 2)

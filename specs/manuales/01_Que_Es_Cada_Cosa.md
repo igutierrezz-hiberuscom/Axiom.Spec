@@ -30,7 +30,7 @@ La configuración efectiva combina `builder` implícito, política `local-only` 
 
 ## Adapters
 
-Un adapter es la capa de traducción entre las capacidades de Axiom y un IDE/CLI externo concreto (`opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `litellm`, más `copilot-vscode`/`antigravity`/`visual-studio-2026` sin adapter dedicado). Cada adapter tiene un "support level" (`multi-mode`, `single-mode`, `fallback-only`) que determina cuánto control de ruteo por slot ofrece. Ver [05_Interfaces_Operativas.md](../05_Interfaces_Operativas.md).
+Un adapter es la capa de traducción entre las capacidades de Axiom y un IDE/CLI externo concreto. Los ocho targets activos son `opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `antigravity`, `visual-studio-2026` y `codex`; todos tienen adapter dedicado. LiteLLM está retirado. `copilot-vscode` no se acepta como target público: solo `configure` puede migrar ese literal desde un `init.json` legacy persistido. Cada adapter tiene un "support level" (`multi-mode`, `single-mode`, `fallback-only`) que determina cuánto control de ruteo por slot ofrece. Ver [05_Interfaces_Operativas.md](../05_Interfaces_Operativas.md).
 
 ## El launcher (`axiom app`)
 

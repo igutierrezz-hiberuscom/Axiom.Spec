@@ -1,0 +1,18 @@
+id: INC-20260818-r10-closure-correction
+kind: increment
+title: r10-closure-correction
+status: archived
+createdAt: '2026-08-18T18:53:59.084Z'
+updatedAt: '2026-08-19T09:17:27.346Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-18T18:53:59.084Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

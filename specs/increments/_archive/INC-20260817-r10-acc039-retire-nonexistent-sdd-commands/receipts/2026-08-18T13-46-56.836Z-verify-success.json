@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc039-retire-nonexistent-sdd-commands",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-18T13:46:56.836Z",
+  "details": "R-10 final: commands activos alineados; 19 intent stubs preservados; build, suite 330/3289, doctor y readiness PASS.",
+  "hash": "552276b5fd6eb0f73ba00dca24f66cf3b2938187553ec3085dd6887aa6e23067"
+}

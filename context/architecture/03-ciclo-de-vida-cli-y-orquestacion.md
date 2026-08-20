@@ -30,7 +30,7 @@ Flags: `--name`, `--layout`, `--role`, `--target`, `--path`, `--yes`, `--force`,
 Registra `--member <id>` (`user:alice`, `agent:sdd`, etc.) en `members.yaml`, deduplicando por igualdad exacta.
 
 ### `axiom configure`
-Lee `init.json` + `profiles.yaml` + `providers.yaml` (+ `provider-overrides.yaml` local opcional), compone `ResolvedInstallProfile`, persiste `install-profile.json`, y materializa surfaces del target activo (p. ej. Copilot instructions vía `@axiom/document-bootstrap`).
+Lee `init.json` + `profiles.yaml` + `providers.yaml` (+ `provider-overrides.yaml` local opcional). Si el literal histórico `copilot-vscode` aparece en `init.json#profileTriple.adapterTarget`, lo migra y persiste atómicamente como `github-copilot` antes de normalizar el profile, llamar a `installProfile` o despachar un writer. Esa migración es interna y no acepta el literal como entrada pública. Después compone `ResolvedInstallProfile`, persiste `install-profile.json` y materializa las surfaces del target canónico activo (p. ej. instrucciones de GitHub Copilot vía `@axiom/document-bootstrap`).
 
 ### `axiom sync`
 Lee `init.json`, mantiene la política local-only y el audit trail habilitado, invoca el materializador del adapter y persiste `last-sync.json` solo después de una generación correcta.
@@ -128,8 +128,20 @@ configuración y MCP.
 
 ## Gobierno verificable en el ciclo (2026-08-02) — tanda `INC-20260730-*`
 
-`runIncrementSubcommand` y `runBugSubcommand` son desde esta tanda **wrappers públicos delgados** sobre un `…Core` privado. El core conserva la lógica de transición byte-idéntica; el wrapper emite un receipt JSON a partir del resultado ya calculado y devuelve ese resultado sin tocarlo. Consecuencia para quien lea el código: el `safeParse` del schema de argumentos vive en el **core**, no en el wrapper, y cualquier lógica nueva de transición debe ir al core — añadirla al wrapper la dejaría fuera del contrato de "no modificar el resultado".
+`runGovernedTransition` es el boundary común de transiciones: resuelve configuración, legalidad, preview, aprobación, QA, efectos, metadata, archive, estado y receipts habilitados por el caller. `runIncrementSubcommand` y `runBugSubcommand` son callers de esa ruta, no capas de receipt sobre un `…Core` privado; la lógica nueva de transición debe añadirse al runner común para conservar el mismo contrato en CLI, launcher y MCP. Los previews son read-only y no emiten receipts; en un apply, un error al escribir el receipt se informa como aviso best-effort sin cambiar el resultado de la transición.
 
 `axiom freeze` (`apps/cli/src/commands/freeze.ts`) expone además `checkCandidateFreeze`, ya consumido por `axiom-increment` como gate previo al apply. Devuelve siempre `{ ok, reason? }` y nunca lanza, incluido el caso de `candidate-freeze.json` corrupto o truncado.
 
 Detalle normativo en [../../specs/07_Gobierno_y_Seguridad.md](../../specs/07_Gobierno_y_Seguridad.md), artefactos en [../../specs/03_Modelo_Operativo_y_Datos.md](../../specs/03_Modelo_Operativo_y_Datos.md).
+
+## Boundary común de transición gobernada (ACC-041, 2026-08-17)
+
+`runGovernedTransition` en `Axiom/packages/workflow/src/governed-transition-runner.ts` es el único boundary mutante común para las transiciones de workflow. Re-resuelve la configuración efectiva fail-closed, calcula la legalidad y los efectos declarados, devuelve preview sin escribir antes de exigir aprobación y exige `confirmed: true` cuando la transición declara `requiresApproval`. La CLI, el launcher y `sdd.transitionApply` MCP llegan a ese boundary; el launcher sólo reenvía la confirmación y MCP conserva el par preview → apply.
+
+Para archive/integrate de incrementos y bugs con artefacto, el runner coordina metadata, efectos locales soportados, archive físico y `workflow-state.json`: el estado se persiste al final. Si una escritura, efecto, move o persistencia final falla, restaura snapshots y el move cuando es posible; si no logra una recuperación completa, comunica inconsistencia en vez de éxito parcial. Los receipts se emiten desde esa ruta cuando la operación los habilita. `reconcileGovernedWorkflowState` conserva un seam limitado para bookkeeping o compensación post-transición: verifica workflow, estado declarado y `expectedState` antes de hacer un compare-and-save, por lo que no inventa una transición de negocio.
+
+Fuentes de implementación: `Axiom/packages/workflow/src/governed-transition-runner.ts`; `Axiom/apps/cli/src/commands/{axiom-increment,axiom-bug,axiom-plan,axiom-role,axiom-qa-e2e,integrate}.ts`; `Axiom/packages/mcp-tools/src/transition-handlers.ts`; `Axiom/apps/cli/src/commands/{app-api,app-launcher}.ts`.
+
+## Resolución, approval y QA R-10 (2026-08-18)
+
+El resolver único toma un YAML de workflow presente y válido; sólo la ausencia usa el asset empaquetado de `workflows.yaml`, mientras error de parseo o schema futuro se propaga sin fallback. `plan-approve` es exclusivamente `draft → plan-approved`, valida metadata, previsualiza sin escribir y exige confirmación; el gate de `axiom-role start` comprueba tanto state como metadata aprobados. Antes del archive, `QaArchiveDecision` es común a CLI, launcher, MCP e integrate: `parallel` conserva el archive con aviso para evidencia distinta de `passed`, pero inline o el rol QA requerido sólo lo permiten con `passed`; policy o evidencia requerida no evaluable bloquea antes de toda mutación.

@@ -44,7 +44,7 @@ Modelo de datos tras el init (fuente única de verdad): `axiom.yaml` es la fuent
 
 1. un solo rol funcional cubierto en profundidad (`functionalProfile: builder`);
 2. soporte multi-repo dentro de un proyecto vía `@axiom/topology` (`installed-multi-repo` layout), no todavía como separación de repos de Axiom-el-producto;
-3. ejecución local (`local-only`) implícita y adapters hacia 8 targets activos, todos con paquete dedicado; `copilot-vscode` se conserva como alias legacy de `github-copilot`.
+3. ejecución local (`local-only`) implícita y adapters hacia 8 targets activos, todos con paquete dedicado; `copilot-vscode` sólo se traduce al leer estado legacy persistido y no es target ni superficie materializable.
 
 ## Registro histórico: fuera de la baseline inicial del MVP
 
@@ -63,7 +63,7 @@ Capacidad añadida de forma aditiva por el roadmap de rediseño (23 incrementos,
 3. **Transición de estado**: para `increment`/`bug`/`plan`, el estado (`status: WorkflowState`, 9 valores) es dirigido por la máquina de estados de `workflow-state.json` — pero esa máquina es UN registro singleton por `WorkflowId` (tipo de workflow), no por instancia de artefacto; `metadata.yml` (identidad de instancia) y `workflow-state.json` (máquina de estados por tipo) son almacenes independientes. Para `adr`/`decision`, el estado sigue su propio vocabulario no dirigido por máquina de estados (`AdrStatus`/`DecisionStatus`, ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md)) y se escribe directamente en `metadata.yml`, sin pasar por `workflow-state.json`.
 4. **Supersesión de ADR**: `axiom-adr supersede <old-id> <new-id>` es la única transición especial — actualiza ambos ADR atómicamente; Decision no tiene equivalente (sin cadena de supersesión en su schema).
 5. **Cierre**: sigue las mismas reglas de cierre que el flujo base de dogfooding — `closed` solo si objetivo claro, acceptance criteria, implementación o justificación no-code, validación ejecutada, revisión contra intent, y conocimiento estable integrado.
-6. **Archivado físico (`INC-20260710-lifecycle-correctness-fixes`)**: `axiom-increment archive` / `axiom-bug archive` no sólo escriben `status: archived` en `metadata.yml` — al completar esa transición, mueven físicamente (rename atómico) la carpeta de la instancia de `<specPath>/{increments,bugs}/<ID>/` a `<specPath>/{increments,bugs}/_archive/<ID>/` (`archiveArtifactDir`, `@axiom/workflow`'s `artifact-store.ts`). Nunca sobreescribe: si ya existe una carpeta archivada con el mismo ID, la operación falla con un mensaje claro en vez de clobberear. Best-effort desde la CLI (un fallo del move se reporta por stderr pero no revierte la transición de estado ya persistida). `listArtifacts`/`axiom-increment list` sólo escanea el nivel directo de `<kindFolder>/`, así que un artefacto archivado deja de aparecer en el listado por defecto tras esta relocación — comportamiento esperado, consistente con la convención `_archive/` ya usada por el propio repo de spec (`specs/increments/_archive/`).
+6. **Archivado físico y coordinado (`INC-20260710-lifecycle-correctness-fixes`, ACC-041)**: `axiom-increment archive` / `axiom-bug archive` no sólo escriben `status: archived` en `metadata.yml` — `runGovernedTransition` resuelve legalidad, preview, confirmación y gate QA antes de mutar, coordina metadata y efectos locales declarados compatibles, mueve físicamente (rename atómico) la carpeta de la instancia de `<specPath>/{increments,bugs}/<ID>/` a `<specPath>/{increments,bugs}/_archive/<ID>/` (`archiveArtifactDir`, `@axiom/workflow`'s `artifact-store.ts`), y persiste `workflow-state.json` al final. Nunca sobreescribe: si ya existe una carpeta archivada con el mismo ID, la operación falla con un mensaje claro en vez de clobberear. Ante un error del efecto, move o persistencia de state, el runner restaura los snapshots y el move cuando puede; si la recuperación no es completa, devuelve una inconsistencia explícita. No existe éxito parcial silencioso. `listArtifacts`/`axiom-increment list` sólo escanea el nivel directo de `<kindFolder>/`, así que un artefacto archivado deja de aparecer en el listado por defecto tras esta relocación — comportamiento esperado, consistente con la convención `_archive/` ya usada por el propio repo de spec (`specs/increments/_archive/`).
 
 ## Flujos de bootstrap
 
@@ -86,7 +86,7 @@ El versionado de toolchain es un flujo project-scoped distinto de `axiom upgrade
 
 ## Flujos operativos de `configure`/`upgrade`/`repair` sobre instalaciones existentes
 
-- `axiom configure`: re-aplica el perfil persistido completo (single-shot, sin flags incrementales). No cubre añadir/quitar repo, rol, adapter o tool/MCP — ver el hueco de 7 operaciones (NFR-AXM-015) documentado en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md). Desde `INC-20260708-incremental-operations` las 4 operaciones ADD (`axiom repo/adapter/provider/role add`, idempotentes y no-clobber) cubren la mitad aditiva de ese hueco; los REMOVE quedan diferidos.
+- `axiom configure`: re-aplica el perfil persistido completo (single-shot, sin flags incrementales). Al leer un `init.json` histórico, y solo en ese borde interno, migra `profileTriple.adapterTarget: "copilot-vscode"` a `github-copilot` y persiste la normalización antes de installer o dispatcher; el alias no es aceptado por la CLI ni por otras APIs públicas. `configure` no cubre añadir/quitar repo, rol, adapter o tool/MCP — ver el hueco de 7 operaciones (NFR-AXM-015) documentado en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md). Desde `INC-20260708-incremental-operations` las 4 operaciones ADD (`axiom repo/adapter/provider/role add`, idempotentes y no-clobber) cubren la mitad aditiva de ese hueco; los REMOVE quedan diferidos.
 - `axiom upgrade`: calcula y aplica migraciones de `ManagedState` con checkpoint rollback-first; soporta `--dry-run`/`--from-checkpoint`/`--target-version`.
 - `axiom repair`: ejecuta `axiom doctor`, agrupa hallazgos por categoría, y despacha las 4 categorías conocidas-como-corregibles (`install-profiles`, `artifact-index`, `toolchain`, `memory`) a las funciones de reparación ya existentes; el resto se reporta como no auto-corregible. Soporta `--dry-run`.
 - Los tres flujos anteriores tienen superficies CLI/launcher confirm-gated;
@@ -323,17 +323,11 @@ El harvest de worktree (`harvestAndCleanupExecution`, INC-20260724-worktree-harv
 El diseño de chunks append-only (nunca se modifican chunks viejos) + `manifest.json` pequeño y mergeable evita conflictos de Git en el caso común. `.engram/engram.db` está gitignored (solo se versionan chunks + manifest).
 ## Gobierno verificable en el ciclo (2026-08-02) — tanda `INC-20260730-*`
 
-### Receipt automático por transición
+### Receipt desde el boundary de transición gobernada
 
-Cada invocación de `runIncrementSubcommand`/`runBugSubcommand` que aplica una transición real deja un receipt JSON en `receipts/` del artefacto. El flujo efectivo por transición es:
+Cuando un caller habilita `receipt`, `runGovernedTransition` es la única ruta que decide y emite el receipt JSON del artefacto; CLI, launcher y `sdd.transitionApply` MCP llegan al mismo boundary. No hay una segunda capa de wrappers `…Core` encargada de receipts. El `phase` es el nombre real de la transición declarado en `workflows.yaml` (`increment-verify`, `bug-archive`…), sin mapeos inventados a otro vocabulario.
 
-1. El `…Core` privado ejecuta la transición exactamente como antes (lógica sin cambios).
-2. El wrapper público emite el receipt a partir del resultado ya calculado: `success` si `exitCode === 0`, `failure` en cualquier otro caso.
-3. El wrapper devuelve el resultado **intacto**.
-
-Casos que **no** emiten receipt, por diseño: `verify --preview`/`--dry-run` (no se aplicó transición), subcomando que no mapea a una transición real, y ausencia de un id de incremento resoluble (no se inventa carpeta). Fallo de escritura del receipt: se avisa por stderr y el ciclo continúa.
-
-Al archivar, la carpeta ya fue movida a `_archive/<id>/` antes de que corra el wrapper, de modo que el receipt de `archive` se co-localiza en el destino archivado y no recrea una carpeta fantasma pre-archive.
+Un preview (`--preview`/`--dry-run`, launcher o MCP) no emite receipt porque no aplica una transición. La escritura es best-effort/no bloqueante: un fallo se reporta como aviso y no altera el resultado ya decidido. En archive, el runner usa la carpeta ya movida a `_archive/<id>/`, de modo que el receipt se co-localiza en el destino archivado y nunca recrea una carpeta fantasma pre-archive.
 
 ### Gate de freeze antes del apply
 
@@ -342,3 +336,11 @@ Antes de delegar un apply a un subagente, el orquestador congela el candidate (`
 ### Evidencia al escribir memoria durante el ciclo
 
 Cualquier fase que persista conocimiento debe aportar `rationale` y `source` (RF-AXM-058). Esto se compone con el contrato de memoria por fase de la tanda `INC-20260729-knowledge-*`: aquélla define **qué** guardar en cada fase; ésta impone que lo guardado venga **justificado y con origen**, y lo hace cumplir en runtime.
+
+## Contratos R-10 de workflow y cierre (2026-08-18)
+
+`axiom.config/workflows.yaml` es la única definición editable del grafo; el build empaqueta ese asset y `resolveWorkflowConfig` lo usa en CLI, launcher, MCP e integrate. Sólo la ausencia del YAML de proyecto elige el default empaquetado; un YAML presente inválido o con schema no soportado falla cerrado. Las acciones alcanzables se derivan del grafo efectivo, incluido el override del launcher.
+
+`runGovernedTransition` es el único límite mutante: calcula legalidad, preview, confirmación, QA, efectos soportados, metadata, archive recuperable, state y receipts habilitados. Un preview no escribe y `--force`/`--no-verify` no sustituyen `confirmed: true` cuando la transición exige aprobación. La aprobación de plan sólo permite `draft → plan-approved` tras validar su metadata; `axiom-role start` requiere state y metadata de ese plan aprobado.
+
+Antes de archivar incrementos o bugs, `QaArchiveDecision` aplica un contrato único. Con `qaLane: parallel`, `pending`, `failed` o `cancelled` permiten continuar con aviso; con carril inline o rol QA requerido, sólo `passed` permite archive y policy/evidencia no evaluable bloquea. El comando `axiom-qa-e2e` registra también el carril inline por el runner común: `start → verify [--run-validation] → pass` produce la evidencia `passed`; sólo entonces el gate inline permite archive.

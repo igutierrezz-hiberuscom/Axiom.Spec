@@ -41,7 +41,10 @@
 	permitidos antes de alcanzar tracker, filesystem o red.
 - Las mutaciones local/external requieren preview y `confirmed: true`; el
 	default Azure DevOps usa `NullTracker` sin red. Mensajes de proveedor y
-	`externalRefs` se redactan antes de volver a la UI.
+	`externalRefs` se redactan antes de volver a la UI. En lifecycle,
+	`--force`, `--no-review` y `--no-verify` sólo afectan sus gates locales
+	documentados y nunca sustituyen la confirmación explícita exigida por una
+	transición `requiresApproval`.
 - La antigua TUI pública y su acción implícita fueron retiradas tras una
 	matriz de paridad. La CLI headless, el launcher y MCP son las superficies
 	vigentes; los runners compartidos no se eliminan por retirar una interfaz.
@@ -186,7 +189,7 @@ La tanda cierra el bloque de gobierno de la ejecución desatendida sobre tres ga
 
 - **Gate de evidencia** — `@axiom/memory` rechaza fail-closed cualquier `save` sin `rationale`/`source` no triviales, antes de tocar disco o de invocar engram por MCP, y desde los tres puntos de entrada del backend para que no sea evitable. Un agente no puede persistir contexto inventado sin declarar su origen.
 - **Gate de freeze** — el orquestador congela el candidate y verifica el hash antes de delegar un `apply`, de modo que el subagente trabaja sobre exactamente los inputs revisados.
-- **Gate de recibos** — cada transición deja un receipt JSON con hash, en éxito y en fallo, antes de dar un incremento por verificado o de integrar su conocimiento.
+- **Gate de recibos** — cuando el caller habilita `receipt`, `runGovernedTransition` deja el receipt JSON desde la ruta común, en éxito o rechazo aplicable; previews no lo emiten y un fallo de escritura es best-effort/no bloqueante. El orquestador verifica los recibos requeridos antes de dar un incremento por verificado o de integrar su conocimiento.
 - **Errores tipados** — la recuperación automática se decide sobre `error.code` de un catálogo cerrado, nunca sobre el texto del mensaje.
 
 ### Propagación normativa a las 7 superficies de `axiom-autopilot` (`INC-20260730-autopilot-integration`)
@@ -194,3 +197,13 @@ La tanda cierra el bloque de gobierno de la ejecución desatendida sobre tres ga
 Las tres directivas (scope tipado y determinista al delegar, verificación de freeze antes de un apply delegado, captura y verificación de recibos antes de integrar conocimiento) son **requisito formal, no sugerencia**, y están presentes en las **siete** superficies del orquestador: `.agents/skills/axiom-autopilot/SKILL.md` (raíz del workspace), `Axiom.SDD/.agents/skills/axiom-autopilot/SKILL.md`, `Axiom.SDD/.github/skills/axiom-autopilot/SKILL.md`, `Axiom.SDD/.github/agents/axiom-autopilot.agent.md`, `Axiom.SDD/.github/prompts/axiom-autopilot.prompt.md`, `.claude/skills/axiom-autopilot.md` y `.claude/commands/axiom-autopilot.md`.
 
 El defecto que esto corrige es de **propagación, no de redacción**: las directivas existían únicamente en la copia de la raíz del workspace, mientras que las fuentes distribuibles bajo `Axiom.SDD/` — que son las que se instalan en un proyecto adoptante — no las tenían. Un proyecto que adoptara Axiom recibía por tanto un orquestador sin ninguno de los tres gates. Regla derivada: **una directiva normativa que solo vive en la copia local del workspace no está adoptada**; la fuente distribuible es la que define lo que reciben los adoptantes.
+
+## Gobierno R-10 de transiciones y evidencia
+
+El grafo canónico de `workflows.yaml` se resuelve fail-closed: sólo su ausencia permite usar el asset distribuido; una configuración presente ilegible o con schema no soportado no puede degradarse silenciosamente a otro workflow. Las superficies CLI, launcher, MCP e integrate no mantienen grafos o gates alternos.
+
+`runGovernedTransition` exige confirmación explícita para toda transición `requiresApproval`; bypasses locales (`--force`, `--no-review`, `--no-verify`) no la sustituyen. La única aprobación de plan es `draft → plan-approved`, y el inicio de roles comprueba state y metadata del plan. Para archive de increment/bug, la decisión QA común es fail-closed cuando inline o requerida: sólo evidencia `passed` permite persistir; parallel puede continuar con aviso. Preview no escribe, y una operación fallida recupera o declara inconsistencia en vez de ocultar éxito parcial.
+
+Los receipts son evidencia de observabilidad co-localizada con el artefacto y se verifican explícitamente en cierres: su escritura best-effort no convierte un fallo durable en éxito. Los cambios de estado, integración y movimiento a `_archive` se ejecutan únicamente por Axiom/Core; las referencias o decisiones históricas se preservan, y una superación nueva se registra por Core sin reescribir el antecedente.
+
+Las Decisions tienen un límite deliberado del modelo Core: `axiom-decision` permite crear y enlazar con planes o incrementos, pero no aceptar, cerrar ni superseder una Decision. Por ello `DEC-20260818-134600-3jfjak` permanece `proposed` y solo está enlazada por Core al correctivo R-10; ese vínculo aporta trazabilidad, no una supersesión formal de la decisión histórica 0015.

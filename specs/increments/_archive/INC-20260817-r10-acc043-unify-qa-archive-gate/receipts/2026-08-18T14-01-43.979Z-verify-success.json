@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc043-unify-qa-archive-gate",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-18T14:01:43.979Z",
+  "details": "QA inline registrable verificada: build, 77 tests focalizados y secuencia Core start/verify/pass archivada.",
+  "hash": "0389e8617864209286dbcb789d3377e1f69f4f3af655ed07298de32afb048d79"
+}

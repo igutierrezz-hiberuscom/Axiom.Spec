@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc042-simplify-plan-approval",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-18T13:47:05.715Z",
+  "details": "R-10 final: draft a plan-approved, preview/confirmación y gate de roles verificados; build, suite 330/3289, doctor y readiness PASS.",
+  "hash": "b99c0b3504a7acebd6244693d9910df912e7c9ec57cfde91fb2104298f1e9ddf"
+}

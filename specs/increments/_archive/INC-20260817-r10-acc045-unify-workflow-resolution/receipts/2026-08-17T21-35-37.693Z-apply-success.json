@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc045-unify-workflow-resolution",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-17T21:35:37.693Z",
+  "details": "ACC-045 implemented a YAML-derived default and common fail-closed resolver.",
+  "hash": "d43e1e8513b4485f7bf68b2034704d4ed3094af020901afe01667307d186550d"
+}

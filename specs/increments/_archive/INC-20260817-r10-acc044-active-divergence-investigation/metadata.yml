@@ -1,0 +1,18 @@
+id: INC-20260817-r10-acc044-active-divergence-investigation
+kind: increment
+title: R-10 ACC-044 active divergence investigation
+status: archived
+createdAt: '2026-08-17T20:22:14.625Z'
+updatedAt: '2026-08-18T14:10:00.067Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-17T20:22:14.625Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

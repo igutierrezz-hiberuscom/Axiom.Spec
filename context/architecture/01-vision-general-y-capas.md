@@ -20,7 +20,7 @@ La fuente documental canónica del workspace es el repo sibling `Axiom.Spec/` (m
 
 ## Capas por responsabilidad (42 packages + `apps/cli`)
 
-> Conteo verificado 2026-08-09: `ls packages/*/package.json | wc -l` → **34** top-level (`packages/adapters/` en sí no cuenta, no tiene `package.json` propio) + **8** adapters activos. El package de LiteLLM fue retirado; `copilot-vscode` es alias legacy y no tiene package propio.
+> Conteo verificado 2026-08-09: `ls packages/*/package.json | wc -l` → **34** top-level (`packages/adapters/` en sí no cuenta, no tiene `package.json` propio) + **8** adapters activos. El package de LiteLLM fue retirado; `copilot-vscode` sólo puede aparecer como literal histórico ya persistido que `axiom configure` migra internamente a `github-copilot`.
 
 | Capa | Packages | Patrón dominante |
 |---|---|---|
@@ -34,7 +34,7 @@ La fuente documental canónica del workspace es el repo sibling `Axiom.Spec/` (m
 | Catálogos | `skills`, `components`, `agents` | Materialización idempotente (tmp+rename) |
 | Operación | `doctor`, `orchestrator`, `cli-commands`, `launcher`, `apps/cli` | State machines, hooks, telemetría, ~81 ficheros de comando; `launcher` es el front web operador por defecto |
 | Contexto/telemetría/tracking | `technical-context`, `telemetry`, `tracker`, `tracker-ado` | Índice de contexto técnico servible por MCP, bus/sinks de telemetría, puertos de tracker + adapter Azure DevOps (todos nuevos desde el baseline) |
-| Documentación/disciplina | `document-bootstrap`, `cavekit-discipline`, `user-workspace` | Bootstrap de surfaces, invariantes nativos, registry user-level |
+| Documentación/disciplina | `document-bootstrap`, `user-workspace` | Bootstrap de surfaces y registry user-level; Cavekit es antecedente histórico retirado del runtime |
 
 Detalle package por package: [../references/01-inventario-de-packages.md](../references/01-inventario-de-packages.md).
 
@@ -45,7 +45,7 @@ Detalle package por package: [../references/01-inventario-de-packages.md](../ref
 - `@axiom/isolation` aplica path-guard y scope por `projectId` sobre cualquier operación.
 - `@axiom/capability-model` modela capabilities/providers/discovery, consumido por `configure`, `start`, `doctor`.
 - `@axiom/install-profiles` es el compositor puro de la configuración efectiva `builder` + `local-only` + target.
-- `@axiom/adapters-*` (8 packages activos) son la salida final hacia cada IDE/CLI externo; `copilot-vscode` es alias legacy y LiteLLM fue retirado.
+- `@axiom/adapters-*` (8 packages activos) son la salida final hacia cada IDE/CLI externo; `copilot-vscode` sólo se migra desde `init.json#profileTriple.adapterTarget` antes de instalar o despachar, y LiteLLM fue retirado.
 - `@axiom/mcp-server` + `@axiom/mcp-tools` son el servidor MCP propio (nuevo desde el baseline): dispatcher JSON-RPC 2.0 hand-rolled sobre los handlers de `@axiom/mcp-tools`, proyectado a config nativa por `apps/cli/src/commands/native-mcp-config.ts`.
 
 ## Qué NO es Axiom hoy (límites verificados)

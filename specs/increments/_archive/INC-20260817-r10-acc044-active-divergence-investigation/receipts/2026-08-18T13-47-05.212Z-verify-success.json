@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc044-active-divergence-investigation",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-18T13:47:05.212Z",
+  "details": "R-10 final: informe caso a caso completado y destinos ACC reconciliados; build, suite 330/3289, doctor y readiness PASS.",
+  "hash": "619b5fa64f9bf62675797d59562c274b42cb8b19f04ceb8e78ef84deb8ff5964"
+}

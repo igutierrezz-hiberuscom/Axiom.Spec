@@ -2,7 +2,7 @@
 
 Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `src/` cuando no. Fecha de relevamiento inicial: 2026-07-02; reconciliado 2026-07-29 (conteos y packages nuevos verificados por `ls`/grep directo, ver nota de conteo abajo).
 
-> **Conteo verificado 2026-08-10**: `ls packages/*/package.json | wc -l` → **34** top-level (`packages/adapters/` es solo un directorio contenedor, sin `package.json` propio, no cuenta como package) + `ls packages/adapters/*/package.json | wc -l` → **8** adapters activos = **42 packages totales**. El baseline documentaba 28. LiteLLM fue retirado y `copilot-vscode` es alias legacy sin package propio. Packages nuevos verificados por `ls packages/`: `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado` (8 nuevos — la nota original del incremento mencionaba 7, pero `telemetry` también es nuevo y no estaba en el inventario 2026-07-02).
+> **Conteo verificado 2026-08-10**: `ls packages/*/package.json | wc -l` → **34** top-level (`packages/adapters/` es solo un directorio contenedor, sin `package.json` propio, no cuenta como package) + `ls packages/adapters/*/package.json | wc -l` → **8** adapters activos = **42 packages totales**. El baseline documentaba 28. LiteLLM fue retirado; si el literal histórico `copilot-vscode` existe en `init.json#profileTriple.adapterTarget`, `axiom configure` lo migra internamente a `github-copilot` antes de instalar o despachar. Packages nuevos verificados por `ls packages/`: `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado` (8 nuevos — la nota original del incremento mencionaba 7, pero `telemetry` también es nuevo y no estaba en el inventario 2026-07-02).
 
 ## Capa dominio/core
 
@@ -37,7 +37,7 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 
 ## Capa adapters (8 sub-packages activos de `packages/adapters/`, verificado 2026-08-09)
 
-> Baseline documentaba 6; `codex`, `antigravity` y `visual-studio-2026` se añadieron después. LiteLLM fue retirado y `copilot-vscode` es alias legacy sin package propio. Detalle completo y vigente en `../architecture/04-adapters-y-model-routing.md`.
+> Baseline documentaba 6; `codex`, `antigravity` y `visual-studio-2026` se añadieron después. LiteLLM fue retirado; `copilot-vscode` sólo se conserva como literal histórico de `init.json#profileTriple.adapterTarget` para que `axiom configure` lo migre internamente a `github-copilot`. Detalle completo y vigente en `../architecture/04-adapters-y-model-routing.md`.
 
 | Package | Target | Nivel de soporte | Notas |
 |---|---|---|---|
@@ -48,7 +48,7 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 | `@axiom/adapters-cursor` | `cursor` | `fallback-only` | Operativo 0031/D.1; integración profunda P1 pendiente |
 | `@axiom/adapters-codex` | `codex` | `fallback-only` | `.codex/AGENTS.md`; generador de primera clase desde `INC-20260726-adapter-mcp-parity` |
 | `@axiom/adapters-antigravity` | `antigravity` | `fallback-only` | `.antigravity/AGENTS.md`; ídem |
-| `@axiom/adapters-visual-studio-2026` | `visual-studio-2026` | `fallback-only` | Alias de compatibilidad; delega en `.github/copilot-instructions.md` |
+| `@axiom/adapters-visual-studio-2026` | `visual-studio-2026` | `fallback-only` | Delega en `.github/copilot-instructions.md` |
 
 Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResult, AdapterGeneratorError>>`.
 
@@ -91,10 +91,11 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 
 ## Capa documentación/disciplina
 
+> **Antecedente histórico — Cavekit:** `@axiom/cavekit-discipline` fue retirado del runtime activo durante R-10 y no pertenece al inventario de packages vigente. La decisión 0015 se conserva como historia de su adopción inicial; esta consolidación no modifica su metadata ni le atribuye una transición Core no ejecutada.
+
 | Package | Responsabilidad | Exports/tipos clave | Notas |
 |---|---|---|---|
 | `@axiom/document-bootstrap` | Writer de Copilot instructions, idempotente, preserva `TEAM:CUSTOM` | `writeCopilotInstructions`, `classifyAndPreserve` | Spec 0018-B4 |
-| `@axiom/cavekit-discipline` | Invariantes puros, backprop de fallos, drift check, gate GGA opcional | `evaluateInvariant`, `backpropFromFailure`, `applyGgaGate` | Spec 0015 |
 | `@axiom/user-workspace` | Registry de proyectos user-level, self-update | `loadRegistry`, `addProject`, `loadInstallManifest` | Spec 0020 (A1/B1) |
 
 ## Capa contexto/telemetría/tracking (nueva desde el baseline 2026-07-02)

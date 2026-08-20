@@ -10,7 +10,7 @@ Para QUÉ debe hacer el producto (requisitos, alcance, principios), ver `specs/0
 
 ## Estado real del producto (resumen)
 
-- Monorepo npm workspaces en `Axiom/`: `apps/cli` + **42 packages activos** bajo `packages/*` — **34 top-level** (`packages/adapters/` no tiene `package.json` propio) + **8 adapters activos** (`opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `codex`, `antigravity`, `visual-studio-2026`). `@axiom/adapters-litellm` fue retirado y `copilot-vscode` es alias legacy sin package. Packages nuevos desde el baseline 2026-07-02 incluyen `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado`.
+- Monorepo npm workspaces en `Axiom/`: `apps/cli` + **42 packages activos** bajo `packages/*` — **34 top-level** (`packages/adapters/` no tiene `package.json` propio) + **8 adapters activos** (`opencode`, `claude-code`, `github-copilot`, `vscode`, `cursor`, `codex`, `antigravity`, `visual-studio-2026`). `@axiom/adapters-litellm` fue retirado; `copilot-vscode` no es un target público y solo se migra, si aparece persistido en `init.json`, durante `axiom configure` antes de instalar o despachar. Packages nuevos desde el baseline 2026-07-02 incluyen `launcher`, `mcp-server`, `mcp-tools`, `providers`, `technical-context`, `telemetry`, `tracker`, `tracker-ado`.
 - Runtime MVP cerrado 2026-06-25; oleadas post-MVP (0019-0039) cerradas hasta 2026-07-01/02; evolución posterior continua (renames de carpetas de config, dedup de `init.json`/`topology.yaml`, launcher como front por defecto, scaffolding de adopción, paridad de adapters, servidores MCP propios, `cmm` reemplaza `codegraph`/`graphify`, retirada de la TUI pública — ver `references/02-historial-de-incrementos.md`).
 - CLI real con **81 ficheros** en `apps/cli/src/commands/*.ts` (verificado: `ls apps/cli/src/commands/*.ts | wc -l` → 81; de esos, 10 son helpers compartidos con prefijo `_` — p. ej. `_shared.ts`, `_tracker-status.ts` — no comandos por sí mismos), de los cuales solo una minoría tiene página de documentación operativa dedicada en `Axiom/docs/cli/`. Familias nuevas relevantes: `workspace*` (16 ficheros, incl. `workspace-setup.ts`/`workspace-adopt.ts`), `app*`/`app-launcher*` (front operador = launcher), `member-install.ts`, `native-mcp-config.ts`, `tracker`-backed commands (`_tracker-status.ts`, `app-launcher-ado.ts`, `external-sync.ts`).
 - Renombres de carpetas de estado/config ya cerrados y verificados en código: `.sdd/` → **`.axiom-state/`** y `axiom.spec/config/` → **`axiom.config/`** (`packages/filesystem-truth/src/discovery.ts#LOCAL_OVERLAY_DIRNAME`/`AXIOM_CONFIG_DIRNAME`, re-exportado vía `@axiom/core`). Cualquier mención a `.sdd/` o `axiom.spec/config/` como ruta actual en este contexto es un residuo del baseline 2026-07-02 y fue corregida en la reconciliación 2026-07-29.
@@ -79,11 +79,20 @@ Ver detalle completo en [references/03-riesgos-y-brechas-conocidas.md](reference
 - Pase de integración R-00 (2026-08-03): verificó la migración byte-a-byte de los ocho ADR a `Axiom.Spec/decisions/`, la ausencia de sus orígenes activos bajo `Axiom/docs/`, la alineación de ownership documental y la frontera entre `Axiom.Spec/` y `Axiom/axiom.spec/` mediante ADR-0032. No se modificó el índice porque no se añadieron ni eliminaron documentos bajo `context/`.
 - Revalidación final R-00 (2026-08-03, registro histórico): las superficies distribuibles de SDD apuntan a `Axiom.Spec/specs/00..08`, las plantillas materializables usan `.axiom-state/` y `axiom.config/`, y el bundle hash de `axiom-context-persistence` coincide con su fuente. Build, doctor y readiness volvieron a pasar después de estas correcciones; los resultados están en los receipts de validación de ambos incrementos. R-04 posterior cambió el diagnóstico de cobertura de Doctor de forma intencional.
 - Validación global 2026-08-02 (registro histórico): `npm run build` limpio; `npx vitest run` completo da **3489 tests, 3483 verdes, 6 rojos preexistentes y caracterizados**; `npm run doctor` da **PASS** (46/61 OK, 0 fallos). Los 6 fallos no fueron introducidos por aquella tanda: la baseline previa (3428 tests) ya los tenía, y el neto de aquella tanda fue +61 tests con cero regresiones. El estado actual posterior a R-04 se describe abajo.
-- Última validación: 2026-08-06. La TUI pública fue retirada en ACC-005; el
+- Última validación global: 2026-08-18. La TUI pública fue retirada en ACC-005; el
 	launcher web, la CLI headless y MCP son las superficies operativas vigentes.
-- La validación dirigida posterior a ACC-023 cubrió 100 tests de doctor/member
-	install, 52 tests de checkpoint/toolchain/worktree y 8 tests de freeze,
-	además de `npm run build`, `npm run doctor` PASS y `npm run readiness:first-project` PASS.
+- Pase R-10 ACC-041 (histórico, previo al cierre completo; 2026-08-18): verificó `runGovernedTransition` como
+  boundary compartido de CLI, launcher y MCP, la propagación de confirmación,
+  la reconciliación compare-and-save de worktree y la recuperación coordinada
+  de archive. El preview calcula origen/destino, `requiresApproval`, efectos
+  declarados y QA sin persistir; `integrate` y el launcher preservan esa
+  decisión. Los receipts se emiten desde el runner sólo cuando el caller los
+  habilita, nunca en preview y de forma best-effort. Build y la suite dirigida
+  pasaron; la suite global final dio `330` archivos / `3289` tests; `npm run
+  doctor` dio `45/60 OK`, `0` fallos, `4` advertencias y `11` omitidos; y
+  `npm run readiness:first-project` pasó. Ver
+  `architecture/03-ciclo-de-vida-cli-y-orquestacion.md` para las fuentes de
+  implementación y el contrato técnico consolidado.
 - La suite global previa a la fase documental terminó con 3326/3326 tests en
   327 archivos; la
 	última prueba de freeze archivado se validó con 8/8 tests y el build volvió a
@@ -100,9 +109,11 @@ Ver detalle completo en [references/03-riesgos-y-brechas-conocidas.md](reference
 	las referencias a `config/<projectName>`, `local` project-bound y modos
 	`gateway`/`hybrid` quedan solo como compatibilidad o historia explícita.
 - Reconciliación R-07 (2026-08-10, `ACC-025..ACC-029`): el runtime activo
-	queda en 8 adapters; LiteLLM se retiró, Copilot/VS Code/Visual Studio usan
-	`.github/copilot-instructions.md`, `sync` cubre los generators activos,
-	Cursor declara su regla potencial no-clobber y la proyección MCP valida el
+	queda en 8 adapters; LiteLLM se retiró y Copilot/Visual Studio comparten
+	`.github/copilot-instructions.md`. `sync` materializa outputs solo para
+	`opencode`, `claude-code`, `github-copilot`, `vscode` y `cursor`; los otros
+	tres targets canónicos caen al resultado vacío del dispatcher. Cursor
+	declara su regla potencial no-clobber y la proyección MCP valida el
 	proyecto antes del writer, limpia solo IDs gestionados y no escribe ni
 	recomienda MCP global para Codex/Antigravity sin binding. Build, suites
 	dirigidas y review independiente pasan; los claims anteriores quedan solo
@@ -112,3 +123,5 @@ Ver detalle completo en [references/03-riesgos-y-brechas-conocidas.md](reference
 ## Regla crítica
 
 Este contexto técnico no debe convertirse en un resumen de código ni en documentación ficticia de módulos no implementados. Toda afirmación sobre "estado actual" debe ser verificable releyendo el código o los docs citados; toda afirmación sobre planes futuros debe marcarse explícitamente como tal.
+
+- Estado R-10 (corrección de cierre en curso, 2026-08-18): los ACC archivados no se reabren ni se reclasifican. El correctivo `INC-20260818-r10-closure-correction` mantiene R-10 **pendiente** mientras reconcilia el contrato público de adapters con el runtime, vuelve a ejecutar los gates locales y espera una re-revisión independiente sin blockers. La evidencia de cierre, los receipts de verify/archive y la cifra final de validación se registrarán solo después de completar esos gates; hasta entonces no existe un cierre formal que declarar.

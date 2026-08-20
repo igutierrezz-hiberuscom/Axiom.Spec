@@ -1,0 +1,18 @@
+id: INC-20260817-r10-acc040-retire-cavekit
+kind: increment
+title: R-10 ACC-040 retire Cavekit runtime surface
+status: archived
+createdAt: '2026-08-17T18:38:57.509Z'
+updatedAt: '2026-08-18T14:09:19.068Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-17T18:38:57.509Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

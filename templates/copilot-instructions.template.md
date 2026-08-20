@@ -5,7 +5,7 @@
   {{project.id}}         <- product.manifest.project.id
   {{mcp.allowlist}}      <- union(product.manifest.providers, providers.yaml#providers, local-overlay.nonSharedProviderBindings)
   {{support.level}}      <- environment-support-matrix.supportLevel
-  {{target.id}}          <- adapter target id (copilot-vscode | github-copilot)
+  {{target.id}}          <- adapter target id (github-copilot)
 -->
 
 <!-- AXIOM:GENERATED:START -->

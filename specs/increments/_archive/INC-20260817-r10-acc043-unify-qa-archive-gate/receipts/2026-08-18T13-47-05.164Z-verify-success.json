@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260817-r10-acc043-unify-qa-archive-gate",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-18T13:47:05.164Z",
+  "details": "R-10 final: contrato QA único y matriz inline/parallel/requerida verificados; build, suite 330/3289, doctor y readiness PASS.",
+  "hash": "cf2f7d31a9a45feb072d1542bc7000874515ff3843571da3b4766871dc38ef8e"
+}

@@ -18,7 +18,7 @@ Este documento se genera para explicar el camino mínimo de arranque de un proye
 | functionalProfile | `config/profiles.yaml` | `product-owner` |
 | operationalOverlay | `config/profiles.yaml` | `standard` |
 | discoveryProviderProfile | `config/providers.yaml` | `filesystem-first` |
-| primaryTarget | `config/profiles.yaml` | `copilot-vscode` |
+| primaryTarget | `config/profiles.yaml` | `github-copilot` |
 
 ## Estado esperado tras init
 

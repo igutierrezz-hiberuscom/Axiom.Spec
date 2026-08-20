@@ -1,0 +1,18 @@
+id: INC-20260817-r10-acc041-governed-transition-runner
+kind: increment
+title: R-10 ACC-041 governed transition runner
+status: archived
+createdAt: '2026-08-17T21:35:43.546Z'
+updatedAt: '2026-08-18T14:09:29.945Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-17T21:35:43.546Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null
