@@ -47,6 +47,17 @@ conocidos con precedencia determinista y migración atómica. `local/` queda
 reservado a datos repo/operador-locales y `executions/<executionId>/` es una
 frontera separada.
 
+### RF-AXM-063 Catálogo user-level único, estricto y concurrentemente seguro
+
+El catálogo de proyectos conocido por el operador debe cumplir un único contrato:
+
+- `~/.axiom/projects.yml` (`schemaVersion: 2`) es el único formato leído y escrito. Su ausencia representa un catálogo vacío; `registry.json` no se lee, migra ni modifica.
+- La carga valida el documento completo antes de exponerlo: clave e `id`, nombre, timestamps ISO, mapa no vacío de repos, coherencia role/key, paths y ausencia de campos desconocidos. Todo fallo vuelve como `UserWorkspaceError` tipado, sin sobrescribir el archivo inválido.
+- Un ID explícito debe ser un slug ASCII válido. Un ID derivado normaliza el nombre con NFKC, elimina diacríticos y colapsa separadores; si queda vacío exige `--id`. Colisiones de identidad o de paths canónicamente equivalentes fallan sin fusionar proyectos. Un upsert solo es idempotente cuando conserva la misma identidad y ownership.
+- Toda mutación coordina el ciclo read-modify-write mediante un lock local acotado y escribe con temporal propietario único, flush/fsync, validación y rename atómico. La recuperación nunca puede retirar una generación nueva ni archivos de otro propietario.
+- `projects list` ordena por `lastUsedAt` descendente e `id` ascendente, informa por repo `present-directory | missing | not-directory`, agrega `available | partial | unavailable` y mantiene la resolubilidad Axiom como señal separada.
+- `projects add` cataloga un directorio sin exigir Axiom; `projects join` sí exige resolución Axiom; `projects use` solo actualiza recencia y puede devolver un path mediante `--print-path`, pero no selecciona contexto. `list|add|join|use --json` emiten un único envelope `{schemaVersion:1, ok, command, data?|error?}` y un exit code coherente.
+
 ### RF-AXM-007 Registro de miembros (`axiom join`)
 
 El CLI debe registrar miembros del proyecto por id (`user:alice`, `agent:sdd`, etc.) en `.axiom-state/<projectKey>/members.yaml`, deduplicando por igualdad exacta. Fuente: `Axiom/docs/cli/join.md`.
@@ -176,13 +187,9 @@ El runtime debe poder EJECUTAR (no solo declarar) los providers LOCALES resuelto
 
 La selección se hace en el wizard (step `providers`) y en `axiom configure --providers <csv>`, se persiste en `workspace.json#providers` (nunca recortando el registry canónico de `providers.yaml`) y se materializa vía `buildProjectProviderRegistry`/`resolveMemoryBackend`. El doctor la reporta con `PS-001`: una tool habilitada pero no instalada produce `warn`, no `fail`. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
 
-### RF-AXM-026 Memoria persistente real LOCAL cross-session (`INC-20260708-memory-real-local-backend`)
+### RF-AXM-026 Memoria persistente Engram local obligatoria (R-12)
 
-`@axiom/memory` debe ofrecer un backend real, LOCAL, cross-session con UPSERT topic-keyed, session summaries y superficie MCP. Verificado: `createEngramBackend` (proceso `engram mcp --project=<projectId>` LOCAL, SQLite+FTS5 vía MCP stdio) implementa la misma interfaz `MemoryBackend` que el backend JSON; `resolveMemoryBackend` auto-selecciona (probe moderno de Engram, fallback JSON, nunca lanza); `memory.decisionRecall`/`memory.contextRecall` tienen handlers reales expuestos dentro del único `McpServerKind` `axiom` (`axiom mcp serve --kind axiom`). GATE 0024 preservado + pin de proceso (ver [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)).
-
-### RF-AXM-027 Aprendizaje continuo (captura/recall de lecciones) (`INC-20260708-continuous-learning`)
-
-Axiom debe poder capturar lecciones al cierre y recuperarlas al inicio del trabajo, de forma determinista y sin motor especulativo. Verificado: `extractLessons`/`persistLessons`/`recallLessons` (módulo `learning.ts` de `@axiom/memory`) sobre el backend real (AB5) y registros de audit-trail; `axiom learn capture [--from-audit] [--text]`/`axiom learn list` como CLI; bloque best-effort de lecciones recientes en `axiom context status`. Sin nuevo `MemoryKind` (lecciones = `kind: 'pattern'` tag `'lesson'`), sin ML. Ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+`@axiom/memory` debe usar exclusivamente Engram local, cross-session, con UPSERT topic-keyed, session summaries y superficie MCP. `createEngramBackend` inicia `engram mcp --project=<projectId> --tools=agent` por stdio, completa el handshake MCP estándar `initialize` y mantiene el pin de proceso y las guards de proyecto de GATE 0024. `resolveMemoryBackend` resuelve únicamente este backend: ante ausencia del ejecutable, spawn, handshake o tool fallida devuelve un `MemoryError` tipado y visible; nunca sustituye el resultado por listas vacías, éxito aparente ni persistencia JSON. No quedan backend, flag ni fallback JSON activos; los JSON históricos no se leen, migran ni eliminan automáticamente. `memory.decisionRecall` y `memory.contextRecall` siguen expuestos dentro del único `McpServerKind` `axiom` (`axiom mcp serve --kind axiom`). Doctor ejecuta TC-024 con `engram --version` y falla con remediación cuando Engram no está disponible.
 
 ### RF-AXM-028 Operaciones incrementales ADD sobre instalaciones existentes (`INC-20260708-incremental-operations`)
 
@@ -256,7 +263,7 @@ Cada artefacto lleva metadata de origen/ciclo de vida (`origin.source`, `lifecyc
 
 ### RF-AXM-043 MCP unificado de `<project>.axiom` (`INC-20260724-unified-axiom-mcp`)
 
-Un solo broker `axiom` expone la unión completa de los dominios `sdd.*`, `spec.*`, `memory.*` y `axiom.*`, incluyendo reads de spec/increment/bug/adr/technical-context, edición de estados, operaciones Git confirmadas y reads de topología/manifest/adoption-state. Engram sigue como backend local opcional, no como broker gestionado separado. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+Un solo broker `axiom` expone la unión completa de los dominios `sdd.*`, `spec.*`, `memory.*` y `axiom.*`, incluyendo reads de spec/increment/bug/adr/technical-context, edición de estados, operaciones Git confirmadas y reads de topología/manifest/adoption-state. Engram no es un broker gestionado separado: es el backend local obligatorio de `memory.*`; su ausencia produce un error de memoria visible y TC-024 de Doctor falla.
 
 ### RF-AXM-044 `cmm` como único proveedor estructural de code-intel (`INC-20260724-cmm-replaces-graphify-codegraph`)
 
@@ -317,7 +324,7 @@ Bug corregido en el mismo incremento: el constructor de `AxiomError` hacía `Obj
 
 ### RF-AXM-058 Evidencia obligatoria y fail-closed en memoria persistente (`INC-20260730-engram-evidence`)
 
-Persistir una `MemoryEntry` a través de `@axiom/memory` exige `rationale` (por qué se registró) y `source` (de dónde viene) con **longitud > 3 tras `trim()`**; las cadenas vacías o de solo espacios cuentan como ausentes. El rechazo es fail-closed y ocurre **antes de cualquier I/O** (escritura a disco o llamada MCP a engram), devolviendo la variante nueva `MemoryError { kind: 'missing-evidence', field: 'rationale' | 'source' }` — se extiende el idioma `Result` que los callers ya manejan en vez de lanzar. El guard `validateMemoryEvidence()` (puro, en `packages/memory/src/evidence.ts`) se invoca desde **tres puntos** — `saveMemory()`, `createInMemoryBackend().save()` y `createEngramBackend().save()` — porque `MemoryBackend` es una interfaz duck-typed exportada y varios tests y callers invocan `backend.save()` directamente; enforcement en un único sitio sería evitable eligiendo otro backend.
+Persistir una `MemoryEntry` a través de `@axiom/memory` exige `rationale` (por qué se registró) y `source` (de dónde viene) con **longitud > 3 tras `trim()`**; las cadenas vacías o de solo espacios cuentan como ausentes. El rechazo es fail-closed y ocurre **antes de cualquier I/O** (llamada MCP a Engram), devolviendo `MemoryError { kind: 'missing-evidence', field: 'rationale' | 'source' }` en el idioma `Result`, sin lanzar. El guard puro `validateMemoryEvidence()` se invoca desde `saveMemory()` y desde `createEngramBackend().save()` para conservar el enforcement incluso cuando un caller usa el backend directamente. El backend JSON ya no existe como ruta de evasión.
 
 Fuera del gate por diseño, documentado: la **ruta de lectura/recall** (`searchResultToEntry`/`buildEntryFromSearchResult`) sigue reconstruyendo entries con `rationale`/`source` vacíos cuando el resultado de búsqueda no los trae — endurecerla rompería `load()`/`query()` sobre entradas preexistentes sin evidencia. `saveSessionSummary` queda exento: `MemorySessionSummary` no tiene esos campos y su entry interna usa literales fijos que el caller no controla.
 

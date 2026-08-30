@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-user-project-registry",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-29T17:51:05.842Z",
+  "details": "Remediation A complete: prototype-safe registry maps; canonical resolver-backed status; v1 active-surface cutover; spawned CLI JSON failures; preserved atomic operation diagnostics; stale-lock/orphan-temp recovery. PASS: Vitest 131/131 and 171/171, tsc -b, npm run build, git diff --check.",
+  "hash": "54c81a8523d577659795a154a853433cb6279f0b0a6bb8a1a998c6b33e37373f"
+}

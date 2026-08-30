@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-catalog-ado",
+  "phase": "increment-specify",
+  "status": "failure",
+  "timestamp": "2026-08-29T13:09:52.913Z",
+  "details": "No transition for command 'increment-specify' from state 'plan-approved'. Available: increment-verify",
+  "hash": "d423c12f373f21821ce681b8ee87e34056a6aa8a87fc35100c1c7bcb647e8deb"
+}

@@ -1,0 +1,18 @@
+id: INC-20260829-r13-structural-mutation-safety
+kind: increment
+title: r13-structural-mutation-safety
+status: plan-approved
+createdAt: '2026-08-29T13:03:49.548Z'
+updatedAt: '2026-08-29T13:09:35.166Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-29T13:03:49.548Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

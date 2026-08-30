@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-user-project-registry",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-29T20:59:31.559Z",
+  "details": "Generation-bound immutable reclaim epochs prevent delayed stale-generation reclaimers from moving a newer live lock; dead claims are superseded after the bounded stale interval. Added deterministic subprocess/barrier race and crashed-claim recovery tests. Targeted Vitest passed 38/38 twice (exit 0 both); tsc -b, npm run build, and git diff --check passed (exit 0); fixture wording updated, PowerShell parse passed, and scoped stale-v1 search returned no matches. Memory bug id mtev5tpp-ecmvwk7z.",
+  "hash": "d32c68eea90b7fe90b9a384a58ecf24eceffbf25b98b1e9cbb19690d0ad26218"
+}

@@ -30,6 +30,18 @@ Gestiona la versión user-level, separada de `axiom upgrade` (project-scoped). M
 
 GATE crítico: el update NO se aplica sin `--apply`. En Windows, antes de aplicar hace backup del shim (`axiom.cmd.bak`); si el install falla, restaura el backup.
 
+## Catálogo y entrada a proyectos
+
+`axiom init` intenta catalogar el repo en `~/.axiom/projects.yml` de forma best-effort, salvo `--no-register`. El catálogo usa exclusivamente `schemaVersion: 2`; un `registry.json` residual se ignora y nunca se migra o modifica. Si `projects.yml` no existe, la primera alta parte de un catálogo vacío.
+
+- `axiom projects add --path <dir>` cataloga un directorio existente sin exigir que sea Axiom-resoluble; `--id` permite aportar el slug canónico cuando el nombre no deriva a ASCII.
+- `axiom projects join --path <dir>` exige que `resolveProject` reconozca el repo antes de catalogarlo. No confundirlo con `axiom join --member <id>`, que registra un miembro dentro del proyecto resuelto.
+- `axiom projects list` ordena por recencia e informa disponibilidad física y resolubilidad por separado.
+- `axiom projects use <id>` solo actualiza `lastUsedAt`: no activa contexto global. `--role` elige el repo y `--print-path` devuelve únicamente el path; PowerShell puede consumirlo con `Set-Location -LiteralPath (axiom projects use <id> --print-path)` y POSIX con `cd -- "$(axiom projects use <id> --print-path)"`.
+- `--json` en `list|add|join|use` devuelve siempre un único envelope versionado, también en error; stdout queda libre de texto humano adicional y el exit code refleja el resultado.
+
+Las altas concurrentes están serializadas por un lock local acotado y reemplazo atómico. Una colisión de identidad o de path no se fusiona ni sobrescribe; una entrada ausente se conserva para diagnóstico en vez de eliminarse automáticamente.
+
 ## Flujo feliz de onboarding de un proyecto
 
 ```bash

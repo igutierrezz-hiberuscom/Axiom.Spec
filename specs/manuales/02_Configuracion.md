@@ -8,7 +8,7 @@ La configuración de Axiom no es un único archivo, se reparte en:
 
 - **`axiom.yaml`** (raíz del repo): manifiesto autoral del proyecto — identidad (`projectId`/`name`/`repoId`/`role`), `paths` recíprocos hacia repos hermanos y la configuración efectiva `builder` + `local-only` + target. Es la fuente única de verdad; `topology.yaml` se deriva de él.
 - **`axiom.config/*.yaml`** (versionado): profiles/overlays/capabilities/providers/políticas — p. ej. `profiles.yaml`, `providers.yaml`, `topology.yaml`.
-- **`~/.axiom/projects.yml`** (registro de usuario, machine-level): el registro v2 de proyectos conocidos por esta máquina, un `repos: { <role>: { role, path } }` por proyecto. Sustituyó al legado `~/.axiom/registry.json` (migración automática, ver `08_Glosario.md`).
+- **`~/.axiom/projects.yml`** (catálogo de usuario, machine-level): único registro de proyectos conocidos por esta máquina, con `schemaVersion: 2` y un `repos: { <role>: { role, path } }` no vacío por proyecto. Se valida completo y se escribe de forma coordinada y atómica. El antiguo `registry.json` no se lee ni se migra; si `projects.yml` no existe, el catálogo empieza vacío.
 - **`.axiom-state/<projectKey>/`** (estado runtime, no versionado): `init.json`, `install-profile.json`, checkpoints, `workspace.json`, `tracker.json` (ver [12_Plugin_Azure_DevOps.md](12_Plugin_Azure_DevOps.md)). `.axiom-state/local/` queda reservado para bindings, overrides y audit trail realmente locales.
 
 ## Cómo cambiar la configuración

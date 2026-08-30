@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260820-r11-knowledge-sync-hardening",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-20T15:30:23.078Z",
+  "details": "Validación independiente: npx vitest run apps/cli/tests/knowledge-sync.test.ts --reporter=dot (18 passed); npm run build PASS; git diff --check PASS con avisos CRLF preexistentes.",
+  "hash": "60c349e6dae8cb06b9646f751d2936048c5506de5996d1a15c52f6b9d16b2a40"
+}

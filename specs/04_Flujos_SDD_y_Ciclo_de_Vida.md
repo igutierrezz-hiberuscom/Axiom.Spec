@@ -96,16 +96,9 @@ El versionado de toolchain es un flujo project-scoped distinto de `axiom upgrade
 
 Ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) (RF-AXM-022) y [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) para el detalle de datos persistidos por cada operación.
 
-## Aprendizaje continuo (captura al cierre, recall al inicio del trabajo) — INC-20260708-continuous-learning
-
-El ciclo de vida gana una capa de aprendizaje continuo MÍNIMA y CONCRETA, anclada en sistemas reales ya entregados (la memoria engram-backed de `@axiom/memory`, ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md), y los registros reales de audit-trail) — no un "motor de instintos" especulativo. Se apoya en tres funciones deterministas de `@axiom/memory` (`extractLessons`/`persistLessons`/`recallLessons`) y se surface en el flujo por dos puntos:
-
-- **Recall al inicio del trabajo**: `axiom context status` (el comando existente que un agente/operador corre para ver el estado del proyecto) añade un bloque best-effort de "lecciones recientes" (las lecciones más relevantes vía `resolveMemoryBackend` + `recallLessons`), que nunca falla el comando si la memoria está vacía o no disponible.
-- **Captura explícita**: `axiom learn capture [--from-audit] [--text "..."]` persiste una lección (como `MemoryEntry` `kind: 'pattern'` tag `'lesson'`, topic-keyed para upsert-in-place); `axiom learn list` la recupera. La captura es SIEMPRE explícita (nunca un efecto lateral silencioso de otro comando). Los hooks de sesión (SessionStart/SessionStop) quedan como un snippet `.claude/settings.json` documentado y OPT-IN — Axiom no ejecuta ningún motor de hooks de sesión ni auto-aplica nada. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
-
 ## Señal de delegación no-bloqueante en el ciclo — INC-20260708-delegation-triggers
 
-`axiom context status` surface además un bloque best-effort de `delegationSuggestions` (mismo contrato de degradación que el bloque de lecciones): lee un `session-metrics.json` OPCIONAL en `.axiom-state/<projectKey>/` y, si está presente y cruza umbral, sugiere delegar a un agent del roster curado. Es una señal de sugerencia PURA y estructuralmente no-bloqueante (nunca en el control flow del state machine) — el detalle del evaluador y del roster vive en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+`axiom context status` surface además un bloque best-effort de `delegationSuggestions`: lee un `session-metrics.json` OPCIONAL en `.axiom-state/<projectKey>/` y, si está presente y cruza umbral, sugiere delegar a un agent del roster curado. Es una señal de sugerencia PURA y estructuralmente no-bloqueante (nunca en el control flow del state machine) — el detalle del evaluador y del roster vive en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 
 ## Revisión con ledger de hallazgos (loop-until-dry + re-review scoped) — INC-20260709-review-findings-ledger
 
@@ -303,24 +296,20 @@ El harvest de worktree (`harvestAndCleanupExecution`, INC-20260724-worktree-harv
 
 ### Sync de memoria entre miembros del equipo
 
-`axiom knowledge sync` y `axiom knowledge pull` (`INC-20260729-knowledge-sync-command`) permiten compartir la memoria de Engram entre miembros del equipo vía Git en `<project>.axiom`:
+`axiom knowledge sync` y `axiom knowledge pull` (`INC-20260729-knowledge-sync-command`, endurecido por ACC-048) intercambian memoria de Engram entre miembros del equipo mediante Git en `<project>.axiom`. Los chunks y el manifest permanecen append-only y versionables; la base local de Engram y los marcadores personales no se versionan.
 
 **Al cerrar una fase** (`axiom knowledge sync --increment <id> --phase <phase>`):
-1. Lee todas las memorias del incremento vía `resolveMemoryBackend` + `queryMemory`
-2. Filtra: solo `visibility: 'project-shared'` (o sin visibility = default), sin secretos
-3. Serializa como chunk JSON en `.engram/chunks/<hash>.json`
-4. Actualiza `.engram/manifest.json` (append-only)
-5. `git add .engram/ && git commit -m "knowledge: sync <id> <phase>" && git push`
-6. Si no hay memorias nuevas, termina OK sin crear commits vacíos
+1. Lee las memorias del incremento mediante `resolveMemoryBackend` y `queryMemory`, y exporta exclusivamente entradas con `visibility: project-shared` explícita. Las privadas o sin visibilidad se omiten e informan con su motivo.
+2. Es preview por defecto: muestra el chunk, los descartes y las acciones Git previstas sin persistir. `--confirm` habilita la escritura atómica de chunk/manifest y el commit Git local; `--push` separado permite enviar ese commit al remoto.
+3. Conserva íntegros `rationale`, `source` y la metadata estable de cada `MemoryEntry`, valida el schema y revisa secretos en todos los campos textuales serializados, no solo en `text`.
+4. Usa argumentos Git sin interpolación de shell, no crea commits vacíos y mantiene el manifest/chunks idempotentes y reintentables ante una escritura interrumpida.
 
-**Al iniciar una fase** (`axiom knowledge pull --increment <id>`):
-1. `git pull --rebase` en `<project>.axiom`
-2. Lee `.engram/manifest.json`, filtra chunks no importados
-3. Para cada chunk nuevo, lee el JSON e importa cada memoria vía `saveMemory`
-4. Actualiza `.engram/.imported` (tracking de chunks ya importados)
-5. Si hay conflicto de Git, reporta sin ocultar
+**Al iniciar una fase o cuando se necesite actualizar memoria compartida** (`axiom knowledge pull`):
+1. No acepta `--increment`: obtiene todos los chunks pendientes del proyecto, sean generales o estén ligados a cualquier incremento. También es preview por defecto y requiere `--confirm` para aplicar Git/importaciones.
+2. Lee el manifest, determina los chunks aún no importados mediante `.axiom-state/<projectKey>/knowledge/imported-chunks.json` y conserva compatibilidad de lectura/migración con el marcador legacy `.engram/.imported` sin volver a versionarlo.
+3. Importa todas las entradas válidas de cada chunk mediante `saveMemory` y solo marca el chunk completo tras guardar todas ellas; schema corrupto, conflicto Git o fallo parcial quedan visibles y no se marcan como éxito, para permitir reintento.
 
-El diseño de chunks append-only (nunca se modifican chunks viejos) + `manifest.json` pequeño y mergeable evita conflictos de Git en el caso común. `.engram/engram.db` está gitignored (solo se versionan chunks + manifest).
+El diseño de chunks append-only (nunca se modifican chunks viejos) y `manifest.json` pequeño y mergeable evita conflictos de Git en el caso común. `.engram/engram.db`, los markers de importación y demás estado local permanecen fuera del intercambio versionado.
 ## Gobierno verificable en el ciclo (2026-08-02) — tanda `INC-20260730-*`
 
 ### Receipt desde el boundary de transición gobernada

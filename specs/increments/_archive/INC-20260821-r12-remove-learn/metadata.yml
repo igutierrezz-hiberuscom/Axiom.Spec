@@ -1,0 +1,18 @@
+id: INC-20260821-r12-remove-learn
+kind: increment
+title: r12-remove-learn
+status: archived
+createdAt: '2026-08-21T14:25:18.243Z'
+updatedAt: '2026-08-21T19:50:04.761Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-21T14:25:18.243Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

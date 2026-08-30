@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-workspace-step-reconciliation",
+  "phase": "increment-plan-approve",
+  "status": "failure",
+  "timestamp": "2026-08-29T13:09:50.120Z",
+  "details": "No transition for command 'increment-plan-approve' from state 'plan-approved'. Available: increment-verify",
+  "hash": "02ce55906ab90d034f724fe0dc72aa8ffbe46c3d826401316dbe710f0245ef44"
+}

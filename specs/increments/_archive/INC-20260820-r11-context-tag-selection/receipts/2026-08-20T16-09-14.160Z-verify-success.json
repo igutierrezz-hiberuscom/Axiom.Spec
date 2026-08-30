@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260820-r11-context-tag-selection",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-20T16:09:14.160Z",
+  "details": "ACC-049: 8 files/97 tests focales, ACC-048: knowledge-sync 18/18, npm run build y git diff --check PASS; revisión independiente resuelta.",
+  "hash": "ac80029430b258dd145ec03f5c0d87bc65a176a796b9d44a456c8e444caee22e"
+}

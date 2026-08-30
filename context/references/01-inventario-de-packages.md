@@ -8,7 +8,7 @@ Fuente: `Axiom/README.md`, README de cada package cuando existe, estructura de `
 
 | Package | Responsabilidad | Exports/tipos clave | Tests | Notas |
 |---|---|---|---|---|
-| `@axiom/core` | Branded IDs, `Result<T,E>` sin excepciones, constantes de path compartidas, **errores tipados** | `asProjectId`, `asSkillId`, `asCapabilityId`, `ok`, `err`, `Result`, `LOCAL_OVERLAY_DIRNAME`, `AxiomError`, `AXIOM_ERROR_CODES`, `AxiomErrorCode` | Sí (`packages/core/tests/`, incl. `error.test.ts`) | README disponible |
+| `@axiom/core` | Branded IDs, `Result<T,E>` sin excepciones, constantes de path compartidas, errores tipados y primitivas de fichero local seguro | `asProjectId`, `asSkillId`, `asCapabilityId`, `ok`, `err`, `Result`, `LOCAL_OVERLAY_DIRNAME`, `AxiomError`, `AXIOM_ERROR_CODES`, `acquireLocalFileLockSync`, `withLocalFileLockSync`, `atomicWriteFileSync` | Sí (`packages/core/tests/`, incl. `error.test.ts` y `local-file.test.ts`) | El lock usa owner durable, lease de inicialización y reclaim claims ligados a generación; el writer usa temporal PID+UUID + fsync + rename |
 | `@axiom/capability-model` | Modelo de capabilities/providers/discovery/compliance | `CapabilityDefinition`, `ProviderDefinition`, `CapabilityDomain`, `ComplianceClass`, `CANONICAL_CAPABILITY_IDS` | No documentados en README | Depende de filesystem-truth, config-validation, isolation, project-resolution |
 | `@axiom/config-validation` | Validación Zod de YAML (`axiom.yaml`, `integrations.yaml`, `policy.yaml`, `capability-model.yaml`, `provider-registry.yaml`, `install-profiles.yaml`) | `validateWithSchema`, `validateAxiomYamlContent`, `AxiomYamlSchema`, `validateInstallProfilesYamlContent` | Sí (`packages/config-validation/tests/`) | Sin I/O propio. **Consumido por `apps/cli` desde `INC-20260730-exact-scope`**: los 3 loaders de `profiles.yaml` (`roles.ts`, `init.ts`, `topology.ts`) usan `validateInstallProfilesYamlContent`; antes el `InstallProfilesYamlSchema` no tenía consumidores |
 
@@ -96,7 +96,7 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 | Package | Responsabilidad | Exports/tipos clave | Notas |
 |---|---|---|---|
 | `@axiom/document-bootstrap` | Writer de Copilot instructions, idempotente, preserva `TEAM:CUSTOM` | `writeCopilotInstructions`, `classifyAndPreserve` | Spec 0018-B4 |
-| `@axiom/user-workspace` | Registry de proyectos user-level, self-update | `loadRegistry`, `addProject`, `loadInstallManifest` | Spec 0020 (A1/B1) |
+| `@axiom/user-workspace` | Catálogo único `projects.yml`, validación estricta, identidad/ownership, disponibilidad/resolubilidad y self-update user-level | `loadRegistryV2`, `saveRegistryV2`, `addProjectV2`, `upsertProjectReposV2`, `listProjectsV2`, `useProjectV2`, `selectProjectRepo`, `ProjectsFile`, `ProjectEntryV2`, `RepoAvailability`, `ProjectAvailability`, `loadInstallManifest` | Sí (`registry-v2.test.ts`, `registry-concurrency.test.ts` y self-update) | No exporta ni migra registry v1; las mutaciones usan el primitivo multiproceso de `@axiom/core` |
 
 ## Capa contexto/telemetría/tracking (nueva desde el baseline 2026-07-02)
 

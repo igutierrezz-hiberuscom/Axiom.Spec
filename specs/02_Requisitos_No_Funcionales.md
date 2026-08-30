@@ -45,6 +45,8 @@ solo el bloque `AXIOM:GENERATED`; el preámbulo, la cola humana y
 elimina la fuente solo después de confirmar el destino y conserva ambas copias
 con advertencia cuando el contenido humano no se puede reconciliar.
 
+Para `~/.axiom/projects.yml`, la atomicidad abarca el ciclo read-modify-write completo: lock multiproceso acotado, temporal propietario PID+UUID, flush/fsync, validación y rename atómico. El reclaim de un lock abandonado debe estar ligado a la generación observada y cercado durante la publicación de su owner; nunca puede retirar una generación sucesora ni artefactos ajenos.
+
 ## NFR-AXM-008 Aislamiento project-scoped
 
 Ninguna ruta, cache, MCP binding o entrada de memoria debe cruzar el `projectKey` de origen. `projectKey` es `projectId` en schema v2 y el slug estable de `project.name` en v1. Verificado en `@axiom/isolation` (path-guard, `DEFAULT_ALLOWED_MCP_SERVERS`) y en las reglas GATE 0024 (`@axiom/memory`: spec prevalece sobre memoria en conflicto).
@@ -84,9 +86,11 @@ Complementariamente, la suite moderna de `@axiom/mcp-server` da una garantía en
 
 **Registro histórico verificado el 2026-08-02:** `npm run doctor` devolvía `PASS` (46/61 OK, 0 fallos, 3 advertencias, 12 omitidos). La medición global de aquella fecha registraba 3489 tests, 3483 verdes y 6 fallos preexistentes caracterizados. La revalidación R-04 del 2026-08-06 devuelve `doctor PASS` (45/60, 0 fallos) y readiness PASS; `CC-004` sirve 13/16 capabilities y deja warning por `code.symbolSearch`, `code.referenceSearch` y `code.impactAnalysis`. Nota de taxonomía reconciliada: el model-routing tiene **7 slots** canónicos (`increment, bug, plan, implementation, qa-e2e, review, archive`), no 10.
 
-## NFR-AXM-011 Evolución de schema solo aditiva
+## NFR-AXM-011 Evolución controlada de schemas persistidos
 
-Todo cambio de schema persistido (registro de usuario, manifiesto `axiom.yaml`, `metadata.yml` de artefactos, `mcp.yml`) debe convivir de forma aditiva junto al formato anterior, seleccionado por presencia de fichero o por campo `schemaVersion`, en vez de reemplazar/renombrar destructivamente. Verificado en la migración de registro (`~/.axiom/projects.yml` `schemaVersion: 2` añadido junto a `~/.axiom/registry.json` `schemaVersion: 1`, ambos leídos/escritos por el mismo paquete) y en el cutover de `axiom.yaml` (`schemaVersion: 1` y `2` ambos soportados por `resolveProject` y los checks `MC-001`/`BC-001`/`BC-002` de `@axiom/doctor`, nunca resolviendo mal uno como el otro).
+La compatibilidad aditiva es la política por defecto cuando existe estado instalado que deba seguir leyéndose. Una retirada destructiva solo es válida como cutover explícito, con alcance y ausencia de consumidores confirmados, sin interpretar silenciosamente una versión como otra.
+
+El catálogo user-level es una excepción deliberada y cerrada: `~/.axiom/projects.yml` `schemaVersion: 2` es su único formato; `registry.json` v1 no se lee ni se migra. Otros contratos conservan su compatibilidad declarada: por ejemplo, `resolveProject` y los checks `MC-001`/`BC-001`/`BC-002` siguen aceptando `axiom.yaml` schema 1 y 2.
 
 ## NFR-AXM-012 Sin caché persistente hasta que el volumen real lo justifique
 

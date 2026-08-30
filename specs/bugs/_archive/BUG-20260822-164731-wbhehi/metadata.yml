@@ -1,0 +1,18 @@
+id: BUG-20260822-164731-wbhehi
+kind: bug
+title: freeze-empty-engram-query
+status: archived
+createdAt: '2026-08-22T16:47:31.481Z'
+updatedAt: '2026-08-22T16:53:11.050Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-22T16:47:31.481Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

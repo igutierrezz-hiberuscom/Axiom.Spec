@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-user-project-registry",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-08-30T03:30:40.426Z",
+  "details": "Fixed the confirmed @axiom/core owner-publication race with a durable pre-mkdir initialization fence and fence-before-owner reclaim ordering; added deterministic live/crashed initializer subprocess regressions. Validation: initial build, two fresh targeted Vitest runs (3 files, 40/40 tests each), tsc -b, final build, and git diff --check all exited 0. Memory: mtf94vij-kht4002w.",
+  "hash": "347174a14f953edb4e0bb880c3c164b97c9a50f6956fef746bd39cd91f04ff4c"
+}

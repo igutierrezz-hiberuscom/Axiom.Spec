@@ -20,7 +20,7 @@ Familias de checks verificadas (prefijo de check ID entre paréntesis; el prefij
 | topology | `TC-001..003` | `axiom.config/topology.yaml` (o su derivación por fallback) |
 | toolchain | `TC-004..006` | `toolchain-catalog.yaml`, detección/registro de tools |
 | toolchain versioning | `TC-020..023` | lockfile, compatibilidad de versiones, drift y canales |
-| memory | `TC-007/008` | backend de memoria, invariantes de recall |
+| memory | `TC-007/008/024` | bindings y aislamiento project-scoped; disponibilidad obligatoria del ejecutable Engram |
 | adapters | `TC-009` | los 8 packages activos `@axiom/adapters-<target>` tienen `src/generator.ts` + `dist/index.js` materializados |
 | skills | `TC-010/012/013` | `skills-catalog.yaml`, lockfile, `bundleHash` |
 | agents | `TC-011` | `axiom.config/agents-catalog.yaml`, cada entry con agent válido |
@@ -92,7 +92,7 @@ Impacta: `sync` (valida gate antes de regenerar outputs), `audit` (usa mirror de
 - El audit trail es transversal y no depende de un overlay ni de transporte externo; `sync` ya no evalúa `minimumSignals` de overlays retirados.
 - El gate `gateOnTelemetrySink` (`packages/cli-commands/src/commands/_shared.ts`) existe como pre-condición de mutación en `sync`/`configure`, pero con la política única `local-only` (`MINIMUM_SIGNALS_BY_OVERLAY['local-only'] = []`) **siempre pasa** por `local-only-bypass`: hoy no bloquea ninguna mutación. Es la única pieza que podría bloquear una operación, y está inerte por diseño.
 - **Emisores reales**: los eventos se emiten desde `packages/tool-routing/src/events.ts` (`emitResolvedEvent`/`emitDegradedEvent`/`emitDispatchEvent` para dispatch de `ToolCall`) y desde `packages/workflow/src/hooks.ts` (`emitTelemetryEvent` para hooks de workflow SDD). Ambos envían al `TelemetryBus` activo vía `getTelemetryBus().emitTelemetry(...)`.
-- **Consumidor de contenido**: el audit trail se escribe siempre (cada mutación), pero su contenido solo se explota por `axiom learn capture --from-audit` (opt-in, no conectado automáticamente) y por `axiom context` (bloque `recentLessons`). Los contadores del bus (`getTelemetryBus().getCounters()`) no tienen superficie pública fuera del panel del launcher y los tests.
+- **Consumidor de contenido**: el audit trail se escribe siempre (cada mutación) para trazabilidad e integridad. Los contadores del bus (`getTelemetryBus().getCounters()`) no tienen superficie pública fuera del panel del launcher y los tests.
 - No documentado explícitamente: un mecanismo formal de opt-out completo de telemetría. Tratar como ausente, no como implementado silenciosamente.
 
 ### Panel de telemetría/auditoría en el launcher (`INC-20260811-acc-032-launcher-telemetry`)
@@ -105,14 +105,8 @@ que explota los datos que el runtime ya escribe y verifica, sin nuevo engine:
   violations, external rewrite), agrega el `audit.log` reciente por
   `capabilityId`/`signalType` + eventos recientes, y expone
   `getTelemetryBus().getCounters()`.
-- `POST /launcher/telemetry/lessons` captura una lección explícita
-  (`axiom learn capture --text`) con preview→confirmación, reusando
-  `runLearnList`/`runLearnCapture`.
 
-El panel es read-only sobre el audit trail (el launcher nunca escribe en el
-audit log); la única mutación es la captura de una lección explícita,
-confirm-gated. Fuente: `Axiom/apps/cli/src/commands/app-launcher-telemetry.ts`,
-`Axiom/apps/cli/src/commands/app-api.ts`, `Axiom/apps/cli/static/launcher/`.
+El panel es completamente read-only sobre telemetría y audit trail: no escribe en `audit.log` ni captura lecciones o memoria. La captura semántica solo puede efectuarse por una acción explícita `axiom memory add` fuera de esta superficie. Fuente: `Axiom/apps/cli/src/commands/app-launcher-telemetry.ts`, `Axiom/apps/cli/src/commands/app-api.ts`, `Axiom/apps/cli/static/launcher/`.
 
 ## Aislamiento (`@axiom/isolation`, doctor)
 

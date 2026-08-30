@@ -1,0 +1,18 @@
+id: INC-20260819-r11-mcp-documentation
+kind: increment
+title: r11-mcp-documentation
+status: archived
+createdAt: '2026-08-20T14:10:09.923Z'
+updatedAt: '2026-08-20T14:37:12.664Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-20T14:10:09.923Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

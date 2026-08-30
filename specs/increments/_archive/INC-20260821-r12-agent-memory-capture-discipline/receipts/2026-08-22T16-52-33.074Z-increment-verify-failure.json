@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260821-r12-agent-memory-capture-discipline",
+  "phase": "increment-verify",
+  "status": "failure",
+  "timestamp": "2026-08-22T16:52:33.074Z",
+  "details": "No transition for command 'increment-verify' from state 'verifying'. Available: increment-archive",
+  "hash": "c5ef59b0b3f354a343d4599f88869bf994d75735bb49b37b34f8749786dbe5c6"
+}

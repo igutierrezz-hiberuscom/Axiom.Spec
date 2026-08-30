@@ -111,3 +111,15 @@ El binario `axiom` se instala una sola vez por operador (no por proyecto), vía 
 - Windows: `%USERPROFILE%\.local\bin\axiom.cmd` (shim, con rollback si el smoke post-install falla).
 
 Manifest de versión user-level: `~/.axiom/install.json` (`@axiom/user-workspace`, `UserWorkspacePaths.installPath`). `axiom self-update` gestiona esta versión, separada del `axiom upgrade` project-scoped; requiere `--apply` explícito para mutar (preview-only por defecto).
+
+## Catálogo user-level de proyectos
+
+Fuente: `Axiom/packages/user-workspace/src/{registry,registry-id,registry-types,errors}.ts`, `Axiom/packages/core/src/local-file.ts`, `Axiom/apps/cli/src/commands/projects.ts`.
+
+`~/.axiom/projects.yml` (`ProjectsFile`, `schemaVersion: 2`) es el único catálogo de proyectos de la máquina. La ausencia del archivo equivale a `{schemaVersion: 2, projects: {}}`; no hay lector, tipos, error ni migrador de `registry.json`. Cada entrada contiene `id`, `name`, timestamps ISO y un mapa no vacío de repos `{ role, path }`. El parser valida de forma estricta el documento completo, incluidas clave/id, campos desconocidos y ownership global de paths, y devuelve `UserWorkspaceError` discriminado en lugar de lanzar.
+
+La identidad explícita usa slug ASCII; la derivación de nombre normaliza NFKC, elimina diacríticos y colapsa separadores. Los paths se resuelven y se comparan con canonicalización física cuando existe el destino, respetando la sensibilidad de la plataforma. Una colisión de ID, identidad o path falla antes de escribir; `upsertProjectReposV2` solo acepta una reejecución que conserve la misma identidad y ownership.
+
+Las mutaciones envuelven todo el ciclo load→validate→modify→save con `withLocalFileLockSync`. El primitivo de `@axiom/core` publica `owner.json` y lo fuerza a disco antes de retirar un lease de inicialización adyacente; los reclaim claims quedan ligados a la generación/epoch observada, de modo que ni un reclamador retrasado ni la ventana `mkdir`→owner pueden retirar un lock sucesor. `atomicWriteFileSync` usa un temporal propietario PID+UUID, flush/fsync, validación previa y rename atómico; la recuperación está limitada a temporales, leases y claims huérfanos que el primitivo puede atribuir con seguridad.
+
+La proyección de estado distingue `present-directory`, `missing` y `not-directory`; el agregado es `available`, `partial` o `unavailable`. La resolubilidad Axiom se calcula aparte y solo cuando el caller aporta el probe de `@axiom/project-resolution`.

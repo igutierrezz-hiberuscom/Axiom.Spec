@@ -12,7 +12,7 @@ Fuente: `Axiom/docs/configuration/providers-and-capabilities.md`, `Axiom/docs/co
 
 `providers.yaml` modela el registry de cuatro providers locales (`filesystem`, `serena`, `cmm`, `engram`) y el único perfil declarativo de discovery `local-only`, con `discoveryOrder: [filesystem]` y fallbacks explícitos.
 
-Regla vigente: `filesystem` es el provider local siempre disponible; `cmm` aporta code-intel estructural, `serena` navegación semántica y `engram` memoria local. La selección project-scoped de `cmm`/`serena`/`engram` es opcional y una tool ausente degrada de forma tipada, sin convertir el estado de entorno en un fallo de gobierno. `readEnabledProviders` recibe `projectKey` y aliases legacy cuando el caller los conoce; solo hace scan global cuando no hay identidad.
+Regla vigente: `filesystem` es el provider local siempre disponible; `cmm` aporta code-intel estructural y `serena` navegación semántica, ambos seleccionables de forma opcional y degradables si falta su tool. Engram es distinto: el runtime de memoria lo resuelve siempre como backend local obligatorio; su indisponibilidad devuelve `MemoryError` y TC-024 de Doctor falla con remediación. `readEnabledProviders` recibe `projectKey` y aliases legacy cuando el caller los conoce; solo hace scan global cuando no hay identidad.
 
 Impacta directamente a: `configure` (compone install profile), `start` (resuelve provider efectivo y modo de discovery), `doctor` (evalúa consistencia del modelo y defaults).
 
@@ -48,6 +48,14 @@ Bug corregido en el incremento 0027: `resolveDetectionPath` calculaba rutas rela
 
 Comandos: `axiom toolchain repair [--id <id>]` (idempotente), `axiom toolchain add --id <id> --path <repoId>` (selección por repo), `axiom toolchain gitignore [--write <file>]` (output ordenado y deduplicado).
 
+## Contexto técnico derivado y memoria compartida (R-11)
+
+`axiom context index [--role <rol>] [--path <specRepo>]` recorre `context/**/*.md` y regenera de forma atómica el índice derivado `technical-context/indexes/<rol>.index.yml`; ese archivo nunca se edita a mano. Un documento puede declarar `tags: [..]` en frontmatter YAML. Solo ese campo participa: se normaliza y valida; sin tags explícitas se usa una tag de fallback derivada de su carpeta de primer nivel o `repo` para la raíz. Tras actualizar documentos de contexto o sus tags, se debe volver a ejecutar el comando y revisar el índice generado, no modificarlo directamente.
+
+Las tools `spec.recommendedContextList` y `spec.implementationContextRead` consumen el mismo selector: primero `mandatory.always`, luego los grupos `mandatory.whenTags` cuyo conjunto completo coincide y finalmente los documentos `available` que coinciden con alguna tag solicitada. El selector deduplica por path y clasifica cada entrada como `mandatory` o `recommended`. Sin `taskTags`, o con `taskTags: []`, no recomienda entradas disponibles. En la lectura compuesta, las tags estructuradas de `plan.taskType` y del rol se agregan únicamente cuando el caller ya aportó al menos una tag explícita; no hay inferencia de texto, scoring ni IA. Los paths siguen confinados al spec repo; `contextBudget` conserva referencias en `small`, contenido obligatorio en `medium` y añade ADRs relacionados en `large`.
+
+`axiom knowledge sync --increment <id> --phase <phase>` intercambia memoria de equipo mediante chunks JSON append-only y un manifest versionable. Es preview por defecto; `--confirm` autoriza persistencia y Git local, y `--push` autoriza el remoto. Solo exporta `visibility: project-shared`, preserva evidencia y metadata estable y omite las entradas private, sin visibilidad o con secretos en cualquier campo textual serializado. `axiom knowledge pull` no se filtra por incremento: al confirmar procesa todos los chunks pendientes. El marker personal vive en `.axiom-state/<projectKey>/knowledge/imported-chunks.json`; la antigua `.engram/.imported` se migra o ignora. Un chunk solo queda completado tras importar todas sus entradas válidas; corrupción y fallos parciales permanecen visibles y reintentables. `.engram/engram.db` y los markers personales no son parte del intercambio versionable.
+
 ## MCP (Model Context Protocol) — Axiom YA expone servidor propio
 
 > **Corrección 2026-07-29**: el baseline 2026-07-02 afirmaba "Axiom no expone hoy un servidor MCP propio y genérico" — esa afirmación es **stale**. Desde entonces se añadieron `@axiom/mcp-server` y `@axiom/mcp-tools`.
@@ -64,7 +72,7 @@ Comandos: `axiom toolchain repair [--id <id>]` (idempotente), `axiom toolchain a
 
 ## Memoria y recall (`@axiom/memory`)
 
-Curación auto/manual por `MemoryKind` (`decision`, `bug`, `learning`, `pattern`, `context`), con invariante scope + `projectId` por entry. GATE 0024: la memoria **no** es fuente de verdad; en conflicto, la spec prevalece. Ranking de recall (incremento 0029): text match (case-insensitive, start-boost, occurrence boost) + recencia (ventana 90 días) + kind boost (`decision=1.5`, `bug=1.4`, `pattern=1.2`, `learning=1.1`, `context=1.0`); cada hit devuelve `reason` explicativo. Recall es opt-in (helper disponible; wire-up al state machine diferido a la fecha del incremento 0029). Comando: `axiom memory inventory`.
+La memoria usa `MemoryKind` (`decision`, `bug`, `learning`, `pattern`, `context`) con invariante de scope + `projectId` por entrada y se persiste explícitamente en el Engram local project-pinned. GATE 0024 fija que la memoria no es fuente de verdad: en conflicto, la spec prevalece. El recall conserva ranking por match de texto, recencia y kind, y cada hit devuelve `reason` explicativo. No existe curación automática desde el audit trail: `axiom learn` fue retirado; los agentes registran decisiones y bugs mediante `axiom memory add` y comunican su resultado. `axiom memory inventory` sigue disponible para inspección.
 
 ## Extensiones opcionales: app plugins y bridge externo
 

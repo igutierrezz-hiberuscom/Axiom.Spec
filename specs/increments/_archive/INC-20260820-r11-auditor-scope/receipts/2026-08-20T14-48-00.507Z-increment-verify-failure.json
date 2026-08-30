@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260820-r11-auditor-scope",
+  "phase": "increment-verify",
+  "status": "failure",
+  "timestamp": "2026-08-20T14:48:00.507Z",
+  "details": "No transition for command 'increment-verify' from state 'verifying'. Available: increment-archive",
+  "hash": "ba39aee8302a05e30842e94414bb04ac805072c5b60bbb78e588630f99fcc149"
+}

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-topology-bindings-persistence",
+  "phase": "increment-plan",
+  "status": "failure",
+  "timestamp": "2026-08-29T13:09:43.093Z",
+  "details": "No transition for command 'increment-plan' from state 'plan-approved'. Available: increment-verify",
+  "hash": "c90a74c39c1b3a31cee36782ebe9ffa0a18711f59deb47fa54c50ca73baab599"
+}

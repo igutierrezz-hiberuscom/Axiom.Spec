@@ -1,0 +1,18 @@
+id: INC-20260821-r12-agent-memory-capture-discipline
+kind: increment
+title: r12-agent-memory-capture-discipline
+status: archived
+createdAt: '2026-08-21T19:58:52.426Z'
+updatedAt: '2026-08-22T16:53:07.345Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-21T19:58:52.426Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

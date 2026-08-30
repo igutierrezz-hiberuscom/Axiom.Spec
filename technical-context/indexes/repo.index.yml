@@ -11,6 +11,8 @@ mandatory:
     - id: context.entry-point
       path: ../../context/TECHNICAL_CONTEXT.md
       reason: Puerta de entrada obligatoria al contexto técnico curado del producto.
+      tags:
+        - repo
   whenTags: []
 available:
   - id: architecture.01-vision-general-y-capas

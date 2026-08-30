@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-control-plane",
+  "phase": "increment-plan",
+  "status": "failure",
+  "timestamp": "2026-08-29T13:09:51.562Z",
+  "details": "No transition for command 'increment-plan' from state 'plan-approved'. Available: increment-verify",
+  "hash": "3317f76b93524f004bf5c93ec939c99d04a6381ac90461595d7005485ae919e3"
+}

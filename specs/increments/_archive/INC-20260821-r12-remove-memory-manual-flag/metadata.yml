@@ -1,0 +1,18 @@
+id: INC-20260821-r12-remove-memory-manual-flag
+kind: increment
+title: r12-remove-memory-manual-flag
+status: archived
+createdAt: '2026-08-21T19:50:09.186Z'
+updatedAt: '2026-08-21T19:58:48.285Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-21T19:50:09.186Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

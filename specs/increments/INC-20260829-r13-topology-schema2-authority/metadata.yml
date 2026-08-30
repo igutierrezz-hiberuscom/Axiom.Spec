@@ -1,0 +1,18 @@
+id: INC-20260829-r13-topology-schema2-authority
+kind: increment
+title: r13-topology-schema2-authority
+status: plan-approved
+createdAt: '2026-08-29T13:03:47.798Z'
+updatedAt: '2026-08-29T13:09:27.653Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-29T13:03:47.798Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

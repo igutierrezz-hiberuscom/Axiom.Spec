@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260821-r12-agent-memory-capture-discipline",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-08-22T16:52:47.726Z",
+  "details": "94 pruebas R-12, build, smoke CLI y Doctor correctos; captura explicita, visibilidad y retirada de --manual revisadas.",
+  "hash": "3a3741dfe12848dcfae49606e54935f0b62bad4b9f2623fad6f6d0678656bc03"
+}

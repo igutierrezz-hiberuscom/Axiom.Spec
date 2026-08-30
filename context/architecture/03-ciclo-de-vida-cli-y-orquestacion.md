@@ -99,7 +99,7 @@ Slots: `increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archiv
 - `member-install.ts` (instalación multi-repo por miembro de equipo).
 - `native-mcp-config.ts` (proyección de los servers MCP gestionados a la config nativa de cada tool).
 - Comandos backed por `@axiom/tracker`/`@axiom/tracker-ado`: `_tracker-status.ts`, `external-sync.ts`, además de `app-launcher-ado.ts`.
-- Otros ficheros nuevos desde el baseline: `axiom-adr.ts`, `axiom-decision.ts`, `artifact-metadata-cli.ts`, `bindings.ts`, `bootstrap.ts`, `eject.ts`, `external-sync.ts`, `index-cmd.ts`, `integrate.ts`, `learn.ts`, `mcp-serve.ts`, `normalize-cmd.ts`, `rollback.ts`, `scaffold.ts`, `state-cmd.ts`, `validate-changes.ts`.
+- Otros ficheros nuevos desde el baseline: `axiom-adr.ts`, `axiom-decision.ts`, `artifact-metadata-cli.ts`, `bindings.ts`, `bootstrap.ts`, `eject.ts`, `external-sync.ts`, `index-cmd.ts`, `integrate.ts`, `mcp-serve.ts`, `normalize-cmd.ts`, `rollback.ts`, `scaffold.ts`, `state-cmd.ts`, `validate-changes.ts`. `learn.ts` fue retirado por R-12 junto con la captura de lecciones derivadas del audit trail; la memoria general permanece como operación explícita.
 
 Los comandos documentados en el baseline (`init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `model`, `components`, `skills`) siguen siendo páginas históricas de `docs/cli/`; `tui` ya no forma parte de la superficie registrada. **`axiom app`** abre `${url}/launcher/` por defecto; el viejo operator UI raíz se eliminó y `GET /`/`GET /index.html` redirigen 302 a `/launcher/`. Antes de tratar el comportamiento de cualquier comando como contrato estable, verificar directamente en el código.
 

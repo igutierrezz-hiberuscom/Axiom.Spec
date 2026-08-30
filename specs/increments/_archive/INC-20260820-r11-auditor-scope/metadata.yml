@@ -1,0 +1,18 @@
+id: INC-20260820-r11-auditor-scope
+kind: increment
+title: r11-auditor-scope
+status: archived
+createdAt: '2026-08-20T14:37:53.972Z'
+updatedAt: '2026-08-20T14:48:19.914Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-20T14:37:53.972Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

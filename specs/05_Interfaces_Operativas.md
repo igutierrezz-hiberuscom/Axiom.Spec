@@ -14,7 +14,15 @@
 
 ## CLI: comandos presentes en código sin documentación operativa equivalente
 
-La superficie adicional de `apps/cli/src/commands/` incluye las rutas de aplicación/launcher, workflow, workspace multi-repo, repos y roles, contexto, MCP, memoria, toolchain, bootstrap, adopción, aprendizaje, actualización y diagnóstico. No se conserva aquí un conteo de ficheros o líneas como dato normativo: el registro efectivo está en `apps/cli/src/index.ts` y el contrato de cada familia se describe en las secciones siguientes. Un comando sin documentación propia debe tratarse como capacidad verificable en código y tests, no como contrato estable solo por existir un archivo.
+La superficie adicional de `apps/cli/src/commands/` incluye las rutas de aplicación/launcher, workflow, workspace multi-repo, repos y roles, contexto, MCP, memoria, toolchain, bootstrap, adopción, actualización y diagnóstico. `axiom learn` fue retirado; la memoria general se opera explícitamente mediante `axiom memory`. No se conserva aquí un conteo de ficheros o líneas como dato normativo: el registro efectivo está en `apps/cli/src/index.ts` y el contrato de cada familia se describe en las secciones siguientes. Un comando sin documentación propia debe tratarse como capacidad verificable en código y tests, no como contrato estable solo por existir un archivo.
+
+### `axiom projects`: catálogo user-level
+
+- `axiom projects list [--json]` lista el único catálogo `~/.axiom/projects.yml`, ordenado por `lastUsedAt` descendente e `id` ascendente. La vista distingue disponibilidad física por repo y resolubilidad Axiom; no elimina entradas ausentes.
+- `axiom projects add --path <path> [--name <name>] [--id <id>] [--role <role>] [--json]` cataloga un directorio existente sin exigir que contenga un proyecto Axiom. `projects join` acepta `--path`, `--id` y `--role`, pero primero exige que `resolveProject` lo resuelva.
+- `axiom projects use <id> [--role <role>] [--print-path] [--json]` actualiza únicamente `lastUsedAt`. No persiste un proyecto activo: el contexto sigue resolviéndose desde `cwd` o un `projectId` explícito. `--role` prevalece; sin él se prefiere la key `axiom` y después la key lexicográficamente menor. `--print-path` escribe exactamente el path y un salto de línea, nunca un comando de shell.
+- Para cambiar de directorio, el caller consume el path según su shell: PowerShell `Set-Location -LiteralPath (axiom projects use <id> --print-path)`; POSIX `cd -- "$(axiom projects use <id> --print-path)"`; `cmd.exe` `for /f "delims=" %P in ('axiom projects use <id> --print-path') do @cd /d "%P"`.
+- Con `--json`, `list|add|join|use` escriben en stdout exactamente un envelope v1 `{schemaVersion:1, ok, command, data?|error?}` en éxito o error. Los diagnósticos humanos van a stderr y los errores terminan con exit code 1.
 
 ### `axiom toolchain`: catálogo, lockfile y canales (`INC-20260730-toolchain-versioning`)
 
@@ -29,6 +37,14 @@ Los comandos que leen estado legacy consultan primero el `projectKey` canónico
 y luego aliases explícitos. `toolchain show/validate/repair` no hacen scans
 globales, y el provisioning de worktree selecciona providers por
 `Execution.projectId`.
+
+### `axiom context index` y selección de contexto por tarea (`INC-20260820-r11-context-tag-selection`)
+
+`axiom context index [--role <rol>] [--path <specRepo>]` regenera el índice derivado `technical-context/indexes/<rol>.index.yml`; no se edita manualmente. El generador usa `tags: [..]` de frontmatter YAML opcional y, en su ausencia, una tag de fallback de carpeta (`repo` para la raíz). Las tools MCP `spec.recommendedContextList` y `spec.implementationContextRead` comparten el mismo selector: en orden, devuelven `mandatory.always`, los grupos `mandatory.whenTags` que satisfacen todas sus tags y los documentos `available` que coinciden con alguna `taskTag`, sin duplicar por ruta. Omitir `taskTags` o pasar `[]` devuelve solo el bloque obligatorio. La lectura compuesta acepta `taskTags`; solo cuando hay alguna tag explícita suma las señales estructuradas `plan.taskType` y el rol explícito, sin inferir texto o usar IA. Conserva la separación `mandatory`/`recommended`, el path-guard dentro del spec repo y los presupuestos `small` (referencias), `medium` (contenido obligatorio) y `large` (añade ADRs relacionados).
+
+### `axiom knowledge sync` y `axiom knowledge pull` (`INC-20260820-r11-knowledge-sync-hardening`)
+
+`axiom knowledge sync --increment <id> --phase <phase>` previsualiza por defecto. Solo `--confirm` permite escribir chunks y ejecutar Git local; `--push` permite además enviar al remoto. Solo se comparte memoria `visibility: project-shared`, con evidencia completa y sin secretos en campos textuales serializados. `axiom knowledge pull` no acepta `--increment` y, con confirmación, importa todos los chunks pendientes; su marker personal project-scoped no forma parte del intercambio Git. Corrupciones o imports parciales se informan y permanecen reintentables.
 
 ## Launcher web (`axiom app`)
 
@@ -68,12 +84,11 @@ La superficie realmente alcanzable y primaria coincide con los entrypoints con g
 
 Ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) para el contrato funcional completo de cada uno.
 
-### Superficie CLI añadida por la tanda INC-20260708-* (providers, memoria/aprendizaje, autoskills, operaciones incrementales)
+### Superficie CLI añadida por la tanda INC-20260708-* (providers, memoria, autoskills, operaciones incrementales)
 
 Comandos nuevos entregados por esta tanda, todos app-owned (registrados directo en `apps/cli/src/index.ts`, no vía `@axiom/cli-commands`, para evitar el gotcha de single-ownership de ese paquete):
 
 - **`axiom configure --providers <csv>`** (`INC-20260708-wizard-configure-provider-selection`): persiste la selección de providers LOCALES habilitados para el proyecto en `.axiom-state/<projectId>/workspace.json#providers` (merge-write, creando el fichero si falta), sin alterar el resto del comportamiento de `configure`. Los ids seleccionables son exactamente `cmm`/`serena`/`engram`; `filesystem` es el baseline siempre disponible. `cmm` y `serena` se registran como providers de code-intel y `engram` se resuelve mediante `MemoryBackend`. **No** toca `axiom.config/providers.yaml` (registry canónico local cerrado de 4 ids, schema-locked por `CC-001`/`CC-003`) — ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
-- **`axiom learn capture [--from-audit] [--text "..."] [--limit N]`** y **`axiom learn list [--query ...] [--limit N]`** (`INC-20260708-continuous-learning`): captura/recall de lecciones sobre el backend real de `@axiom/memory` (`resolveMemoryBackend`), mismas convenciones que `axiom memory` (`resolveMemoryScope`, UI en español, split `run*`/`register*`). Ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md).
 - **`axiom skills suggest [--repo <path>] [--apply]`** (`INC-20260708-autoskills-wizard-phase`): detección de stack + sugerencia de skills curadas para un repo (default cwd); sin `--apply` solo imprime (read-only), con `--apply` instala el set sugerido en `axiom.config/skills-index/<roleId>.yaml#available` de ese repo. Se une al grupo `skills` existente (`list`/`refresh`/`drift`); usable contra cualquier repo (no solo el proyecto activo).
 - **`axiom repo add`**, **`axiom adapter add <target>`**, **`axiom provider add <id>`**, **`axiom role add <roleId> --path <path>`** (`INC-20260708-incremental-operations`): las 4 operaciones incrementales ADD-only, idempotentes y no-clobber, que resuelven el proyecto desde cwd y reusan el motor multi-repo (`runWorkspaceSetup` + helpers exportados). `repo add` escribe el `axiom.yaml` del repo nuevo con `paths` recíprocos y refresca los de los hermanos, actualiza `topology.yaml`, registra en `projects.yml` y genera adapters/MCP/skills/rules para los adapters habilitados del proyecto; `adapter add` persiste en `workspace.json#adapters` y regenera ese adapter en todos los repos; `provider add` persiste en `workspace.json#providers` (validación best-effort vía `buildProjectProviderRegistry`, sin spawnear nada); `role add` es un wrapper de `repo add --kind role` + asignación de rol en topología. Los REMOVE quedan diferidos (ver NFR-AXM-015 en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md)). Registrados desde `apps/cli/src/commands/workspace-incremental.ts`.
 
@@ -311,7 +326,7 @@ Consolida el comportamiento de `axiom app` con el front real que ya se servía b
 - **Verificado en runtime** contra el CLI construido: `GET /` → 302 `/launcher/`; `GET /launcher/` → 200 con `<title>Axiom Launcher</title>`; `GET /app.js` → 404.
 ### Superficie CLI de gobierno verificable (2026-08-02) — tanda `INC-20260730-*`
 
-- **`axiom freeze --increment <id> [--force-json]`** — congela el candidate escribiendo `candidate-freeze.json` en la carpeta del incremento (hash combinado de memoria filtrada + `README.md`). `--force-json` fuerza el backend JSON de memoria. Expone además la API programática `checkCandidateFreeze(incrementId, cwd) → { ok, reason? }`, ya consumida por `axiom-increment` como gate previo al apply. `INC-20260730-candidate-freeze`.
+- **`axiom freeze --increment <id>`** — congela el candidate escribiendo `candidate-freeze.json` en la carpeta del incremento (hash combinado de memoria Engram filtrada + `README.md`). No existe `--force-json` ni backend JSON alternativo. Si Engram no está disponible, el error queda visible y el freeze no simula un hash correcto. Expone además la API programática `checkCandidateFreeze(incrementId, cwd) → { ok, reason? }`, ya consumida por `axiom-increment` como gate previo al apply. `INC-20260730-candidate-freeze`, reconciliado por R-12.
 - **`axiom phase receipt --increment <id> --phase <name> --status <success|failure> [--details <msg>]`** — emisión manual de un receipt. Se mantiene intacta tras `INC-20260730-phase-receipts`, pero **deja de ser la única vía**: `runGovernedTransition` emite el receipt desde la ruta común cuando el caller habilita `receipt`. El comando manual queda para fases sin transición CLI propia y para los incrementos hand-authored spec-first de este mismo repo.
 
 Nota de vocabulario, relevante al leer receipts: el campo `phase` lleva el **nombre real de la transición** (`increment-create`, `increment-verify`, `bug-archive`…), no el vocabulario `design/tasks/apply/verify/knowledge/freeze/close` que aparece en el Scope original del incremento. Ese segundo vocabulario no existe como tal en la CLI, cuyos subcomandos reales son 8 para `increment` y 4 para `bug`; se prefirió registrar lo que efectivamente se ejecutó, verificable 1:1 contra el state machine, antes que inventar un mapeo.

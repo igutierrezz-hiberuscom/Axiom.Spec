@@ -187,136 +187,42 @@ review de write-scope y el flujo `axiom-review`.
 - [04_Generar_Spec_y_Contexto_Tecnico.md](04_Generar_Spec_y_Contexto_Tecnico.md)
 - [../05_Interfaces_Operativas.md](../05_Interfaces_Operativas.md)
 
-## Contrato de memoria Engram por fase
+## Contrato de memoria Engram y captura explícita
 
-Cada fase del ciclo SDD debe guardar memoria útil en Engram para
-transferir conocimiento a fases posteriores del mismo incremento. Esta
-sección define el contrato mínimo que toda skill de fase debe cumplir.
+La memoria SDD usa exclusivamente el Engram local del proyecto. Las skills no deben inventar una persistencia, fallback JSON ni captura automática: una decisión o un bug solo cuentan como capturados cuando el agente ejecuta `axiom memory add` y comunica el resultado. Si Engram o la operación fallan, el agente registra el error y no afirma éxito ni utiliza un fallback.
 
-### Metadata obligatoria
+### Acción obligatoria ante decisiones y bugs confirmados
 
-Toda memoria guardada por una fase debe incluir:
+Para una decisión o bug confirmado, ejecutar exactamente una captura explícita con evidencia verificable:
 
-| Campo | Tipo | Descripción |
-| ----- | ---- | ----------- |
-| `increment` | `string` | ID del incremento/bug/plan (ej. `INC-20260729-knowledge-harvest-command`) |
-| `phase` | `SddPhase` | Fase que la genera: `analysis`, `architecture`, `frontend`, `backend`, `qa`, `validator`, `archive` |
-| `actorRole` | `ActorRole` | Rol del actor: `analyst`, `architect`, `frontend`, `backend`, `qa`, `validator`, `orchestrator` |
-| `knowledgeKind` | `KnowledgeKind` | Tipo de conocimiento: `decision`, `constraint`, `discovery`, `bugfix`, `gotcha`, `pattern`, `risk`, `open-question`, `workaround`, `convention` |
-| `stability` | `Stability` | `temporary` (solo este incremento), `candidate-project-context` (promovible a contexto técnico), `candidate-skill` (promovible a skill), `historical-only` (solo trazabilidad) |
-| `visibility` | `Visibility` | `project-shared` (default) o `private` |
-| `sourceArtifact` | `string` | Path al artefacto fuente (spec, plan, código) que originó la memoria |
-
-### Reglas generales (todas las fases)
-
-**Guardar cuando**:
-- Se descubre una decisión útil para fases posteriores
-- Se identifica una restricción no obvia de la spec
-- Se encuentra un gotcha que puede hacer fallar la implementación
-- Se detecta un patrón reutilizable
-- Se observa un error repetido
-- Se identifica un riesgo o asunción que los agentes downstream deben conocer
-
-**NO guardar**:
-- Logs crudos
-- Texto duplicado de la spec sin aprendizaje adicional
-- Razonamiento de bajo valor
-- Preferencias personales
-- Notas temporales sin valor downstream
-- Secretos, tokens, credenciales, PII, datos sensibles de cliente
-
-### Por fase: qué guardar
-
-#### Analysis / Functional refinement
-
-**Guardar**:
-- Restricciones funcionales descubiertas (`knowledgeKind: constraint`)
-- Reglas de negocio ambiguas (`knowledgeKind: open-question`)
-- Dependencias externas (`knowledgeKind: constraint`)
-- Riesgos de alcance (`knowledgeKind: risk`)
-- Decisiones de negocio relevantes (`knowledgeKind: decision`)
-- Escenarios límite (`knowledgeKind: discovery`)
-- Información que arquitectura o implementación necesitará
-
-**NO guardar**:
-- Resúmenes completos de la spec
-- Texto duplicado sin aprendizaje adicional
-- Dudas ya resueltas y sin valor posterior
-
-#### Architecture / Plan
-
-**Guardar**:
-- Decisiones arquitectónicas (`knowledgeKind: decision`, `stability: candidate-project-context`)
-- Tradeoffs y alternativas descartadas (`knowledgeKind: decision`)
-- Dependencias técnicas (`knowledgeKind: constraint`)
-- Riesgos técnicos (`knowledgeKind: risk`)
-- Constraints para frontend/backend (`knowledgeKind: constraint`)
-- Patrones que deben seguirse en implementación (`knowledgeKind: pattern`)
-
-**Marcar como `candidate-project-context`** cuando la decisión sea estable para el proyecto, no solo para el incremento.
-
-#### Frontend implementation
-
-**Guardar**:
-- Limitaciones reales de UI (`knowledgeKind: constraint`)
-- Componentes reutilizables (`knowledgeKind: pattern`)
-- Inconsistencias con diseño/spec (`knowledgeKind: discovery`)
-- Edge cases de navegador (`knowledgeKind: gotcha`)
-- Gotchas de estado, cache, formularios o validación (`knowledgeKind: gotcha`)
-- Patrones útiles para próximos incrementos (`knowledgeKind: pattern`)
-
-**Marcar como `candidate-skill`** cuando sea una regla operativa que debería repetirse en futuras implementaciones frontend.
-
-#### Backend implementation
-
-**Guardar**:
-- Contratos reales observados (`knowledgeKind: discovery`)
-- Inconsistencias entre spec/OpenAPI/backend legacy (`knowledgeKind: discovery`)
-- Workarounds (`knowledgeKind: workaround`)
-- Efectos colaterales (`knowledgeKind: gotcha`)
-- Reglas de integración (`knowledgeKind: constraint`)
-- Gotchas de persistencia, colas, cache, permisos o errores funcionales (`knowledgeKind: gotcha`)
-
-**Marcar como `candidate-project-context`** si describe una realidad estable del sistema.
-**Marcar como `candidate-skill`** si describe un checklist o prevención repetible.
-
-#### QA / Validator
-
-**Guardar**:
-- Defectos recurrentes (`knowledgeKind: bugfix`)
-- Gaps de tests (`knowledgeKind: discovery`)
-- Escenarios que deberían añadirse a futuras validaciones (`knowledgeKind: pattern`)
-- Patrones de fallo (`knowledgeKind: pattern`)
-- Errores del flujo SDD (`knowledgeKind: gotcha`)
-- Checks que faltan en skills actuales (`knowledgeKind: discovery`)
-
-**Marcar como `candidate-skill`** cuando sea una regla que debería añadirse a una skill de validación/review.
-
-### Flujo de memoria entre fases
-
-```text
-Analista
-  → guarda memoria útil (stability: candidate-project-context o temporary)
-  → el backend de memoria (Engram/JSON) persiste localmente
-Arquitecto
-  → consulta memorias del incremento (filtro: phase=analysis)
-  → usa lo aprendido por el analista
-  → guarda sus propias memorias
-Frontend / Backend / QA / Validator
-  → repiten el mismo patrón: consultar fases anteriores → actuar → guardar
+```sh
+axiom memory add --text "<decisión confirmada>" --kind decision --visibility project-shared --rationale "<por qué se confirmó>" --source "<evidencia verificable>"
+axiom memory add --text "<bug confirmado, causa y fix>" --kind bug --visibility project-shared --rationale "<por qué se confirmó>" --source "<evidencia verificable>"
 ```
 
-Al finalizar el incremento, `axiom knowledge harvest --increment <id>` clasifica
-todas las memorias y genera `knowledge-harvest.md` con propuestas de promoción
-a contexto técnico y skills.
+`project-shared` se utiliza solo para decisiones, bugs, restricciones o patrones ya confirmados, libres de secretos y con valor reutilizable para el equipo. `private` se limita a contexto local, hipótesis o notas temporales:
 
-### Relación con el Knowledge Harvest
+```sh
+axiom memory add --text "<contexto o hipótesis local>" --kind context --visibility private --rationale "<estado o motivo>" --source "<origen local>"
+```
 
-El harvest clasifica automáticamente por `stability`:
-- `candidate-project-context` → propuesta de promoción a `context/technical/`
-- `candidate-skill` → propuesta de creación/actualización de skill
-- `temporary` / `historical-only` → solo memoria histórica del incremento
-- Sin metadata de fase → descartada (ruido)
+`private` sigue siendo legible en la máquina local; solo impide la exportación por Knowledge Sync y no es un almacén de secretos. Ninguna visibilidad admite tokens, credenciales, PII ni datos sensibles.
 
-La promoción real a contexto técnico o skills requiere revisión humana
-o confirmación explícita. El harvest solo propone, nunca muta.
+### Metadata de fase
+
+Además de esa acción explícita, una memoria útil puede incluir `increment`, `phase`, `actorRole`, `knowledgeKind`, `stability`, `visibility` y `sourceArtifact`. Guardar únicamente decisiones, restricciones, riesgos, gotchas, patrones o descubrimientos reutilizables; nunca logs crudos, texto duplicado, razonamiento de bajo valor ni secretos. La metadata se persiste como frontmatter en Engram y permite que fases posteriores consulten el mismo incremento.
+
+### Flujo y Knowledge Harvest
+
+```text
+Agente de fase
+  → consulta las memorias Engram del incremento cuando aporten contexto
+  → captura explícitamente decisiones/bugs confirmados y conocimiento útil
+  → comunica el id o el error de la operación
+
+Al cierre
+  → `axiom knowledge harvest --increment <id>` clasifica por `stability`
+  → propone promociones a contexto técnico o skills sin mutarlas
+```
+
+Knowledge Sync solo exporta `project-shared`; las memorias `private`, sin visibilidad o con secretos se excluyen con motivo. El harvest propone: `candidate-project-context` para contexto técnico, `candidate-skill` para una skill y `temporary`/`historical-only` como memoria histórica. La promoción real requiere revisión humana o confirmación explícita.

@@ -1,0 +1,18 @@
+id: INC-20260820-r11-context-tag-selection
+kind: increment
+title: r11-context-tag-selection
+status: archived
+createdAt: '2026-08-20T15:31:48.288Z'
+updatedAt: '2026-08-20T16:09:20.942Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-20T15:31:48.288Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

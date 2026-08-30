@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-structural-mutation-safety",
+  "phase": "increment-specify",
+  "status": "failure",
+  "timestamp": "2026-08-29T13:09:47.150Z",
+  "details": "No transition for command 'increment-specify' from state 'plan-approved'. Available: increment-verify",
+  "hash": "b69f6494cdb1632c37f2165e8d20b7701a83bd05df2c21fa46c00b75b9d1d33a"
+}

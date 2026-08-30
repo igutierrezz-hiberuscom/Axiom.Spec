@@ -1,0 +1,21 @@
+id: INC-20260829-r13-user-project-registry
+kind: increment
+title: r13-user-project-registry
+status: archived
+createdAt: '2026-08-29T13:03:27.046Z'
+updatedAt: '2026-08-30T07:59:57.202Z'
+externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-08-30T07:59:57.202Z'
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-29T13:03:27.046Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

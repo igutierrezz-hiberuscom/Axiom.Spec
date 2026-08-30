@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-telemetry-regression",
+  "phase": "increment-specify",
+  "status": "failure",
+  "timestamp": "2026-08-29T13:09:54.633Z",
+  "details": "No transition for command 'increment-specify' from state 'plan-approved'. Available: increment-verify",
+  "hash": "1fd522472d8adbcd4f1342cbce5e65ef61965512f9c4696cad9958eff06c1d40"
+}

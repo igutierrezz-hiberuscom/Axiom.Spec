@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-workspace-resolution-surface",
+  "phase": "increment-plan",
+  "status": "failure",
+  "timestamp": "2026-08-29T13:09:45.327Z",
+  "details": "No transition for command 'increment-plan' from state 'plan-approved'. Available: increment-verify",
+  "hash": "1f67634edac58e19954eb22cf83dfac612e2b832ab567e9ec022a115ec81859e"
+}

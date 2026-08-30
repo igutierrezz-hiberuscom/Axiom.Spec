@@ -1,0 +1,18 @@
+id: INC-20260829-r13-launcher-control-plane
+kind: increment
+title: r13-launcher-control-plane
+status: plan-approved
+createdAt: '2026-08-29T13:03:50.131Z'
+updatedAt: '2026-08-29T13:09:39.446Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-08-29T13:03:50.131Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null
