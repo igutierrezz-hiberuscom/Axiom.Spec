@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-control-plane",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-09-08T07:31:23.883Z",
+  "details": "Apply delegado en tres parches con freeze hash 92406c1068e037b2cca17b2e1047d6096134d65b595f98eb06ab30929a36b061; control plane, grants, HttpLaunch, static symlink guard, SSE shutdown y evidencia focal implementados; sin Git mutante.",
+  "hash": "a6f35d938aadbbc95ab1725406b196acc028d79520813ce8f3e57ee63ce8fbfb"
+}

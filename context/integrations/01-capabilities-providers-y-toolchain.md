@@ -77,3 +77,10 @@ La memoria usa `MemoryKind` (`decision`, `bug`, `learning`, `pattern`, `context`
 ## Extensiones opcionales: app plugins y bridge externo
 
 `@axiom/app` (incremento 0030) implementa un sistema de plugins project-scoped con discovery en `.axiom-state/<projectKey>/app-plugins/*.json` (renombrado desde el prefijo antiguo, `INC-20260703-config-folder-renames`; schema guard tolerante: malformados → warnings, no abort; IDs únicos por proyecto) y un bridge declarativo hacia Azure DevOps. El contrato vigente separa schema, discovery, resolución y ejecución: solo handlers estáticos allowlisted pueden ejecutarse; `command` es una etiqueta informativa. Read es read-only; `local-mutation`/`external-mutation` requieren preview y `confirmed: true`; valores, opciones y envelopes se validan antes del handler. El catálogo y resultados se proyectan sin propiedades desconocidas, secretos, userinfo ni query de URLs. `kind: none` usa `NullTracker` sin red; `kind: ado` usa los ports/fakes del tracker. No hay integración con Jira/Confluence implementada.
+
+
+## Launcher: entrega local y endpoints HTTP (R-13)
+
+La integración de entrega del launcher es local-only y no recibe URLs arbitrarias desde la request. `HttpLaunch` selecciona un endpoint configurado por id, valida allowlist y protocolo, fija la resolución DNS, bloquea destinos privados/link-local/metadata y rebinding no autorizado, rechaza redirects y acota timeout/respuesta. `ClipboardLaunch` comunica una instrucción al cliente y solo alcanza `delivered` después de evidence/ack; VS Code no se ofrece como transporte runtime hasta existir bridge cliente. La cobertura real usa fixtures `node:http` sobre loopback y no red externa.
+
+El alias plugin-scoped del launcher se mantiene por compatibilidad con el catálogo existente; la validación de envelopes impide combinar targets plugin con `actionKey` o `adapterId`.

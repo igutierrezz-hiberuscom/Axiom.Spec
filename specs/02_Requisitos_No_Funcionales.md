@@ -47,6 +47,12 @@ con advertencia cuando el contenido humano no se puede reconciliar.
 
 Para `~/.axiom/projects.yml`, la atomicidad abarca el ciclo read-modify-write completo: lock multiproceso acotado, temporal propietario PID+UUID, flush/fsync, validación y rename atómico. El reclaim de un lock abandonado debe estar ligado a la generación observada y cercado durante la publicación de su owner; nunca puede retirar una generación sucesora ni artefactos ajenos.
 
+## NFR-AXM-027 Mutaciones estructurales recuperables y observación fail-closed
+
+Las operaciones `workspace setup|adopt`, `repo add` y `role add` deben prevalidar conjuntamente todos los recursos estructurales y todos los límites de outputs derivados sin producir `mkdir`, home, locks, temporales, journals, telemetría o registro. `ENOENT` es la única evidencia de ausencia; `ENOTDIR`, `EACCES`, `EIO` y errores desconocidos conservan operación, path, código y causa en un error tipado.
+
+El apply debe serializar proyecto, registry solicitado y recursos en orden canónico, replantear bajo lock y rechazar cualquier drift de bytes, metadata, tipo, `realpath` o identidad física. Cada operación persiste un journal bajo `.axiom-state/<projectKey>/structural-transactions/<operationId>/`; un fallo restaura el estado previo cuando es demostrable o deja `recovery-required` visible, nunca éxito parcial. Solo después de `committed` pueden ejecutarse outputs derivados; sus fallos son warnings tipados con `exitCode: 0` y no reinterpretan el commit estructural.
+
 ## NFR-AXM-008 Aislamiento project-scoped
 
 Ninguna ruta, cache, MCP binding o entrada de memoria debe cruzar el `projectKey` de origen. `projectKey` es `projectId` en schema v2 y el slug estable de `project.name` en v1. Verificado en `@axiom/isolation` (path-guard, `DEFAULT_ALLOWED_MCP_SERVERS`) y en las reglas GATE 0024 (`@axiom/memory`: spec prevalece sobre memoria en conflicto).
@@ -90,7 +96,9 @@ Complementariamente, la suite moderna de `@axiom/mcp-server` da una garantía en
 
 La compatibilidad aditiva es la política por defecto cuando existe estado instalado que deba seguir leyéndose. Una retirada destructiva solo es válida como cutover explícito, con alcance y ausencia de consumidores confirmados, sin interpretar silenciosamente una versión como otra.
 
-El catálogo user-level es una excepción deliberada y cerrada: `~/.axiom/projects.yml` `schemaVersion: 2` es su único formato; `registry.json` v1 no se lee ni se migra. Otros contratos conservan su compatibilidad declarada: por ejemplo, `resolveProject` y los checks `MC-001`/`BC-001`/`BC-002` siguen aceptando `axiom.yaml` schema 1 y 2.
+`TopologyManifest` es una excepción de cutover explícito: el único formato aceptado es `schemaVersion: 2`, con autoridad única en `<axiomRepo>/axiom.config/topology.yaml`, buckets `axiomRepo`/`codeRepos`/`legacyRepos` y unión discriminada de referencias. Schema 1, aliases legacy, manifest ausente, autoridad no resoluble, YAML malformado o shape/semántica inválida deben fallar closed; ningún loader puede derivar o aceptar una topología alternativa desde `axiom.yaml` o una copia local. Esta regla no cambia la compatibilidad independiente de `axiom.yaml`, cuyos schemas 1 y 2 siguen siendo contratos separados cuando un caller los admite.
+
+El catálogo user-level es otra excepción deliberada y cerrada: `~/.axiom/projects.yml` `schemaVersion: 2` es su único formato; `registry.json` v1 no se lee ni se migra. Otros contratos conservan su compatibilidad declarada, sin reutilizar el número de schema de topology.
 
 ## NFR-AXM-012 Sin caché persistente hasta que el volumen real lo justifique
 
@@ -153,3 +161,10 @@ Un flujo desatendido (`/axiom-autopilot` y sus subagentes) debe dejar **evidenci
 Refuerza `NFR-AXM-006` (sin excepciones para control de flujo): con `AXIOM_ERROR_CODES` (RF-AXM-057) la recuperación automática se decide sobre un `code` estable, no sobre el texto de un mensaje.
 
 **Hueco conocido y no cerrado**: el receipt se emite tras retornar el core de la transición, por lo que cubre los fallos con `exitCode === 1` pero **no** una excepción que escape del core — ese camino no deja receipt. Es defendible (una excepción es un crash, no un desenlace de fase) pero es un límite real del gobierno verificable y queda registrado como tal, no como cobertura completa.
+
+
+## Control plane local del launcher (R-13, ACC-070..ACC-072)
+
+El launcher web opera como control plane local y fail-closed: solo acepta bind literal `127.0.0.1` o `::1`, crea una sesión aleatoria por proceso y exige cookie válida, `Host` exacto y `Origin` local en la API. Las mutaciones JSON requieren `application/json`, schema cerrado, body máximo de 256 KiB y timeout de lectura de 5 s; las respuestas 5xx no exponen paths ni stacks. La superficie servida y browse canonicalizan rutas y rechazan traversal y symlink escape.
+
+SSE conserva el aislamiento de sesión, máximo 8 suscriptores, heartbeat de 15 s, cola máxima de 64 KiB y cleanup por desconexión, backpressure y shutdown. La autorización de una mutación no se deriva de Doctor, de un flag recibido por HTTP ni de `confirmed:true` externo.

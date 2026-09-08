@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-topology-schema2-authority",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-04T10:32:22.655Z",
+  "details": "Independent GO review; focused 94/94, serial 335 suites/3289 tests, typechecks, build, doctor PASS (0 failures), readiness PASS, git diff --check PASS.",
+  "hash": "70ed45501deabe0252d63210a822c6332b762b496898017326fc7c381a8482a1"
+}

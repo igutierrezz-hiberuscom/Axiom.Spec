@@ -174,16 +174,51 @@ compartan accidentalmente un `workspace.json`.
 
 ## Capacidad clave
 
-El runtime debe saber dónde está cada repo del proyecto y cómo resolverlo en cada surface soportada. Implementado hoy dentro de un único proyecto vía `topology.yaml`. **SUPERSEDE** la afirmación previa de que la resolución de "en qué repo Axiom vive cada pieza del propio producto" (Axiom / Axiom.SDD / Axiom.Spec) era puramente manual (gobernada solo por `Axiom.SDD/AGENTS.md`, no por una topología ejecutable): desde `INC-20260710-dogfooding-workflow-configs`, el propio repo `Axiom` ship un `axiom.config/topology.yaml` real (`mode: multi-repo`, `sddRepo` → `../Axiom.SDD`, `specRepo` → `../Axiom.Spec`, con `Axiom` mismo declarado como `roleCodeRepository` asignado al profile `builder`), por lo que `axiom topology show/validate` ya reflejan esa topología de forma ejecutable — ver la subsección de workflows/topología dogfooded más abajo.
+El runtime debe saber dónde está cada repo del proyecto y cómo resolverlo en cada
+surface soportada. La topología vigente se resuelve mediante un único
+`TopologyManifest.schemaVersion: 2` autoral en
+`<axiomRepo>/axiom.config/topology.yaml`. `axiom.yaml` en un repo `code` o
+`legacy` contiene identidad y el pointer `axiomRepo`; no contiene el grafo ni
+autoriza una copia local. En este workspace la autoridad es
+`Axiom.Spec/axiom.config/topology.yaml`, `Axiom/axiom.yaml` apunta a ella como
+`kind: code` y `Axiom.SDD` está declarado como `legacy` read-only. La spec
+canónica y el runtime permanecen separados por ownership; esta topología no
+sustituye esa regla.
+
+El loader valida autoridad, schema, discriminadores, referencias, asignaciones,
+roles, `mode` y `qaLane` de forma fail-closed. No acepta schema 1, aliases
+`sddRepo`/`specRepo`/`roleCodeRepositories`, copias por repo ni fallback
+silencioso desde `axiom.yaml`. El scope de spec prioriza el child físico
+`<authority>/specs`; una autoridad dedicada `role: spec` sin ese child puede
+usar su raíz; una topología ausente, malformada, default-local o sin mapping no
+reactiva una proyección local y conserva el default `axiom.spec`.
+
+Los bindings machine-local usan `LocalBindingsV2` (`schemaVersion: 2`) y errores
+`TopologyError` estables. CLI `topology show|validate` y `bindings` emiten un
+envelope JSON v1 único y exit code honesto; launcher y MCP conservan código,
+kind y causa estructurada en lugar de recodificar un fallo como resultado vacío.
+Las escrituras de topology/bindings comparten los primitives de lock, validación
+y reemplazo atómico de `@axiom/core`.
+
+Las superficies de setup/adopción e incremental comparten además
+`StructuralMutationResult`: recursos estructurales, warnings derivados y error
+son campos separados. Un error de recursos devuelve `ok:false`/exit no cero; un
+fallo post-commit de adapters, reglas, MCP o catálogos conserva `ok:true`,
+`state:'committed'`, `exitCode:0` y una warning tipada.
 
 ### Workflows (`workflows.yaml`) y topología (`topology.yaml`) dogfooded en `Axiom` — INC-20260710-dogfooding-workflow-configs
 
-Ambos ficheros son canónicos pero **OPCIONALES a nivel de archivo**, siguiendo el mismo patrón que `profiles.yaml`/`DEFAULT_PROFILES` (`BUG-20260703-configure-needs-bundled-profiles`): si el proyecto no tiene su propio `axiom.config/workflows.yaml`, `@axiom/workflow` cae a un `DEFAULT_WORKFLOWS` embebido (`packages/workflow/src/default-workflows.ts`) con los 5 workflows canónicos (`increment`, `bug`, `plan`, `role`, `qa-e2e`) derivados 1:1 de los 5 comandos CLI que los consumen; `axiom.config/topology.yaml` ya tenía este mismo comportamiento vía `@axiom/topology`'s `defaultSingleRepoManifest`. Un fichero PRESENTE siempre gana sobre el fallback, y si está presente pero mal formado sigue siendo un error tipado — el fallback nunca tapa un archivo roto, solo uno ausente.
+`workflows.yaml` puede usar el fallback bundleado de workflows cuando está
+ ausente, pero un `topology.yaml` de schema 2 no es un opt-in derivado: debe
+ existir en la autoridad declarada para una topología multi-repo. Un fichero de
+topología presente pero mal formado, con schema distinto o con autoridad
+inválida es un error visible; el fallback no tapa un archivo roto ni convierte
+un repo code/legacy en autoridad.
 
-- **Antes de este incremento**, ninguno de los dos ficheros existía en `Axiom/axiom.config/`, por lo que `axiom-increment`/`axiom-bug`/`axiom-plan approve`/`axiom-role`/`axiom-qa-e2e` fallaban en vivo con "No se encontró workflows.yaml..." y `axiom topology show` reportaba silenciosamente `mode: single-repo` (el default pre-archivo).
-- **Ahora**, `Axiom/axiom.config/workflows.yaml` y `Axiom/axiom.config/topology.yaml` existen y son idénticos en contenido al fallback embebido correspondiente (verificado por un test de sync exacto en `packages/workflow/tests/default-workflows.test.ts`).
-- **`@axiom/doctor` TC-014/TC-015** (categoría `workflow-config`) verifican que, SI cualquiera de los dos ficheros existe, sea válido — ausente sigue siendo `pass` (fallback embebido); presente y mal formado es `fail`. Complementan (no reemplazan) a TC-001/TC-002, que cubren cobertura de roles y antes absorbían un manifest inválido en un `skip` silencioso en vez de un `fail`.
-- **`topology.yaml`'s `assignments[].roleId`** usa el id de functional profile `builder` (de `profiles.yaml`), no un id de rol de implementación (`backend`/`frontend`/`qa-e2e`) — ese mapeo de profile-a-rol-de-implementación queda diferido a un incremento posterior.
+- La autoridad actual es `Axiom.Spec/axiom.config/topology.yaml` y contiene `axiomRepo`, `codeRepos`, `legacyRepos`, `roles`, `assignments` y `qaLane`; el manifest se escribe solo allí.
+- `Axiom/axiom.yaml` conserva identidad/pointer (`axiomRepo: ../Axiom.Spec`) y no materializa el grafo; ningún repo code/legacy recibe una copia de `topology.yaml`.
+- `@axiom/doctor` y `axiom topology validate` validan la autoridad con `validateTopology`; ausencia de pointer, autoridad ausente/no-axiom, YAML inválido, schema no soportado o shape/semántica inválida no se degrada silenciosamente a single-repo.
+- `assignments[].roleId` se contrasta con la unión de los roles de equipo declarados y los perfiles funcionales permitidos; `builder` sigue siendo la configuración funcional implícita y no se confunde con los roles de implementación.
 
 ## Registro histórico: primera capa de herramientas MCP (roadmap de rediseño, cerrado)
 
@@ -483,11 +518,13 @@ Tanda de 7 incrementos que lleva el conjunto de adapters a paridad de primera cl
 
 ### Hardening del launcher y plugins externos (2026-08-04) — ACC-006/007/008
 
-El launcher delega setup/adopcion y lifecycle en los runners canonicos. Valida
-ownership de destinos antes de adoptar, rechaza paths de repos solapados y
-devuelve resultados parciales con provenance y warnings. El lifecycle propaga
-`executionMode` al handler async de roles y `runIntegrate` hace preflight y
-rollback antes de informar un archive exitoso.
+El launcher delega setup/adopcion y lifecycle en los runners canonicos. Preview
+y preflight de workspace son read-only y comparten las mismas validaciones de
+ownership/solapamiento que la CLI. Los recursos estructurales se comprometen,
+revierten o dejan `recovery-required`; provenance, recursos y warnings
+derivadas se proyectan por separado, sin presentar estructura parcial como
+éxito. El lifecycle propaga `executionMode` al handler async de roles y
+`runIntegrate` hace preflight y rollback antes de informar un archive exitoso.
 
 Los plugins declarativos usan `schemaVersion`, `handler` y una allowlist
 estatica. `command` solo se compara como etiqueta; no se ejecuta. La
@@ -603,3 +640,10 @@ Consolida las capacidades del plugin Azure DevOps del launcher (sobre `@axiom/tr
 A partir de este incremento `apps/cli` depende realmente de `@axiom/config-validation` y los tres loaders comparten `validateInstallProfilesYamlContent()`. La función se diseñó para devolver `data` tipada (a diferencia de las otras cuatro `validate*YamlContent`, que devuelven solo validez + errores) porque estos call sites necesitan el objeto parseado de vuelta.
 
 Regla derivada, aplicable a futuras integraciones: **si ya existe un schema canónico para un fichero, consumirlo es obligatorio antes que escribir un loader nuevo**. Un schema sin consumidores es deuda, no cobertura.
+
+
+## Transportes del launcher y entrega configurada (R-13, ACC-071)
+
+`HttpLaunch` no acepta una URL request-controlled: selecciona un `endpointId` de configuración validada, restringe protocolos y hosts allowlisted, resuelve y fija la dirección DNS, rechaza destinos privados/link-local/metadata y DNS rebinding no permitido, desactiva redirects y aplica timeout de 5 s y respuesta máxima de 64 KiB. La evidencia de éxito es un status HTTP recibido de ese endpoint; los redirects, timeouts y respuestas oversized no se marcan como entregados. La cobertura incluye fixtures HTTP locales reales sin red externa.
+
+`ClipboardLaunch` informa `client-instructed` y crea un registro de delivery; solo un ack con digest, token y evidence puede progresar a `delivered`. No existe `VSCodeLaunch` como transporte efectivo: targets VS Code pueden usar clipboard hasta que exista un bridge cliente con ack.

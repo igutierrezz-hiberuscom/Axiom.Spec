@@ -38,7 +38,17 @@ mantiene las rutas headless `axiom init`, `axiom workspace setup` y
 sin depender de una interfaz terminal. `axiom` sin subcomando no abre una
 superficie implicita y `axiom tui` ya no existe como comando.
 
-Modelo de datos tras el init (fuente única de verdad): `axiom.yaml` es la fuente autoral de la identidad del proyecto (`projectId`/`name`/`repoId`/`role`) y del mapa de repos. `init` escribe `axiom.yaml`, `AGENTS.md` canónico (aditivo, best-effort), `.gitignore`, `.axiom-state/local/` y `.axiom-state/<projectKey>/init.json` (con `profileTriple`+`createdAt`+`version`, sin `projectName` propio); `projectKey` es `projectId` v2 o el slug estable del nombre v1. `init` ya NO escribe `topology.yaml`, que se deriva de `axiom.yaml` al leer y se materializa de forma perezosa solo al asignar roles (`INC-20260703-config-dedup`; ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)). Además intenta registrar el proyecto en el registry user-level de forma best-effort y admite opt-out con `--no-register`. Un `axiom.yaml` v1/v2 con `mode: gateway` o `mode: hybrid` se lee por compatibilidad y se normaliza a `local-only`; esos literales no abren una rama operativa.
+Para `workspace setup|adopt`, `repo add` y `role add`, preview y preflight son
+read-only: resuelven autoridad, ownership, solapamientos y todos los targets sin
+crear siquiera home, locks o temporales. Apply adquiere locks en orden, recupera
+o bloquea journals incompletos, recalcula el plan y comprueba sus precondiciones
+antes del primer journal. La publicación estructural termina en `committed`,
+rollback comprobado o `recovery-required`; nunca en éxito parcial. Después del
+commit se ejecutan adapters, reglas, MCP, catálogos y otras proyecciones como
+pasos derivados: una avería ahí produce warnings tipados y `exitCode: 0`, pero no
+revierte la identidad/topología ya válida.
+
+Modelo de datos tras el init: `axiom.yaml` es el manifiesto de identidad del repo (`projectId`/`name`/`repoId`/`role`) y, en repos `code`/`legacy`, contiene el puntero `axiomRepo` hacia la autoridad. No contiene el mapa completo de repos. `init` escribe `axiom.yaml`, `AGENTS.md` canónico (aditivo, best-effort), `.gitignore`, `.axiom-state/local/` y `.axiom-state/<projectKey>/init.json` (con `profileTriple`+`createdAt`+`version`, sin `projectName` propio); `projectKey` es `projectId` v2 o el slug estable del nombre v1. `init` no escribe `topology.yaml`: un repo que no es la autoridad no deriva una topología local. El loader solo usa el manifest schema 2 desde `<axiomRepo>/axiom.config/topology.yaml` cuando el pointer y la autoridad son válidos; ausencia o malformación queda fail-closed y no activa fallback. Además intenta registrar el proyecto en el registry user-level de forma best-effort y admite opt-out con `--no-register`. Un `axiom.yaml` v1/v2 con `mode: gateway` o `mode: hybrid` se lee por compatibilidad y se normaliza a `local-only`; esos literales no abren una rama operativa.
 
 ## Baseline operativa actual
 
@@ -113,17 +123,17 @@ El contrato se bundlea como UNA constante TS canónica (`@axiom/document-bootstr
 
 ## Repo-affinity y review por rol (2026-07-11) — INC-20260711-repo-affinity-guard / INC-20260711-per-role-review
 
-Dos endurecimientos del ciclo de vida para workspaces multi-repo con roles↔repos definidos; ambos son un **NO-OP estricto** fuera de ese caso (single-repo, `axiom.yaml` schemaVersion 1, o sin asignaciones — el dogfood de Axiom incluido), así que no afectan al flujo por defecto.
+Dos endurecimientos del ciclo de vida para workspaces multi-repo con roles↔repos definidos; ambos son un **NO-OP estricto** fuera de ese caso (single-repo, sin manifest schema 2 válido o sin asignaciones — el dogfood de Axiom incluido), así que no afectan al flujo por defecto.
 
 ### Repo-affinity de los comandos de ciclo de vida (INC-20260711-repo-affinity-guard)
 
 Un guard compartido `checkRepoAffinity` (mismo patrón que `checkPlanIsApproved`) cableado en los cuatro entrypoints de ciclo de vida enforce DESDE QUÉ repo se ejecuta cada comando:
 
-- `axiom-increment` / `axiom-bug` / `axiom-plan` deben ejecutarse desde el **repo de SPEC**; desde el repo de control (`sdd`) o un repo de rol/código se rechazan (exit 1, mensaje accionable que nombra el repo correcto).
-- `axiom-role` para el rol **X** (`start`/`apply`/`complete`/`sync-graph`) debe ejecutarse SOLO desde el repo asignado al rol **X**; abrir el repo de otro rol se rechaza nombrando el repo correcto.
-- **Condiciones de gating (las tres deben cumplirse; si no, NO-OP):** `loadTopology(repoActual)` OK y `mode === 'multi-repo'`; `resolveProject` resuelto con `role` no vacío (i.e. `axiom.yaml` schemaVersion 2); `assignments.length > 0`. El rol destino de `axiom-role` se deriva del `--slug`/`--id` operado contra `topology.yaml#roles`/`#assignments`.
+- `axiom-increment` / `axiom-bug` / `axiom-plan` deben ejecutarse desde el **repo de SPEC**; desde un repo code o legacy se rechazan (exit 1, mensaje accionable que nombra el repo correcto).
+- `axiom-role` para el rol **X** (`start`/`apply`/`complete`/`sync-graph`) debe ejecutarse SOLO desde el repo code asignado al rol **X**; abrir el repo de otro rol se rechaza nombrando el repo correcto.
+- **Condiciones de gating (las tres deben cumplirse; si no, NO-OP):** `loadTopology(repoActual)` debe resolver la autoridad schema 2 válida; `resolveProject` debe exponer `role`/`repoId` compatibles; y `assignments.length > 0`. El rol destino de `axiom-role` se deriva del `--slug`/`--id` operado contra `roles`/`assignments` del manifest autoral.
 
-Depende de que `topology.yaml` esté materializado en CADA repo (control + spec + cada rol), anclado per-repo, para que `loadTopology(repoActual)` responda "cuál es mi rol / qué repo dueña el rol X" desde cualquier repo — ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md). La identidad de repo (`role`/`repoId`) surface como campos aditivos de `ProjectResolution`.
+`loadTopology(repoActual)` sigue el `axiomRepo` pointer hasta `<authority>/axiom.config/topology.yaml`; no depende de que `topology.yaml` esté materializado en cada repo. La identidad local (`role`/`repoId`) se conserva como campos de `ProjectResolution`, y una autoridad ausente o inválida no se sustituye por una copia local.
 
 ### Review de write-scope por rol y agregado (INC-20260711-per-role-review)
 

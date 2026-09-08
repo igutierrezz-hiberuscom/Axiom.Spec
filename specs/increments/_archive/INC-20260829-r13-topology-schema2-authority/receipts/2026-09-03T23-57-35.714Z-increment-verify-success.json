@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-topology-schema2-authority",
+  "phase": "increment-verify",
+  "status": "success",
+  "timestamp": "2026-09-03T23:57:35.714Z",
+  "details": "Suite 335 archivos/3283 tests; typecheck, build, doctor PASS, readiness PASS, topology 101/101 y type-tests OK.",
+  "hash": "533e4276b7c55476561e46c82a35f7e9dbbfe8f65149cdfe44116714ed302506"
+}

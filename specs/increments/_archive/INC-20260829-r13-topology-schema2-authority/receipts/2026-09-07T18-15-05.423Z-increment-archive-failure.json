@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-topology-schema2-authority",
+  "phase": "increment-archive",
+  "status": "failure",
+  "timestamp": "2026-09-07T18:15:05.423Z",
+  "details": "QA archive: qaLane=inline, evidence=pending; required QA is not passed, archive blocked.",
+  "hash": "8ca75801dec423314346a28854e1d5dbd99203b62a24bc53c57cd42c70c89eb1"
+}

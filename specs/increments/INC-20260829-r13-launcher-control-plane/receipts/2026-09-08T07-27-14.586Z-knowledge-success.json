@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-control-plane",
+  "phase": "knowledge",
+  "status": "success",
+  "timestamp": "2026-09-08T07:27:14.586Z",
+  "details": "Conocimiento estable R-13 reconciliado en specs 02/05/06/07, README del incremento y contexto técnico existente; archive omitido por provenance no certificable.",
+  "hash": "f4a287d810545c2032b10742c22b2828e03f1c663866ddefdf66bf9feb5c169c"
+}

@@ -17,7 +17,7 @@ Familias de checks verificadas (prefijo de check ID entre paréntesis; el prefij
 | capability-model | `CC-001..006` | consistencia del modelo declarativo y cobertura provider-routed de capabilities |
 | install-profiles | `IP-001..004` | consistencia de `builder` + `local-only` + target resueltos |
 | tool-routing | `TR-001..004` | consistencia del dispatcher de `ToolCall` |
-| topology | `TC-001..003` | `axiom.config/topology.yaml` (o su derivación por fallback) |
+| topology | `TC-001..003` | autoridad `axiom.config/topology.yaml` schema 2, puntero y semántica fail-closed |
 | toolchain | `TC-004..006` | `toolchain-catalog.yaml`, detección/registro de tools |
 | toolchain versioning | `TC-020..023` | lockfile, compatibilidad de versiones, drift y canales |
 | memory | `TC-007/008/024` | bindings y aislamiento project-scoped; disponibilidad obligatoria del ejecutable Engram |
@@ -74,6 +74,12 @@ Las checks de lockfile **TC-020..TC-023** son project-scoped: TC-020 valida exis
 
 **`axiom doctor`**: correr con `--json`, corregir primero fallos estructurales, dejar warnings para una segunda pasada.
 
+**Mutaciones de workspace (`setup|adopt`, `repo add`, `role add`)**
+- `AXIOM_STRUCTURAL_*` antes del journal: revisar el path, operación, código de filesystem y causa; `ENOTDIR`, `EACCES` y `EIO` no equivalen a target ausente.
+- `precondition-changed`: otro proceso o el operador cambió bytes, tipo, `realpath`, mtime o identidad física entre preview y apply; repetir desde un preview nuevo, no forzar el plan viejo.
+- `recovery-required`: conservar `.axiom-state/<projectKey>/structural-transactions/<operationId>/` y no editar staging/backup a mano. La siguiente mutación intenta recovery bajo los mismos locks y se bloquea si encuentra hashes o entries desconocidos.
+- Una warning `derived-failure` con `state: committed`/exit 0 significa que identidad/topología quedaron válidas y falló una proyección post-commit. Reejecutar el comando granular dueño (`workspace adapters|rules|mcp-config|config-scaffold|skills|spec-base`) después de corregir la causa; no hacer rollback manual de recursos estructurales.
+
 `CC-004` usa las 16 capabilities provider-routed canónicas, no solo las que
 ya aparecen en `providers.yaml`. Lee su clase y estado desde
 `capabilities.yaml`: requeridas activas sin provider son `fail`, opcionales o
@@ -117,3 +123,8 @@ El panel es completamente read-only sobre telemetría y audit trail: no escribe 
 ## Gobernanza mínima verificada por doctor
 
 `integrations.yaml` existe; `policy-as-code.yaml` existe; `axiom.yaml` es válido; `.axiom-state/local/` no queda expuesta accidentalmente al versionado. Ver también la fila "gobernanza" (`GC-001..013`) de la tabla arriba para las verificaciones de gobernanza más amplias (lockfile de skills, `AGENTS.md`, manifests) añadidas desde el baseline.
+
+
+## Validación operativa del control plane R-13
+
+La validación de R-13 combina suites focales del launcher (server real, seguridad de grants, transportes, onboarding, paneles, push, ADO y `@axiom/launcher`), typechecks separados, `npm run build`, `npm run doctor` y `npm run readiness:first-project`. En la ejecución del 2026-09-08 pasaron 8 suites y 192 tests; Doctor devolvió PASS con 48/61 OK, 0 fallos, 2 advertencias y 11 omitidos; readiness devolvió PASS. Las advertencias/omitidos de Doctor son diagnóstico del proyecto y no autorizan ni bloquean por sí mismos las mutaciones del launcher.

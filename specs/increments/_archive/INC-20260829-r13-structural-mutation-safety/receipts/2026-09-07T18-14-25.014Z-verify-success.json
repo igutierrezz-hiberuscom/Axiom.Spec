@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-structural-mutation-safety",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-07T18:14:25.014Z",
+  "details": "Freeze fda546c137fe1a87852450a740716614cf06567650d5a6a03de15550262fef5b validated in final B-F regression: 42 incremental, 121 structural, 25 setup/adopt, 32 YAML/MCP/steps/envelopes/bindings, 19 workspace-command and 53 app/launcher tests; build, doctor, readiness, index and diff-check PASS; inline review GO.",
+  "hash": "2f1dd6c5dc175d6818642d8868eaefd89b2caea397fec0f7fb08e69b67f38dae"
+}

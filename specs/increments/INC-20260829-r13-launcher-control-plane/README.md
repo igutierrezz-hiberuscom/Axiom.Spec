@@ -1,7 +1,7 @@
 # Control plane, transportes y confirmación del launcher R-13
 
 > **Código**: INC-20260829-r13-launcher-control-plane
-> **Estado documental**: especificación refinada; lifecycle gestionado por Axiom Core
+> **Estado documental**: implementación verificada; lifecycle gestionado por Axiom Core (`verifying`); cierre `pending` por provenance no aislable
 > **Fecha**: 2026-08-29
 > **Acciones**: ACC-070..ACC-072 y matriz correspondiente de ACC-076
 > **Dependencias**: independiente de A-E en comportamiento; se ejecuta después de I para minimizar colisiones de CLI
@@ -55,6 +55,20 @@ No se mantiene API launcher sin sesión, CORS, `confirmed:true` como autorizaci�
 
 Servidor real: auth/origin/content-type/body/timeouts/headers/browse/SSE; SSRF/redirect/DNS fixtures locales; delivery ack; token mismatch/replay/race/expiry/edit/required; build y diff-check.
 
+## Resultado de verificación (2026-09-08)
+
+- Freeze de candidate revalidado por Core: `92406c1068e037b2cca17b2e1047d6096134d65b595f98eb06ab30929a36b061`.
+- Validación focal R-13: 8 suites, 192 tests PASS; typecheck de `packages/launcher` y `apps/cli` PASS; `npm run build` PASS; `git diff --check` focal PASS.
+- `npm run doctor`: PASS, 48/61 OK, 0 fallos, 2 advertencias y 11 omitidos. `npm run readiness:first-project`: PASS.
+- Review independiente: `ready_for_lifecycle`; CA-F1/ACC-070, CA-F2/ACC-071, CA-F3/ACC-072 y la evidencia ACC-076 conformes en el estado observado.
+- Core ejecutó `plan-approved → verifying` mediante `axiom-increment verify`. Receipts: `increment-verify` hash `256618ad116836db81767b2372c5083107b314d209049d5418abe690be43275c` y fase `verify` hash `b53eed4dc56758c26d052427146019a79b06949b6926f8c5c7326f94c7d55697`.
+
+## Provenance y decisión de cierre
+
+El worktree de `Axiom` contiene cambios concurrentes de numerosos incrementos y no existe una commit focal aislada; `Axiom.Spec` también tiene cambios concurrentes. Por tanto, la evidencia certifica el estado observado del worktree, pero no permite atribuir todos los resultados exclusivamente a R-13. Conforme a la regla del lote, no se ejecuta `archive`, no se marca `closed` y el cierre queda `pending` hasta disponer de provenance focal o una matriz de atribución reproducible.
+
+La observación no bloqueante de la review sobre comentarios históricos de `VSCodeLaunch` y el fallback SPA profundo queda registrada para una limpieza/documentación posterior; no cambia el alcance funcional aceptado de R-13.
+
 ## Integración estable
 
-Diferida al final; no editar specs 00..08/context durante apply.
+Consolidada al final de la verificación, sin editar metadata estructural ni índices: el contrato del control plane local, los límites HTTP/SSE, el transporte HTTP configurado/allowlisted, los estados honestos de clipboard, el rechazo de VSCode ficticio, el single-use grant y la separación entre Doctor diagnóstico y autorización fueron reconciliados en `Axiom.Spec/specs/02_Requisitos_No_Funcionales.md`, `05_Interfaces_Operativas.md`, `06_Integraciones_y_Capacidades.md`, `07_Gobierno_y_Seguridad.md` y el contexto técnico existente. No se archivó el incremento por la provenance no certificable.

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-workspace-resolution-surface",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-05T18:42:07.511Z",
+  "details": "D verify GO inline: corregidos warnings del no-op de runRepoAdd y preflight cero-escritura de workspace mcp-config; suites focales 15/15, 186/186 tests; suites de cambios 2/2, 38/38; workspace-state 5/5; cinco typechecks y npm run build PASS; git diff --check PASS. npm run doctor conserva fallo ambiental Engram ETIMEDOUT; suite global 327 suites/3309 tests PASS y 12 suites/18 tests fallan en fixtures legacy/adoption y workspace.json/providers incompatibles con cutover estricto preexistente.",
+  "hash": "726139b6fea7927962a1eaa0d8be21d163b29c2f8f9aa95283f5f697b7d33032"
+}

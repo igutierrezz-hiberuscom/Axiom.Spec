@@ -116,22 +116,17 @@ warning por las tres capabilities opcionales sin provider.
 
 ## Onboarding multi-repo (`axiom workspace setup` / `axiom workspace adopt` / `member install`)
 
-Añadido desde el baseline 2026-07-02 (varias oleadas post-0030, consolidadas por `INC-20260727-adoption-config-scaffolding` y anteriores). `runWorkspaceSetup` (`apps/cli/src/commands/workspace-setup.ts`) es el motor CORE compartido, sin interfaz TUI y sin lógica de negocio de MCP, detrás de dos flujos:
+El motor compartido `runWorkspaceSetup` (`apps/cli/src/commands/workspace-setup.ts`) opera sobre una autoridad `axiomRepo`, repos `code` y fuentes `legacy` read-only. Lo consumen dos flujos:
 
-- **`axiom workspace setup`**: scaffolding aditivo de un proyecto/repo de control ya existente (no requiere legacy repos previos).
-- **`axiom workspace adopt`** (`workspace-adopt.ts`): adopción de un repo/proyecto legacy hacia el modelo Axiom; llama a `runWorkspaceSetup` tras confirmación explícita para la parte de scaffolding (Subject B), y añade por separado la migración basada en detectores (Subject A) — no cambia la firma de `runWorkspaceSetup` (parametrización puramente aditiva).
-- **`member install`** (`member-install.ts`): instalación por miembro de equipo en un repo multi-rol ya adoptado/configurado.
+- **`axiom workspace setup`**: crea o reconcilia un workspace sin depender del catálogo user-level para resolver la autoridad.
+- **`axiom workspace adopt`** (`workspace-adopt.ts`): adopta fuentes legacy tras confirmación y preserva una identidad válida de otro proyecto como `skipped`; un documento inválido, ambiguo o conflictivo se rechaza.
+- **`member install`** (`member-install.ts`): instala el overlay personal de un miembro sobre un workspace ya configurado.
 
-Ambos flujos de `workspace setup`/`adopt` siembran, best-effort y no-clobber, los 4 artefactos de config que antes ningún comando producía automáticamente: `axiom.config/integrations.yaml` (PC-001), `axiom.config/policy-as-code.yaml` (PC-002), `axiom.config/agents-catalog.yaml` (TC-011) y el `axiom.skills.lock` raíz (GC-001/GC-002/GC-007) — ver `../architecture/02-modelo-de-datos-y-configuracion.md`.
+Setup/adopt y las altas `repo add`/`role add` calculan primero un plan sin escribir. El preflight valida en conjunto identidad, paths, create flags, ownership y solapamientos; solo `ENOENT` representa ausencia. Apply mantiene locks de proyecto/registry/recursos, recupera journals incompletos, replantea y verifica precondiciones antes de publicar identidad, topología, bindings, `workspace.json`, init state y registro solicitado como una unidad. Un fallo termina en rollback o `recovery-required`, nunca en estructura parcial presentada como éxito; `--no-register` mantiene el catálogo fuera de la unidad persistida.
 
-El launcher web (`axiom app`) expone estos flujos con endpoints server-level
-`/api/launcher/workspace/setup` y `/api/launcher/workspace/adopt`. La preview
-no escribe; la confirmación delega en los mismos runners. Antes de adoptar se
-rechazan destinos con `axiom.yaml` de otro proyecto o identidad desconocida y
-paths de roles iguales/anidados. El resultado devuelve paths, created/skipped,
-warnings, provenance, conformance y registry real; una adopción parcial se
-representa como resultado parcial, no como error opaco. `axiom app` es la
-interfaz guiada vigente; no existe una TUI pública equivalente.
+Adapters, reglas, MCP, skills, catálogos y base de spec se ejecutan después del commit y conservan política no-clobber dentro de sus owners. Una avería derivada se devuelve como warning tipada y no revierte la estructura válida. `WORKSPACE_STEP_CATALOG` es la matriz única entre setup y los comandos granulares de reparación.
+
+El launcher web (`axiom app`) expone `/api/launcher/workspace/setup` y `/api/launcher/workspace/adopt`: preview no escribe y confirmación delega en los mismos runners/envelopes que la CLI. El resultado separa recursos estructurales, steps derivados, warnings, provenance y registry real; no existe una TUI pública equivalente.
 
 ## Fuera de la baseline inicial (no-goals explícitos del MVP)
 

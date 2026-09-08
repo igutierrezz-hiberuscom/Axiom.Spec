@@ -1,0 +1,27 @@
+schemaVersion: 2
+mode: multi-repo
+axiomRepo:
+  id: axiom-spec-authority
+  ref: .
+  kind: axiom
+  description: Canonical Axiom.Spec authority for product artifacts.
+codeRepos:
+  - id: axiom-code-builder
+    ref: ../Axiom
+    kind: code
+    description: Axiom runtime/product code repository.
+legacyRepos:
+  - id: axiom-sdd-source
+    ref: ../Axiom.SDD
+    kind: legacy
+    mode: read-only-source
+    legacyFunction: sdd
+    description: Axiom.SDD workflow source; read-only legacy input.
+roles:
+  - id: builder
+    description: Runtime/product implementation role.
+assignments:
+  - repoId: axiom-code-builder
+    roleId: builder
+    primary: true
+qaLane: inline

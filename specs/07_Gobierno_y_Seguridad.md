@@ -57,11 +57,11 @@ Un incremento o bug solo puede marcarse `closed` si: el objetivo/comportamiento 
 
 Regla: "Axiom se desarrolla con Axiom, pero Axiom no contiene su propia factoría interna como parte del producto instalable."
 
-- `runDogfoodingBoundaryChecks` (`Axiom/packages/doctor/src/checks.ts`, id de check `DF-001`, categoría `dogfooding`) comprueba que ningún repo con rol `code` (`TopologyManifest.roleCodeRepositories`) tenga una dependencia física — una dependencia local de `package.json` (`file:`/`link:`/path relativo) o un literal de path `require`/`import` — que resuelva dentro del path de filesystem resuelto del repo con rol `sdd` o `spec`. Estrictamente unidireccional: que `sdd`/`spec` referencien a `code` para contexto es esperado y está fuera de alcance; solo se marca `code -> sdd`/`code -> spec`.
-- Parametrizado por rol por diseño, no hardcodeado por nombre: se apoya en `sddRepo`/`specRepo`/`roleCodeRepositories` de `TopologyManifest`, así que funciona de forma significativa sobre los nombres de repo de cualquier proyecto de terceros, no solo sobre el layout de este workspace.
-- Postura fail-open, con muchos `skip` (sin estado `warn`): se salta cuando el proyecto no está `resolved`, cuando `topology.yaml` falla al cargar, cuando `manifest.mode === 'single-repo'` (no es posible ningún límite cross-repo), o cuando `roleCodeRepositories` está vacío. Un `fail` requiere un match real y concreto de path resuelto; si no, `pass`.
+- `runDogfoodingBoundaryChecks` (`Axiom/packages/doctor/src/checks.ts`, id de check `DF-001`, categoría `dogfooding`) comprueba que ningún repo de `code` (`TopologyManifest.codeRepos`) tenga una dependencia física — una dependencia local de `package.json` (`file:`/`link:`/path relativo) o un literal de path `require`/`import` — que resuelva dentro de la autoridad `axiomRepo` o de los repos fuente `legacyRepos` que el proyecto haya declarado. El escaneo sigue siendo estrictamente unidireccional: solo se marca code → authority/legacy.
+- Parametrizado por rol por diseño, no hardcodeado por nombre: se apoya en `axiomRepo`/`codeRepos`/`legacyRepos` de `TopologyManifest`, de modo que funciona sobre los nombres de repo de cualquier proyecto de terceros, no solo sobre este workspace.
+- La comprobación exige que `loadTopology` haya resuelto una autoridad schema 2 válida; una autoridad ausente, pointer inválido, YAML malformado, schema no soportado o semántica inválida no se convierte en una topología vacía ni en un fallback local. Fuera de una topología multi-repo válida, el check puede reportar `skip` conforme a su contrato; un match real de path sigue siendo `fail`.
 - Escaneo mínimo suficiente (sin parseo AST, sin resolución de alias de bundler, sin recorrido transitivo de `node_modules`): un escaneo de dependencies/devDependencies/optionalDependencies de `package.json` acotado a los globs `workspaces` declarados propios del repo, más un grep acotado de literales de path `require(...)`/`from '...'`, excluyendo paths generados conocidos vía `aggregateKnownGeneratedPathGlobs`.
-- Este propio repo `Axiom` no tiene un `axiom.config/topology.yaml` explícito, así que `DF-001` reporta `skip` (no `pass`) al correr aquí hoy — un hueco esperado e intencional ligado a que este workspace todavía no se declara a sí mismo como `mode: multi-repo`, no un defecto. Levantar un `topology.yaml` real para este workspace queda como trabajo futuro diferido (reflejo de D1, ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md)).
+- En este workspace la autoridad schema 2 está en `Axiom.Spec/axiom.config/topology.yaml`; `Axiom/axiom.yaml` apunta a ella como repo `code` y `Axiom.SDD` figura como `legacy` read-only. El check ya no presupone ni necesita un `topology.yaml` local dentro de `Axiom/`.
 
 ## Checks de doctor — categorías establecidas por el roadmap de rediseño
 
@@ -110,9 +110,30 @@ proyecto real, así que no se inventa un check de doctor para esos artefactos.
 
 Hasta `INC-20260710-plan-role-split` (P1-5), esta primitiva era genérica pero no tenía nada real que hacer cumplir en la práctica: `axiom-plan create` siempre dejaba el `allowedWriteScope` del plan vacío. Cerrado: `axiom-plan create` ahora deriva el role-split del plan de `topology.yaml#roles`/`#assignments` (o de un `--roles` explícito) y puebla `targetRepos`/`allowedWriteScope` con los repos que esos roles poseen — ver "`PlanMetadata.roles`" en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md). `validateWriteScope` en sí no cambió; el gap era exclusivamente que el producer nunca poblaba lo que el consumer ya sabía leer.
 
-Regla de ownership complementaria en el scaffolding: **guarda no-clobber del setup de workspace** (`runWorkspaceSetup`, INC-20260705-workspace-multirepo-setup-engine). Al parametrizar un directorio existente, el motor nunca sobrescribe un `axiom.yaml` preexistente que pertenece a OTRO proyecto: si el fichero parsea con un `projectId` distinto (o es v1/no-parseable-pero-presente), su escritura se salta y se registra como warning, nunca como error — Axiom no reclama la propiedad de un repo ya gobernado por otro proyecto. Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
+La guarda de ownership de workspace es ahora una frontera común, no un warning
+local de scaffolding. `workspace setup`, `repo add` y `role add` rechazan antes
+de toda escritura un `axiom.yaml` foráneo, inválido o ambiguo; `workspace adopt`
+solo puede preservar como `skipped` una identidad válida de otro proyecto. El
+preflight enumera tanto recursos estructurales como destinos derivados, valida
+create flags, IDs reservados, ownership y solapamientos bidireccionales, y trata
+solo `ENOENT` como ausencia. `ENOTDIR`, `EACCES`, `EIO` o una observación
+indeterminada son fallos tipados, no permiso para inventar un target.
 
-Los pasos aditivos de la segunda tanda de setup de workspace (INC-20260705-*) heredan la misma postura de seguridad de ownership: todos son **best-effort** (un fallo de generación de adapter, de baseline de skills o de base de spec nunca hace fallar el setup global — se degrada a warning) y ninguno clobbera contenido preexistente. La baseline de skills y la base de spec están además **gateadas por creación**: solo corren cuando el repo destino (control para skills, spec para la base) se crea recién en la misma llamada; un repo ya existente se salta silenciosamente. La base de spec aplica adicionalmente un guardado per-file (skip + warning si el fichero destino ya existe), de modo que jamás reescribe una spec o un contexto técnico que un repo ya tuviera. Las autoskills por repo de código (round 3, `INC-20260705-workspace-code-repo-skills`) heredan la misma postura: best-effort por repo (el fallo de un repo no salta los demás), gateadas por el `created` propio de cada repo de rol, sin clobber de un repo preexistente. Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+Apply mantiene locks de proyecto, registry solicitado y recursos en orden
+canónico durante recovery, replan y comprobación de precondiciones. El journal
+persistido bajo `.axiom-state/<projectKey>/structural-transactions/<operationId>/`
+permite rollback/roll-forward por hashes; contenido desconocido deja
+`recovery-required` y bloquea la siguiente mutación. No existe éxito parcial
+estructural. `axiom.yaml` solo reemplaza `AXIOM:MANAGED`, preservando byte a byte
+las regiones humanas; una conversión markerless solo se acepta con identidad
+inequívoca y sin conflicto.
+
+Adapters, skills, reglas, MCP, catálogos y base de spec son outputs derivados:
+se ejecutan únicamente después de `committed`, dentro de límites de ownership ya
+prevalidados. Sus averías se aíslan como warnings tipados y no revierten ni
+falsean la unidad estructural. Los comandos granulares de repair reutilizan el
+catálogo único de steps y no habilitan capacidades ni mutan registry o
+`workspace.json`.
 
 Robustez del catálogo user-level (`INC-20260829-r13-user-project-registry`): `~/.axiom/projects.yml` es el único formato activo y se valida completo antes de exponer o mutar datos. IDs ambiguos, identidades divergentes y paths canónicamente equivalentes ya poseídos por otro proyecto fallan sin escribir; una reejecución solo es idempotente cuando conserva identidad y ownership. Las mutaciones están serializadas por un lock local acotado y el reemplazo usa un temporal propietario, flush/fsync, validación y rename atómico. El reclaim comprueba generación y fencing: un reclamador retrasado no puede borrar la generación sucesora y la ventana entre crear el lock y publicar su owner queda protegida por un lease de inicialización. La recuperación elimina únicamente claims, leases o temporales propios y huérfanos; nunca borra contenido ajeno. Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
 
@@ -207,3 +228,10 @@ El grafo canónico de `workflows.yaml` se resuelve fail-closed: sólo su ausenci
 Los receipts son evidencia de observabilidad co-localizada con el artefacto y se verifican explícitamente en cierres: su escritura best-effort no convierte un fallo durable en éxito. Los cambios de estado, integración y movimiento a `_archive` se ejecutan únicamente por Axiom/Core; las referencias o decisiones históricas se preservan, y una superación nueva se registra por Core sin reescribir el antecedente.
 
 Las Decisions tienen un límite deliberado del modelo Core: `axiom-decision` permite crear y enlazar con planes o incrementos, pero no aceptar, cerrar ni superseder una Decision. Por ello `DEC-20260818-134600-3jfjak` permanece `proposed` y solo está enlazada por Core al correctivo R-10; ese vínculo aporta trazabilidad, no una supersesión formal de la decisión histórica 0015.
+
+
+## Control plane del launcher: autorización y límites (R-13, ACC-070..ACC-072)
+
+La seguridad del launcher se implementa en el runtime mediante un estado server-side por proceso (`AsyncLocalStorage` para el contexto y un marcador no falsificable para autorización). Los grants conservan hashes de token, digest de payload, sesión, proyecto, acción, diagnóstico y expiración; los consumidos permanecen solo dentro de una ventana acotada para distinguir replay. Grants y deliveries tienen límites deterministas de memoria y purga/evicción por TTL/retención.
+
+Los endpoints de plugins, onboarding, paneles ADO/Git y lifecycle convergen en preview→confirmación y handlers allowlisted; no aceptan una autorización HTTP inventada. La autorización se marca únicamente después del consumo atómico del grant y antes del bridge/runner. El alias plugin-scoped de `/launcher/execute` es compatibilidad explícita; los targets ambiguos se rechazan antes de consumir tokens. El transporte HTTP permanece configurado/allowlisted y local-only según la sección de integraciones; Doctor sigue siendo diagnóstico, no permiso.

@@ -52,7 +52,7 @@ No todos se consumen hoy con el mismo nivel de profundidad en runtime, pero form
 
 ### Frontera entre `Axiom.Spec/` y `Axiom/axiom.spec/`
 
-`Axiom.Spec/` es el repositorio canónico de especificación del workspace: contiene las specs 00–08, el contexto técnico, los incrementos y bugs canónicos bajo `specs/increments/` y `specs/bugs/`, los planes, las plantillas, los prompts y `decisions/`. La topología del runtime lo referencia como `specRepo` (`Axiom/axiom.config/topology.yaml#specRepo.ref: ../Axiom.Spec`).
+`Axiom.Spec/` es el repositorio canónico de especificación del workspace: contiene las specs 00–08, el contexto técnico, los incrementos y bugs canónicos bajo `specs/increments/` y `specs/bugs/`, los planes, las plantillas, los prompts y `decisions/`. Cuando forma parte de una topología schema 2, su identidad se declara en el único manifest autoral `axiomRepo/axiom.config/topology.yaml`; no existe un campo `specRepo` ni una copia autoral por repositorio. El `axiom.yaml` de un repo `code` o `legacy` sólo conserva identidad y un puntero local `axiomRepo` hacia esa autoridad.
 
 `Axiom/axiom.spec/` es una baseline product-owned dentro del repositorio runtime: contiene incrementos, planes, agentes objetivo, skills objetivo y plantillas que consumen catálogos, adapters, readiness y el artifact store. Es legítima en su ubicación actual y no se mueve, elimina ni renombra por su similitud nominal con `Axiom.Spec/` (ADR-0032).
 
@@ -114,42 +114,81 @@ histórico `copilot-vscode`, únicamente `configure` lo migra y persiste como
 
 Un YAML global del producto no debe mezclar visión documental, builder tooling y runtime. Cada YAML debe pertenecer a una capa concreta y a una responsabilidad concreta. Vigente: el catálogo de `axiom.config/*.yaml` ya está desglosado por responsabilidad concreta (policy, capability, telemetry, routing) en vez de un único fichero monolítico.
 
-## Topología de repos y registro global (roadmap de rediseño, cerrado, aditivo sobre el modelo por defecto)
+## Topología de repos y registro global (contrato vigente, R13)
 
-`specs/increments/_archive/INC-20260702-axiom-redesign-roadmap/` (23 incrementos, cerrado 2026-07-03) implementó un modelo de topología de repos por rol dentro de cada proyecto gestionado por Axiom, y un registro global fuera del proyecto. Este modelo convive de forma **aditiva** con el `axiom.yaml` único descrito arriba — `single-repo` sigue siendo el modo por defecto en la práctica hoy; el modelo multi-repo es un opt-in real y ya materializado, no solo declarado.
+El modelo de topología vigente usa exclusivamente `TopologyManifest.schemaVersion: 2`. El manifest es autoral, versionado y único por proyecto; no es una proyección por repositorio ni un dato que se derive silenciosamente desde `axiom.yaml`. El modo puede ser `single-repo` o `multi-repo`, pero ambos usan la misma forma schema 2.
 
-### `TopologyManifest` (`Axiom/packages/topology/src/types.ts`, `schemaVersion: 1`)
+### `TopologyManifest` (`Axiom/packages/topology/src/types.ts`, `schemaVersion: 2`)
 
 ```ts
 interface TopologyManifest {
-  schemaVersion: 1;
+  schemaVersion: 2;
   mode: 'single-repo' | 'multi-repo';
-  sddRepo: RepoRef;
-  specRepo: RepoRef;
-  roleCodeRepositories: readonly RepoRef[];
+  axiomRepo: AxiomRepoRef;
+  codeRepos: readonly CodeRepoRef[];
+  legacyRepos: readonly LegacyRepoRef[];
+  roles: readonly RoleDef[];
   assignments: readonly RoleAssignment[];
-  roles?: readonly RoleDef[]; // Decision D5 — team/code role registry, ver abajo
-  qaLane?: 'inline' | 'parallel';
+  qaLane: 'inline' | 'parallel';
 }
 ```
 
-Tres repos por rol dentro de un proyecto gestionado:
+`axiomRepo` es la autoridad del grafo y contiene el único fichero autoral
+`<axiomRepo>/axiom.config/topology.yaml`. `codeRepos` declara repositorios de
+producto/implementación; `legacyRepos` declara fuentes de solo lectura y exige
+`mode: 'read-only-source'` más `legacyFunction`. Las referencias son una unión
+discriminada: los repos `axiom` y `code` no pueden llevar campos de legacy, y un
+repo `legacy` no puede omitirlos. Los buckets antiguos `sddRepo`, `specRepo` y
+`roleCodeRepositories` no forman parte del contrato activo y no se auto-mapean.
 
-1. repo `sdd` (método/factory);
-2. repo `spec` (conocimiento canónico);
-3. repo(s) `code` (runtime instalable, `roleCodeRepositories`).
+La autoridad se resuelve desde el `axiomRepo` pointer del `axiom.yaml` local de
+un repo `code` o `legacy`; ese archivo conserva identidad y puntero, no el grafo
+completo. El loader exige pointer válido, autoridad existente, autoridad de tipo
+`axiom`, YAML parseable, `schemaVersion: 2` y forma/semántica válidas. La ausencia,
+malformación, schema desconocido, autoridad ausente o autoridad no-`axiom`
+terminan en error fail-closed: no se reabre fallback desde `axiom.yaml` ni se
+acepta una copia local como autoridad. `defaultSingleRepoManifest()` solo es el
+default local del propio repo `axiom` y su `authority.source === 'default'` no
+habilita proyección de spec.
 
-- `single-repo` sigue siendo el modo por defecto en la práctica: `sddRepo` y `specRepo` resuelven ambos a la raíz del proyecto, `roleCodeRepositories` queda vacío. El paso de "multi-repo como modo primario/por defecto" (D1, ver "Pendientes conocidos" abajo) no se ha dado, aunque la ruta opt-in a multi-repo (`schemaVersion: 2`, ver más abajo) ya es real y está entregada.
-- **`axiom.yaml` es la fuente de verdad autoral del mapa de repos; `topology.yaml` es un artefacto opt-in/derivado** (`INC-20260703-config-dedup`, dedup #2, cerrado 2026-07-03). `axiom init` YA NO escribe `axiom.config/topology.yaml` para el layout `installed-multi-repo` (única ruta que antes lo hacía desde cero). `loadTopology` (`@axiom/topology`) deriva un `TopologyManifest` de fallback directamente desde `axiom.yaml` cuando `topology.yaml` está ausente (`tryLoadTopologyHint`, version-aware v1/v2, → `defaultInstalledMultiRepoManifest`/`defaultSingleRepoManifest`); todo consumidor de topología (doctor `TC-001`/`TC-003`/checks de límite de dogfooding, `axiom topology show`, `qa-archive-gate`) pasa por `loadTopology`, nunca lee el YAML crudo, así que se beneficia del fallback de forma transparente. `topology.yaml` se sigue materializando de forma perezosa recién cuando un proyecto corre una mutación real (`axiom roles assign`/`remove`, que llama a `loadTopology` y persiste con `writeTopologyYaml` en la primera asignación). Unificación completa de schema (que `defaultInstalledMultiRepoManifest` derive `specRepo.ref` leyendo literalmente `axiom.yaml#paths.specification.path` en vez de re-derivar la convención `../${projectName}.spec` de forma paralela) queda deliberadamente diferida: tocaría la firma pública de los builders de manifest default de `@axiom/topology` y sus tests de forma exacta, sin que haya todavía un proyecto real que fuerce la necesidad. `roleCodeRepositories`/`assignments`/`qaLane` no tienen equivalente en `axiom.yaml#paths` y seguirán siendo exclusivos de `TopologyManifest`.
-- `multi-repo` está completamente soportado por el schema (cada repo tiene un `id` y un `ref`, path relativo a `projectRoot` o path/URI absoluto). La resolución real de `LocalBindings` para multi-repo más allá de la heurística "ref relativo a projectRoot" sigue siendo una preocupación P1 — no existe todavía ningún proyecto con contenido no trivial de `topology-bindings.yaml` contra el que validar.
-- Los bindings locales por usuario (`.axiom-state/local/topology-bindings.yaml`, `LocalBindings { schemaVersion: 1; localPaths: Record<string, string> }`) explícitamente no se versionan.
-- Todos los helpers conscientes de topología del código (write-scope, límite de dogfooding, etc.) resuelven repos vía `loadTopology`/`loadLocalBindings`/`resolveRepoPath` de `@axiom/topology`, todos libres de `homeDir` — patrón establecido y reusable para cualquier check futuro que necesite ser parametrizado por rol en vez de hardcodeado a nombres de repo concretos.
+`LocalBindings` es un dominio separado y usa `schemaVersion: 2` con
+`localPaths: Record<string, string>` bajo `.axiom-state/local/`. Solo admite IDs
+presentes en el manifest autoral y paths locales absolutos canonicalizados; una
+ref remota sin materializar no se persiste como path. La inspección distingue
+`present-directory | missing | not-directory | remote-unmaterialized` y los
+loaders devuelven `TopologyError` ante schema futuro, corrupción, ID desconocido,
+path inválido o I/O: ningún consumidor sensible cae a `{}` ni oculta la causa.
 
-### Materialización de `topology.yaml` en cada repo, colapso de `repoId` y canonicalización de paths Windows (2026-07-11)
+`workspace.json` tiene un único contrato `WorkspaceStateV1` (`schemaVersion: 1`):
+`projectId`, arrays ordenados/deduplicados `adapters` y `providers`, extensiones
+opcionales `profile`/`overlay`, `createdAt` inmutable y `updatedAt`. La ausencia
+`ENOENT` produce un estado inicial solo para una operación autorizada; JSON
+inválido, schema futuro, campos desconocidos, tipos/valores inválidos o identidad
+divergente abortan sin overwrite. `updateWorkspaceState` ejecuta read-modify-write
+bajo el lock común, valida el temporal, renombra atómicamente y conserva bytes y
+`updatedAt` en un no-op.
 
-- **`topology.yaml` materializado en CADA repo** (control + spec + cada repo de rol), anclado per-repo (`INC-20260711-repo-affinity-guard`): supersede la nota de arriba de que solo el repo de control recibía `topology.yaml`. El mapa role→repo se escribe en todos los repos (por `runWorkspaceSetup`, `runRepoAdd` y best-effort por `member install`) para que `loadTopology(repoActual)` resuelva la identidad de rol desde cualquier repo — es la base del guard de repo-affinity (ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md)). `ProjectResolution` gana `role`/`repoId` aditivos (poblados desde `axiom.yaml` schemaVersion 2).
-- **Colapso del doble segmento de `repoId`** (`INC-20260711-audit-bug-fixes`): `buildRoleAwareAxiomYaml` colapsa `repoId = ${projectId}-${repoRole}-${roleKey}` a un solo segmento cuando `repoRole === roleKey` (ya no `<project>-sdd-sdd`/`-spec-spec`). Cosmético: ningún lookup usa `repoId` (usan `roleKey`/`topologyId`).
-- **Canonicalización de paths Windows 8.3 (compare-time)** (`INC-20260711-audit-bug-fixes`): nuevo `canonicalizePath` (`@axiom/filesystem-truth`) resuelve la forma corta 8.3 (`IGUTIE~1`) vs. larga (`igutierrezz`) a una forma consistente, aplicado en los sitios de COMPARACIÓN del registro/resolver (`findByRootPath`/`findByRepoPathV2`/`findByAncestorRepoPathV2`, `normalizeForAncestorCompare`, `relativeRef`). NO reescribe los paths ALMACENADOS (Decision D-001) — solo canonicaliza ambos operandos al comparar, para no romper asserts de path exacto.
+Las mutaciones de identidad, topología, bindings, workspace state, init state y
+registro solicitado se describen mediante `StructuralMutationPlan`. Su journal
+vive en `.axiom-state/<projectKey>/structural-transactions/<operationId>/` y
+registra intención, hashes, staging y estados `prepared | committing | committed |
+rolling-back | rolled-back | recovery-required`. Staging y backup son adyacentes
+al destino; una recuperación solo publica/restaura bytes cuyos hashes e identidad
+siguen siendo demostrables.
+
+La resolución del scope de spec converge con esta autoridad: si el manifest
+válido apunta a un directorio físico `<authority>/specs`, ese child tiene
+prioridad; una autoridad dedicada con `role: spec` puede usar su raíz cuando no
+existe el child; el resto conserva `undefined` y el almacén default
+`axiom.spec`. Topología ausente, malformada, default-local o sin mapping no
+reactiva un fallback local de proyección.
+
+`runWorkspaceSetup` y sus mutaciones escriben el manifest únicamente en la
+autoridad. Los repos `code` y `legacy` reciben identidad/puntero local cuando
+corresponde, pero no copias de `topology.yaml` ni del grafo. Para una autoridad
+`spec`, `buildRoleAwareAxiomYaml` usa el `topologyId` de `manifest.axiomRepo` y
+no un id derivado alternativo; el `axiom.yaml` de los repos de código conserva
+solo el puntero hacia esa autoridad.
 
 ### Dos ejes de "rol", desacoplados (Decision D5, `INC-20260710-dynamic-team-roles`)
 
@@ -192,60 +231,77 @@ Toda mutación ejecuta load→validate→modify→save dentro de `withLocalFileL
 
 `role` (`REPO_ROLES`: `sdd|spec|code`), `layout` (`PROJECT_LAYOUTS`) y `ADAPTER_TARGETS` son const arrays exportados por `apps/cli/src/commands/init.ts`, fuente única para la validación de `runInit` y para las opciones del launcher de onboarding. `builder` y `local-only` no son selectores.
 
-### Setup de workspace multi-repo en una operación (`runWorkspaceSetup`) — INC-20260705-workspace-multirepo-setup-engine
+### Setup/adopción multi-repo y unidad estructural
 
-`runWorkspaceSetup(spec: WorkspaceSetupSpec): Promise<WorkspaceSetupResult>` (`apps/cli/src/commands/workspace-setup.ts`) es el motor que scaffoldea y cablea un workspace Axiom multi-repo **en una sola llamada**: un repo de control (rol `sdd`), un repo de spec (rol `spec`) y N repos de código por rol funcional (`backend`/`frontend`/`qa-e2e`/custom, strings abiertos). Es una ruta aditiva y distinta de `runInit`/`axiom init` (single-repo), que quedan sin cambios. Lo consumen `axiom workspace setup`, `axiom workspace adopt` y los endpoints del launcher `/api/launcher/workspace/{setup,adopt}`, todos con preview, confirmacion, no-clobber e idempotencia.
+`runWorkspaceSetup` y `runWorkspaceAdopt` comparten el modelo de una autoridad
+`axiomRepo`, 0..N repos `code` y fuentes `legacy` read-only. CLI y launcher usan
+los mismos runners: preview y preflight no escriben; apply requiere
+confirmación en la superficie que corresponda.
 
-Datos que escribe el motor, con el modelo de datos ya descrito arriba como base:
+El plan estructural cubre:
 
-- **`axiom.yaml` por repo, con `paths` recíproco y consciente de rol** (`schemaVersion: 2`, builder `buildRoleAwareAxiomYaml`, separado del `buildAxiomYaml` single-repo de `init.ts`). Cada repo recibe su propio `axiom.yaml` cuyo `paths` referencia a **todos** los repos hermanos con paths relativos calculados vía `path.relative` desde ese repo (así "se conocen entre sí"). El caso degenerado de dos repos que resuelven al mismo path absoluto emite `.` en vez de un relativo autorreferencial.
-- **Un único `axiom.config/topology.yaml`**, escrito solo en el repo de control, con `sddRepo`/`specRepo`/`roleCodeRepositories`/`assignments` derivados del `spec`, `qaLane: 'inline'`, y `mode: multi-repo` cuando hay repos de rol o un repo de spec distinto (si no, `single-repo`). Round-trippea por `loadTopology` (`@axiom/topology`) — es el mismo `TopologyManifest` opt-in descrito arriba, ahora escrito por el motor en vez de perezosamente por `axiom roles assign`.
-- **`.axiom-state/local/topology-bindings.yaml`** en el repo de control (`saveLocalBindings`), mapeando cada `topologyId` a su path absoluto local (no versionado, ver arriba).
-- **Registro de TODOS los repos en `~/.axiom/projects.yml`** bajo un único `projectId`, en una llamada a `upsertProjectReposV2` (`@axiom/user-workspace`). La operación se ejecuta bajo el lock multiproceso del catálogo y solo hace merge cuando la identidad y el ownership existentes coinciden; una colisión de ID, nombre o path falla sin escribir. Re-ejecutar exactamente el mismo setup es idempotente. El registro sigue siendo **best-effort y no bloqueante** para el scaffolding local — ver "Registro no bloqueante sobre el catálogo único" más abajo.
-- Solo el repo de control recibe `topology.yaml` + `.axiom-state/<projectId>/`; los repos de rol/spec reciben `axiom.yaml` (+ `.gitignore`/`AGENTS.md` best-effort en directorios nuevos) y `.axiom-state/local/` + `.axiom-state/<projectId>/`.
+- el bloque gestionado de `axiom.yaml` por repo, con identidad y puntero a la autoridad;
+- el único `<axiomRepo>/axiom.config/topology.yaml` schema 2;
+- `.axiom-state/local/topology-bindings.yaml` schema 2;
+- `.axiom-state/<projectKey>/workspace.json` e `init.json`;
+- `~/.axiom/projects.yml` solo cuando se solicita registro;
+- los directorios creados por la propia operación.
 
-Directorios nuevos (`create: true`) se scaffoldean desde cero; directorios existentes (`create: false`) se parametrizan in-place. **Guarda no-clobber**: si un `axiom.yaml` preexistente parsea con un `projectId` distinto (o es v1/no-parseable-pero-presente), su escritura se salta y se registra como warning, nunca como error (ver ángulo de ownership en [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)).
+Antes del primer write se validan todos los repos, IDs, flags `create`,
+ownership, solapamientos y destinos derivados. Setup, `repo add` y `role add`
+rechazan un `axiom.yaml` foráneo, inválido o ambiguo; adopt puede preservar como
+`skipped` una identidad foránea válida, pero no reclamarla. Apply adquiere locks
+en orden, recupera journals incompletos, replantea bajo lock y comprueba bytes,
+metadata, tipo, `realpath` e identidad física. Los recursos terminan en
+`committed`, rollback demostrable o `recovery-required`.
 
-Tras el registro, el motor invoca best-effort la generación de config MCP (`.axiom/mcp.yml` + proyección al adapter) — ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y la sección `mcp.yml` de abajo.
+### Registro opcional dentro de la transacción
 
-### Registro no bloqueante sobre el catálogo único (`INC-20260829-r13-user-project-registry`)
+El catálogo no es autoridad del grafo y no se necesita para resolver un
+workspace local. Con registro solicitado, `projects.yml` es un recurso
+estructural: validación, ownership, I/O o timeout fallidos abortan/revierten la
+unidad. `--no-register` omite su persistencia y no crea home; no desactiva las
+comprobaciones read-only de ownership necesarias cuando el catálogo ya existe.
+`registry.json` residual se ignora y nunca se migra. Solo después del commit se
+ejecutan config MCP, adapters, skills, reglas, catálogos y base de spec; sus
+fallos quedan en warnings derivadas.
 
-El registro en `projects.yml` sigue siendo **no bloqueante para el scaffolding local**. Un `spec.register === false` o un fallo tipado de validación, ownership, I/O o timeout deja `registryRegistered: false` y un warning claro, pero no impide generar config MCP, adapters, `workspace.json`, skills, reglas o base de spec, porque esos pasos no dependen del catálogo user-level. `registryRegistered` refleja el resultado real; no convierte un fallo en éxito silencioso.
+### Artefactos adicionales del setup de workspace (contrato vigente tras R-13)
 
-No existe compatibilidad v1 en esta ruta ni en `runInit`/consumidores: `registry.json` residual se ignora, `projects.yml` ausente parte de un catálogo vacío y no hay migración/reintento especial. Un `projects.yml` inválido o una colisión permanece intacto para diagnóstico. Las mutaciones válidas se coordinan bajo el mismo lock y contrato de ownership descritos arriba.
+Las tandas de workspace incorporaron estado persistido y materializaciones que hoy se gobiernan mediante `WORKSPACE_STEP_CATALOG`. El catálogo separa recursos estructurales requeridos de outputs derivados: `workspace.json` pertenece al commit estructural y **no** es best-effort; adapters, skills, reglas, MCP, catálogos y base de spec se materializan solo después de que esa unidad haya quedado `committed`. El comportamiento y las tablas de despacho viven en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md); aquí se documentan las formas de datos.
 
-### Artefactos adicionales del setup de workspace (round 2, INC-20260705-*)
-
-La segunda tanda de incrementos de workspace añade cuatro clases de artefacto persistido/scaffoldeado al motor. Todos son pasos **best-effort** (un fallo nunca aborta el setup) y comparten las semánticas de gating descritas al final de esta subsección. El comportamiento y las tablas de despacho viven en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md); aquí se documentan solo las formas de datos.
-
-- **`<controlRepo>/.axiom-state/<projectId>/workspace.json`** — registro de la selección de adapters (`INC-20260705-workspace-adapters-multiselect`), escrito una sola vez en el repo de control (el mismo ancla project-scoped que `topology.yaml`/`topology-bindings.yaml`), incluido en `filesCreated`:
+- **`<axiomRepo>/.axiom-state/<projectKey>/workspace.json`** — único estado persistido de selección de adapters/providers. Su contrato cerrado es:
 
   ```ts
-  interface WorkspaceSetupRecord {
-    schemaVersion: 1;
-    adapters: AdapterTarget[]; // los adapters multi-seleccionados
-    providers: string[];       // providers LOCALES habilitados (INC-20260708-wizard-configure-provider-selection)
-    profile: string;           // siempre builder en estados nuevos
-    overlay: string;           // siempre local-only en estados nuevos
-    createdAt: string;         // ISO timestamp
+  interface WorkspaceStateV1 {
+    readonly schemaVersion: 1;
+    readonly projectId: string;
+    readonly adapters: readonly string[];
+    readonly providers: readonly string[];
+    readonly profile?: string;  // extensión de compatibilidad
+    readonly overlay?: string;  // extensión de compatibilidad
+    readonly createdAt: string; // ISO-8601, inmutable
+    readonly updatedAt: string; // ISO-8601
   }
   ```
 
-  El campo `providers` (`INC-20260708-wizard-configure-provider-selection`) persiste la SELECCIÓN de providers LOCALES habilitados del proyecto (subconjunto de `cmm`/`serena`/`engram`; `[]` = ninguno, solo `filesystem` always-on). Es la ÚNICA fuente de verdad de "qué providers habilitó este proyecto" — distinta del REGISTRY canónico local de 4 ids de `axiom.config/providers.yaml` (schema-locked, nunca recortado). Lo escriben tanto el step `providers` del wizard como `axiom configure --providers <csv>` (merge-write) y las operaciones incrementales `provider add`. Lo lee `buildProjectProviderRegistry` (`@axiom/providers`) para registrar exactamente los clientes code-intel habilitados. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+  `projectId` debe coincidir con el proyecto resuelto; adapters y providers se normalizan como arrays ordenados sin duplicados. Solo `ENOENT` representa ausencia y permite inicializar el documento dentro de una mutación autorizada. JSON inválido, schema futuro, campos desconocidos, tipos/valores inválidos o identidad divergente abortan sin overwrite. `updateWorkspaceState` ejecuta read-modify-write bajo el lock local común, valida el temporal, conserva `createdAt` y no reescribe bytes ni `updatedAt` en un no-op.
 
-- **`install-profile.json` por repo** — `generateWorkspaceAdapters` resuelve un `ResolvedInstallProfile` por repo del workspace (vía `installProfile`, un solo call por repo con `adapters[0]` como primario), persistido en el `.axiom-state/<projectId>/` de ese repo, con el mismo shape que ya escribe `axiom configure` (ver "Ficheros generados por comando"). Los ficheros de adapter derivados (`.opencode/AGENTS.md`, `.claude/AGENTS.md`, `.antigravity/AGENTS.md`, `.github/copilot-instructions.md`, etc.) se escriben en **cada** repo por adapter seleccionado, según la tabla de despacho `target -> generador` de [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+  El campo `providers` persiste la selección local habilitada del proyecto, distinta del catálogo completo `axiom.config/providers.yaml`. Lo actualizan las superficies add/enable —wizard, `axiom configure --providers` y `provider add`— mediante el contrato anterior; `buildProjectProviderRegistry` lo lee para registrar exactamente los clientes code-intel habilitados. Las operaciones repair/regenerate no incorporan capacidades nuevas.
 
-- **Baseline de skills en el repo de control** (`INC-20260705-workspace-sdd-skills`), solo cuando el repo de control se crea recién:
+- **`install-profile.json` por repo** — `generateWorkspaceAdapters` resuelve un `ResolvedInstallProfile` por repo del workspace y lo persiste bajo `.axiom-state/<projectKey>/`. Los ficheros de adapter (`.opencode/AGENTS.md`, `.claude/AGENTS.md`, `.antigravity/AGENTS.md`, `.github/copilot-instructions.md`, etc.) son outputs derivados post-commit y se escriben por adapter seleccionado según la tabla de despacho de [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+
+- **Baseline de skills en la autoridad `axiomRepo`** (`INC-20260705-workspace-sdd-skills`):
   - `axiom.config/skills-catalog.yaml` (`schemaVersion: 1`) — catálogo semilla de 5 ids con `bundleHash` byte-exacto por entrada (`computeSkillBundleHash`); las fuentes de cada skill se escriben bajo `axiom.spec/target-axiom-skills/<id>.md`. Es el mismo `SkillsCatalog` que consume el check `TC-010` de doctor (ver [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)).
-  - `.opencode/agents/<id>/SKILL.md` (materializado por `applySkillSet`) + `.axiom-state/<projectId>/skills-pending.json`.
+  - `.opencode/agents/<id>/SKILL.md` (materializado por `applySkillSet`) + `.axiom-state/<projectKey>/skills-pending.json`.
   - `axiom.config/skills-index/<role>.yaml` — un `SkillsRoleIndex` (schema de RF-AXM-020, ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md)) por cada rol funcional declarado en el workspace.
 
-- **Base de spec en el repo de spec** (`INC-20260705-workspace-spec-base`), solo cuando el repo de spec se crea recién: la estructura canónica de spec + contexto técnico, scaffoldeada desde plantillas bundleadas como constantes TS (guardado per-file: nunca sobrescribe un fichero preexistente, skip + warning):
+- **Base de spec en la autoridad** (`INC-20260705-workspace-spec-base`): estructura canónica de spec + contexto técnico, scaffoldeada desde plantillas bundleadas con guardado por fichero; nunca sobrescribe un fichero preexistente y reporta `skipped`/warning:
   - `specs/README.md` + `specs/00_Resumen_Ejecutivo.md` .. `specs/08_Glosario.md` (9 ficheros numerados);
   - `context/TECHNICAL_CONTEXT.md` + `context/README.md`;
   - directorios estructurales vacíos (vía `.gitkeep`): `specs/{increments,bugs,archive}/` y `context/{architecture,integrations,operations,references}/`.
 
-**Semánticas de gating (`created`)**: la generación multi-adapter + `workspace.json` corre **siempre**, para todos los repos (con independencia del resultado de registro — ver "Registro no bloqueante" arriba). La baseline de skills del repo de control corre **solo si el repo de control se creó recién** en esta misma llamada (`repoResults.find(r => r.topologyId === control.topologyId)?.created === true`); la base de spec corre **solo si el repo de spec se creó recién** (`… === specRepo.topologyId …`). Un repo parametrizado in-place (`create: false`, ya existente) se salta silenciosamente en ambos casos — sin clobber, sin ruido. El flag `created` lo computa `writeOneRepo` antes en la misma llamada.
+**Semántica vigente de ejecución**: `WORKSPACE_STEP_CATALOG` es la única fuente declarativa de steps, owners, preflight, prerequisites y clases de output para setup y reparaciones granulares. `identity`, `topology`, `workspace-state` y `registry` alimentan la frontera estructural común: todos sus targets y también los destinos derivados se prevalidan antes del primer write. Tras el commit, los steps derivados se aíslan entre sí; un fallo se conserva como warning tipada con estado estructural `committed` y `exitCode: 0`, y no impide ejecutar los steps posteriores. En setup, los predicates de creación se calculan desde outcomes estructurales confiables; los comandos granulares pueden reparar targets ya declarados. Add/enable puede cambiar `WorkspaceStateV1`; repair/regenerate solo materializa lo ya habilitado.
 
 ### Autoskills por repo de código (round 3, `INC-20260705-workspace-code-repo-skills`)
 
@@ -255,13 +311,13 @@ Además de la baseline de skills del repo de control (round 2, arriba), cada rep
 - `.opencode/agents/<id>/SKILL.md` (materializados por `applySkillSet`) + `.axiom-state/<projectId>/skills-pending.json` (con `projectId = effectiveProjectId`, consistente entre todos los repos del workspace).
 - **UN único `axiom.config/skills-index/<roleId>.yaml`** scoped al propio rol (posiblemente custom) de ese repo (`role: roleId`, `repoKinds: ['role']`), donde `roleId = repo.functionalRoleId ?? repo.roleKey` — a diferencia del repo de control, que escribe un `skills-index` por CADA rol funcional del workspace.
 
-Es best-effort y gateado estrictamente por el `created` propio de cada repo de rol: un repo de rol preexistente (`create: false`) se salta por completo (nunca clobbera su catálogo). El repo de control sigue vía `scaffoldSddSkills` (sin cambios); el repo de spec no recibe skills. El comportamiento vive en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+En setup es un output derivado post-commit cuyo predicate se basa en el outcome estructural `created` del repo de código; un repo preexistente (`create: false`) no se reclama ni se clobbera. `axiom workspace skills` puede reparar la baseline de targets ya declarados y prevalidados. Cualquier fallo de materialización queda como warning tipada sin alterar el commit estructural. La autoridad sigue usando el executor compartido `scaffoldSddSkills`; el repo dedicado a spec no recibe skills. El comportamiento vive en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 
 ### Artefactos y formas de datos de la tanda INC-20260708-* (providers, memoria, reglas, operaciones incrementales)
 
 Formas de datos añadidas por esta tanda (el comportamiento vive en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md); aquí solo las estructuras persistidas y su ancla):
 
-- **Selección de providers en `workspace.json#providers`** (`INC-20260708-wizard-configure-provider-selection`): ver el campo `providers` del `WorkspaceSetupRecord` arriba. Estado project-scoped en `<controlRepo>/.axiom-state/<projectKey>/workspace.json`, leído por `buildProjectProviderRegistry` (`@axiom/providers/project-registry.ts`) usando el `projectKey` resuelto y aliases legacy explícitos; no escanea arbitrariamente otro proyecto. Devuelve un `ProviderRegistry` con los clientes code-intel habilitados + `filesystem` always-on, más un `engramEnabled: boolean` (engram no es un `ProviderClient` — se resuelve vía `resolveMemoryBackend`).
+- **Selección de providers en `workspace.json#providers`** (`INC-20260708-wizard-configure-provider-selection`): usa `WorkspaceStateV1` y su writer lockeado descritos arriba. Es estado project-scoped bajo `<axiomRepo>/.axiom-state/<projectKey>/workspace.json`; `buildProjectProviderRegistry` (`@axiom/providers/project-registry.ts`) lo lee mediante el `projectKey` resuelto y aliases legacy explícitos, sin escanear otro proyecto. Devuelve un `ProviderRegistry` con los clientes code-intel habilitados + `filesystem` always-on, más `engramEnabled` (Engram no es un `ProviderClient`: se resuelve vía `resolveMemoryBackend`).
 
 - **Modelo de memoria Engram-only (R-12)**: `MemoryEntry` mantiene `topicKey?`/`sessionId?` (aditivos), `MemorySessionSummary` y `MemoryBackend.saveSessionSummary?`. El UPSERT topic-keyed se implementa mediante `topic_key` de Engram: una misma combinación `(projectId, topicKey)` reemplaza la entrada correspondiente. `resolveMemoryBackend` inicia exclusivamente `engram mcp --project=<projectId> --tools=agent`, hace el handshake estándar `initialize` y devuelve un `MemoryError` ante cualquier indisponibilidad; no existen backend JSON, `createInMemoryBackend`, `memoryFilePath`, `forceJson` ni fallback de persistencia activos. Los JSON históricos quedan intactos y sin consumo runtime. TC-024 verifica de forma segura `engram --version`; su ausencia es un fallo de Doctor con guía de instalación.
 
@@ -279,7 +335,7 @@ Formas de datos añadidas por esta tanda (el comportamiento vive en [06_Integrac
 
 - **Scaffold canónico del propio repo `Axiom/`** (`INC-20260708-product-repo-self-bootstrap`): el repo de producto ganó en su raíz el set canónico que su runtime/tests esperaban — `axiom.config/` con contenido schema-válido real (`skills-catalog.yaml`, `agents-catalog.yaml`, `model-routing-policy.yaml`, `profiles.yaml`, `providers.yaml`, `capabilities.yaml`, `integrations.yaml`, `policy-as-code.yaml`, `mcp-manifest.yaml`, `telemetry-sinks.yaml`), `axiom.spec/target-axiom-skills/*.md` (20), `axiom.spec/target-axiom-agents/*.md` (14), `axiom.spec/templates/` (copiadas de `Axiom.Spec/templates/`), `AGENTS.md` y `axiom.skills.lock`. El cierre de aquella tanda registró `readiness:first-project` y `doctor` verdes; esa fotografía histórica fue superada por la verificación del 2026-08-02, que devuelve ambos comandos en `PASS` (ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)). `profiles.yaml#allowedTargets` declara los 8 targets activos validados por `IP-003`; `copilot-vscode` no pertenece al conjunto público y únicamente se migra, si ya está persistido en `init.json`, durante `configure` antes de instalar o despachar. LiteLLM fue retirado.
 
-- **Idempotencia de las operaciones incrementales** (`INC-20260708-incremental-operations`): `axiom repo/adapter/provider/role add` mutan los MISMOS artefactos del modelo multi-repo reusando los helpers exportados de `workspace-setup.ts` (`buildRoleAwareAxiomYaml`, `writeOneRepo`, `buildTopologyManifest`/`writeTopologyManifest`, `relativeRef`, `axiomYamlPathFor`, `tryReadExistingProjectId` — ampliados de module-private a exportados, sin cambio de comportamiento en `runWorkspaceSetup`). `repo add` re-deriva el bloque `paths` de CADA repo del proyecto (recíproco), actualiza `topology.yaml`, hace `upsertProjectReposV2` y genera adapters/MCP/skills/rules solo para el repo nuevo; `adapter add` hace append-dedup en `workspace.json#adapters` y regenera ese adapter en todos los repos; `provider add` hace append-dedup en `workspace.json#providers`. Re-ejecutar con los mismos args es no-op/merge (sin entradas duplicadas, sin clobber). Si no existe `workspace.json`, `adapter add`/`provider add` crean uno mínimo (schemaVersion 1, arrays vacíos) en vez de fallar.
+- **Idempotencia de las operaciones incrementales** (`INC-20260708-incremental-operations`, reconciliada por R-13): `repo add` y `role add` resuelven el proyecto contra la autoridad topology schema 2 y producen un `StructuralMutationPlan`. La unidad incluye el bloque gestionado de identidad, el único manifest autoral, bindings locales, `WorkspaceStateV1`/init state y `projects.yml` cuando se solicita registro; no vuelve a emitir paths recíprocos ni copias del grafo en cada `axiom.yaml`. Apply preflighta sin escribir, adquiere locks en orden, replantea bajo lock y termina en commit completo, rollback demostrable o `recovery-required`. `adapter add` y `provider add` actualizan arrays deduplicados mediante `updateWorkspaceState` y después materializan los outputs seleccionados de `WORKSPACE_STEP_CATALOG`; repair/regenerate no habilita capacidades. Repetir los mismos argumentos converge a `unchanged`/no-op sin duplicados ni clobber. Si falta `workspace.json`, solo una mutación autorizada crea la forma completa `WorkspaceStateV1`; corrupción, schema futuro o identidad divergente fallan sin overwrite.
 
 - **Scaffolding automático de la config de adopción** (`INC-20260727-adoption-config-scaffolding`): lo que `INC-20260708-product-repo-self-bootstrap` (arriba) hizo a mano para el propio repo `Axiom/`, `runWorkspaceSetup` (motor de `axiom workspace setup`/`adopt`) lo hace ahora automáticamente para CUALQUIER proyecto adoptado/seteado — siembra en el repo de control `axiom.config/integrations.yaml`, `axiom.config/policy-as-code.yaml`, `axiom.config/agents-catalog.yaml` y el `axiom.skills.lock` raíz (best-effort, no-clobber; `agents-catalog.yaml`/`axiom.skills.lock` con `bundleHash` recomputable byte-a-byte por el doctor). Las formas de `agents-catalog.yaml`/`skills.lock` son las ya descritas (materialización `@axiom/agents`/`@axiom/skills`, TC-010/TC-011); el comportamiento del motor de scaffolding vive en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 

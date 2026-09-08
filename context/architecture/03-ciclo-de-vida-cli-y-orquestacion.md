@@ -19,9 +19,9 @@ init → join → configure → sync → start → audit → doctor
 ### `axiom init`
 1. Valida nombre (`^[a-z0-9][a-z0-9-]{0,62}$`).
 2. Determina layout: `self-hosted` (si detecta `_builder/`, `packages/`, `apps/` o los targets bajo `axiom.spec/`) o `installed-multi-repo` (default).
-3. Genera `axiom.yaml` con `builder` + `local-only` + target y escribe `AGENTS.md` de forma aditiva y best-effort.
+3. Genera `axiom.yaml` con identidad, `builder` + `local-only` + target y, para repos `code`/`legacy`, el pointer `axiomRepo`; escribe `AGENTS.md` de forma aditiva y best-effort.
 4. Crea `.axiom-state/local/` y `.axiom-state/<projectKey>/`, `.gitignore` (renombrado desde el prefijo antiguo por `INC-20260703-config-folder-renames`, cerrado).
-5. Si layout `installed-multi-repo`, ya **no** escribe `topology.yaml` (`INC-20260703-config-dedup`, cerrado): `@axiom/topology#loadTopology` deriva un manifest de fallback desde `axiom.yaml` cuando el fichero está ausente; `topology.yaml` se materializa perezosamente solo cuando el proyecto corre `axiom roles assign`.
+5. No deriva ni materializa `topology.yaml` desde `axiom.yaml`. `@axiom/topology#loadTopology` sigue el pointer hasta la autoridad y exige `TopologyManifest.schemaVersion: 2`; una autoridad ausente o inválida falla closed. Solo una operación de workspace autorizada actualiza el manifest en `<axiomRepo>/axiom.config/topology.yaml`.
 6. Persiste `init.json`.
 7. Intenta registrar el proyecto en el registry user-level; el registro es best-effort y admite opt-out.
 Flags: `--name`, `--layout`, `--role`, `--target`, `--path`, `--yes`, `--force`, `--no-register`. La configuración funcional y la política operativa no tienen flags: son `builder` y `local-only`.
@@ -58,11 +58,7 @@ Ejecuta familias de checks (creció bastante desde el baseline 2026-07-02: bound
 ### `axiom upgrade`
 `--dry-run` | `--from-checkpoint <id>` | `--target-version <v>` | `--no-sync` | `--no-doctor`. Calcula migraciones aplicables, crea checkpoint pre-upgrade (`init.json`, `install-profile.json`, `managed-state.json`), aplica migraciones en orden con rollback automático si alguna falla, persiste nuevo `ManagedState`, y por defecto encadena `sync` + `doctor` post-upgrade.
 
-El helper `resolveSpecArtifactRelPath` usa el `role: spec` cuando está
-disponible y, para repos v1/runtime con `topology.yaml`, resuelve el
-`specRepo` de la topología como fallback. Así `freeze`, lifecycle e integrate
-leen la misma carpeta canónica, incluso después de mover un incremento a
-`specs/increments/_archive/`.
+El helper `resolveSpecArtifactRelPath` exige un manifest schema 2 cargado desde su autoridad. Si existe un child físico `<authority>/specs`, lo usa; una autoridad dedicada con `role: spec` sin ese child puede resolver la raíz; en cualquier otro caso conserva `undefined` y el almacén default `axiom.spec`. La ausencia, malformación, fuente `default` o falta de mapping no reabre un fallback local. Así `freeze`, lifecycle e integrate leen la misma carpeta canónica, incluso después de mover un incremento a `specs/increments/_archive/`.
 
 ## Histórico: TUI (`axiom tui`)
 
@@ -114,9 +110,20 @@ la generación del árbol documental pertenece a `@axiom/workflow` y a su
 `scaffoldArtifact`. El generador resuelve primero `templates/` del scope del
 proyecto y usa el contenido bundleado como fallback, escribe cada archivo con
 no-clobber y deja `metadata.yml` bajo la responsabilidad del artifact store.
-La misma separación se aplica al workspace setup: sus writers independientes
-preparan repos, estado, topología, adapters, process surfaces, catálogos y la
-base de spec como pasos best-effort, sin reemplazar contenido preexistente.
+La misma separación se aplica al workspace. Antes del primer writer,
+`planStructuralMutation` observa identidad, topología, bindings, estado,
+registry solicitado y límites derivados sin crear directorios, home, locks ni
+temporales. Apply adquiere locks, recupera journals previos, replantea bajo lock
+y publica los recursos estructurales mediante staging adyacente y journal
+persistente; rollback o `recovery-required` sustituyen cualquier éxito parcial.
+
+Solo después de `committed` se ejecutan adapters, process surfaces, reglas, MCP,
+catálogos y base de spec. `runStructuralDerivedSteps` captura snapshots antes y
+después, limita cada writer a sus outputs declarados y convierte sus fallos en
+warnings tipados sin cambiar `exitCode: 0` del commit válido. Los comandos
+granulares seleccionan sus owners/targets desde `WORKSPACE_STEP_CATALOG` y
+reportan `created | updated | unchanged | skipped | failed`; repair no habilita
+capacidades ni muta `workspace.json`.
 
 Para Copilot, la superficie general se comparte en
 `.github/copilot-instructions.md`; el writer de
@@ -145,3 +152,10 @@ Fuentes de implementación: `Axiom/packages/workflow/src/governed-transition-run
 ## Resolución, approval y QA R-10 (2026-08-18)
 
 El resolver único toma un YAML de workflow presente y válido; sólo la ausencia usa el asset empaquetado de `workflows.yaml`, mientras error de parseo o schema futuro se propaga sin fallback. `plan-approve` es exclusivamente `draft → plan-approved`, valida metadata, previsualiza sin escribir y exige confirmación; el gate de `axiom-role start` comprueba tanto state como metadata aprobados. Antes del archive, `QaArchiveDecision` es común a CLI, launcher, MCP e integrate: `parallel` conserva el archive con aviso para evidencia distinta de `passed`, pero inline o el rol QA requerido sólo lo permiten con `passed`; policy o evidencia requerida no evaluable bloquea antes de toda mutación.
+
+
+## Control plane local y evidencia R-13
+
+El launcher web (`apps/cli/src/commands/app-api.ts` y `app-launcher.ts`) es una superficie fina sobre los runners de CLI/workflow. Su control plane exige loopback literal, sesión por proceso, `Host`/`Origin` local, schemas cerrados y límites de lectura; `launcher-security.ts` liga grants single-use al snapshot normalizado y consume el token antes de ejecutar. El alias plugin-scoped de `/launcher/execute` es deliberado y no sustituye la validación del target.
+
+La entrega HTTP usa endpoints configurados y allowlisted con DNS/IP gobernado, sin redirects, timeout/respuesta acotados y evidencia de status; clipboard queda pendiente de ack/evidence y no se materializa un transporte VS Code ficticio. `LauncherEventHub.closeAll()` se invoca en el shutdown real para liberar respuestas SSE e intervalos. La transición `axiom-increment verify` y los receipts de fase se ejecutan desde el repo de SPEC, mientras la implementación y sus tests viven en el repo de código.

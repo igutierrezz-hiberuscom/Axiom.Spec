@@ -289,3 +289,671 @@ Se retiraron `axiom learn`, las lecciones derivadas de audit y `recentLessons`; 
 Los cuatro incrementos de R-12 están archivados con metadata y receipts gobernados: `INC-20260821-r12-remove-learn`, `INC-20260821-r12-remove-memory-manual-flag`, `INC-20260821-r12-engram-only-memory` e `INC-20260821-r12-agent-memory-capture-discipline`. El bug de cierre `BUG-20260822-164731-wbhehi` también está archivado: corrigió la query FTS vacía de `freeze` mediante el ancla `rationale`, cubrió el rechazo en el stub hermético y permitió regenerar freezes reales de R-12.
 
 La evidencia final incluye 94 pruebas dirigidas del lote R-12, 26 pruebas de regresión de freeze/Engram, `npm run build`, smoke de memoria CLI, freezes reales, `npm run doctor` PASS con TC-024, `npm run readiness:first-project` PASS, `axiom index validate` correcto, índice técnico regenerado por CLI y `git diff --check` sin errores. Los README humanos archivados y los criterios del bug quedaron reconciliados con sus metadata y receipts; no se alteraron IDs, estados estructurales ni recibos inmutables. La integración estable permanece en `specs/00..08`, manuales y `context/**` ya reconciliados.
+## Registro histórico — auditoría read-only y handoff de R-13 estructural (baseline previa a implementación, 2026-08-29)
+
+> Esta sección conserva la evidencia y el brief tal como se observaron antes de implementar B→F. Todos los estados, STOP/GO y frases en presente de este bloque describen exclusivamente aquella baseline; no son el estado vigente. El estado final se registra en los artifacts gobernados y en la síntesis de cierre añadida al final del plan.
+
+### Alcance, precedencia y baseline preservado
+
+Esta sección consolidó el resultado de la auditoría previa de `INC-20260829-r13-structural-mutation-safety` (ACC-065..ACC-067) y fijó el orden de entrega del bloque estructural de R-13. La evidencia primaria fue el runtime `Axiom/`; los incrementos congelados expresaban el estado deseado, no probaban que existiera. La auditoría detallada correspondió a E y trató B, C, D y F como gates posteriores.
+
+En aquella sesión no se modificaron los documentos congelados, `metadata.yml`, receipts, IDs, estados, índices, código, configuración, tests ni Git. El hash `c9ed6b8aec1051df6912cc622c00ae5e5ca9950874467add41cace10885bcc04` es histórico y fue sustituido por freezes posteriores.
+
+Estado observado en esa baseline histórica:
+
+1. A, ACC-050..ACC-056: validado; proporciona identidad/catálogo y primitives por archivo (`@axiom/core`) que deben reutilizarse.
+2. B, `INC-20260829-r13-topology-schema2-authority` (ACC-057..ACC-059): `plan-approved`.
+3. C, `INC-20260829-r13-topology-bindings-persistence` (ACC-060..ACC-062): `plan-approved`; depende de B.
+4. D, `INC-20260829-r13-workspace-resolution-surface` (ACC-063, ACC-064 y ACC-069): `plan-approved`; depende de A, B y C.
+5. E, `INC-20260829-r13-structural-mutation-safety` (ACC-065..ACC-067): `plan-approved`; depende de B, C y D.
+6. F, `INC-20260829-r13-workspace-step-reconciliation` (ACC-068): `plan-approved`; solo se implementa después de D y E.
+
+El orden obligatorio es **B → C → D → E → F**. Cada unidad debe quedar implementada, validada y revisada antes de usar sus contratos en la siguiente. No se adapta E a topology v1 ni se crea una segunda capa temporal de compatibilidad: hacerlo duplicaría contratos destinados a retirarse en B.
+
+### Resultado de la auditoría de E
+
+#### Cumplimiento observado en aquella baseline
+
+Existían primitives aprovechables, pero todavía no constituían cumplimiento de ACC-065..ACC-067:
+
+- `packages/filesystem-truth/src/path-canonical.ts#canonicalizePath` resolvía `realpath`, symlinks/junctions, nombres Windows 8.3 y ancestros existentes.
+- `packages/core/src/local-file.ts` aportaba `acquireLocalFileLockSync`, `withLocalFileLockSync` y `atomicWriteFileSync` para coordinación y reemplazo por archivo.
+- `packages/user-workspace/src/registry.ts#upsertProjectReposV2` protegía su propio read-modify-write con lock.
+- Setup, adopción, operaciones incrementales y launcher ya contenían validaciones parciales y writers reutilizables.
+
+Ninguna de esas piezas implementaba entonces un preflight global sin escrituras, una transacción recuperable multiarchivo o una reconciliación seccional de `axiom.yaml`.
+
+#### Desviaciones verificadas entonces
+
+**ACC-065 — todavía no estaba implementada en esa baseline.**
+
+- `apps/cli/src/commands/workspace-setup.ts#writeOneRepo` podía crear el directorio antes de completar el ownership check. Un `axiom.yaml` foráneo o inválido producía warning y el flujo podía continuar con otros outputs.
+- `apps/cli/src/commands/workspace-incremental.ts#resolveExistingProject` llamaba a `ensureHomeDir`; por tanto la resolución usada antes de una operación podía mutar home.
+- Los guards `prepareWorkspaceInput`, `sourceDoesNotOverlapDestination` y `destinationOwnershipError` de `app-onboarding.ts` eran exclusivos del launcher y no formaban una frontera común para CLI, setup, adopt, repo y role.
+- No había una comparison key pública y única para equivalencia física/case-folding; duplicar lowercasing o canonicalización privada podía producir decisiones distintas entre superficies.
+- No se prevalidaban conjuntamente todos los outputs estructurales y derivados antes del primer `mkdir`, lock, temporal, journal, log, telemetría o modificación del registro.
+
+**ACC-066 — todavía no estaba implementada en esa baseline.**
+
+- `workspace-setup.ts#runWorkspaceSetup` aplicaba writers de forma secuencial y mezclaba estructura indispensable con materialización derivada best-effort.
+- `workspace-adopt.ts#runWorkspaceAdopt` encadenaba setup, restauración MCP, topología legacy best-effort y migración sin una unidad transaccional común.
+- `workspace-incremental.ts#runRepoAdd` degradaba fallos de topology, bindings o registry a warnings y podía devolver `exitCode: 0` después de un estado parcial.
+- `packages/core/src/local-file.ts` coordinaba un recurso, pero todavía no existían coordinador multi-recurso, journal de operación, rollback/roll-forward ni recuperación global.
+- `upsertProjectReposV2` encerraba el lock dentro del API de registro; faltaban una operación pura/unlocked o una composición explícita que permitiese incluir `projects.yml` en una transacción externa sin inversión de locks.
+- `packages/topology/src/loader.ts#saveLocalBindings` usaba un temporal fijo, no lockeaba y todavía pertenecía al contrato schema 1 observado.
+- En esa baseline no existían `StructuralMutationPlan`, `StructuralMutationResult`, `structural-transactions` ni el estado `recovery-required`.
+
+**ACC-067 — todavía no estaba implementada en esa baseline.**
+
+- `workspace-setup.ts#writeOneRepo` volvía a renderizar el documento completo para una identidad que consideraba propia; comentarios y extensiones no emitidos por el renderer se perdían.
+- Todavía no existían los delimitadores exactos `# AXIOM:MANAGED:START` y `# AXIOM:MANAGED:END` ni un merger por offsets que preservase bytes exteriores.
+- El dogfood `Axiom/axiom.yaml` era markerless y narrativo. No reunía evidencia suficiente para convertirlo automáticamente sin una decisión de migración explícita.
+
+#### Flujos observados entonces y punto de fallo
+
+1. **Setup:** wrapper CLI/launcher → `runWorkspaceSetup` → creación/escritura de repos → topology/bindings/estado/registro → outputs derivados. Un fallo tardío podía dejar recursos anteriores aplicados.
+2. **Adopción:** `runWorkspaceAdopt` → setup → restauración MCP → tratamiento legacy/migración. Los pasos posteriores no estaban protegidos por una intención persistida y recuperable.
+3. **Repo/role add:** resolución existente —que podía crear home— → alta física → mutación de topology/bindings/registry. Algunos fallos se convertían en warnings y el resultado global podía parecer exitoso.
+4. **Launcher:** añadía guards propios y confirmación, pero terminaba delegando en runners con las mismas fronteras parciales. `confirmed` no sustituía preflight, ownership ni atomicidad.
+
+#### Riesgos identificados entonces
+
+- Estado híbrido tras crash entre replaces o tras un fallo tardío de registro.
+- Lost update o deadlock si se combinaban project lock, resource locks y el lock interno de `projects.yml` sin orden único.
+- `EXDEV` si staging/backup se colocaba en un directorio central de otro volumen.
+- Rollback destructivo si un operador modificaba un archivo después del inicio y no se comparaban hashes.
+- Alias físicos por symlink, junction, case-folding o nombre 8.3 que evadiesen ownership o solapamientos.
+- Conversión markerless que borrase contenido humano o aceptase una identidad ambigua.
+- Resultados/exit codes que presentasen como éxito una estructura incompleta.
+
+#### Validación observada entonces
+
+La auditoría fue deliberadamente read-only. Se inspeccionaron código, configuración dogfood, tests existentes y artefactos lifecycle, pero no se ejecutaron Vitest, build, doctor o readiness porque podían crear `dist`, temporales, cachés o estado. En aquella auditoría todavía no existían receipt `increment-verify`, matriz verde, review independiente ni evidencia de integración para E.
+
+#### Recomendación emitida entonces
+
+La recomendación de aquella baseline fue mantener E en `plan-approved`/pendiente y no ejecutar `increment-verify` ni cierre hasta que B, C y D estuvieran aplicadas y verificadas, E cumpliese la matriz indicada abajo, una revisión independiente no encontrase blockers y el conocimiento estable se integrase. El mensaje de commit sugerido entonces, sin crearlo, fue `feat(workspace): make structural mutations recoverable`.
+
+### Flujo objetivo obligatorio para E
+
+El único flujo de mutación estructural será:
+
+1. Recibir y normalizar una intención, con `operationId`, reloj y generador de IDs inyectables para pruebas.
+2. Ejecutar `planStructuralMutation` en modo estrictamente read-only: leer, `stat`, `realpath`, parsear y calcular; nunca crear home, directorios, locks, temporales, journal, logs o telemetría.
+3. Devolver preview o rechazo tipado. Un rechazo conserva un snapshot byte/metadata idéntico de todos los roots observados.
+4. En apply, adquirir primero el project lock y después los resource locks en orden por comparison key canónica.
+5. Recalcular el plan bajo lock y rechazar si cambió cualquier precondición.
+6. Recuperar o bloquear ante journals previos incompletos antes de preparar una operación nueva.
+7. Crear journal y staging/backup adyacente a cada destino; persistir intención, hashes y estado `prepared` antes del primer replace.
+8. Aplicar todos los recursos estructurales requeridos y registrar cada frontera durable.
+9. Ante fallo, hacer rollback exacto cuando los hashes sean conocidos; si existe contenido desconocido, persistir `recovery-required`, devolver exit no cero y no tocarlo a ciegas.
+10. Marcar `committed` solo cuando toda la unidad estructural sea válida.
+11. Ejecutar después los outputs derivados. Sus fallos se devuelven como warnings tipados y no revierten una estructura ya válida.
+12. Emitir el mismo resultado/envelope desde CLI y launcher.
+
+### Invariantes cerradas
+
+1. **Cero escrituras de preflight:** incluye `mkdir`, home, lock, tmp, journal, logs, telemetría, registry y derivados.
+2. **Una sola canonicalización:** `@axiom/filesystem-truth` exporta canonical path y comparison key de plataforma; ningún consumidor implementa su propio lowercasing.
+3. **Ownership exhaustivo:** el plan enumera path exacto y owner esperado de cada output estructural y derivado.
+4. **Solapamiento bidireccional:** destino dentro de fuente read-only y fuente dentro de destino fallan; también fallan dos identidades sobre el mismo objeto físico.
+5. **Replan bajo lock:** preview nunca se aplica si el filesystem cambió.
+6. **Orden de locks:** project lock primero; recursos en orden canónico; no se adquiere home si `--no-register`.
+7. **Registro solicitado es estructural:** si se solicita, un fallo de `projects.yml` revierte la unidad. `--no-register` omite por completo acceso/mutación de home.
+8. **Staging co-localizado:** temporales y backups residen junto al destino para no cruzar volúmenes.
+9. **Journal recuperable:** `.axiom-state/<projectKey>/structural-transactions/<operationId>/` usa estados `prepared | committing | committed | rolling-back | rolled-back | recovery-required`.
+10. **Recovery por hashes:** todo-after completa `committed`; mezcla conocida before/after hace rollback; hash desconocido deja `recovery-required`.
+11. **No rollback ciego:** una edición humana posterior al inicio jamás se sobrescribe si su hash no coincide.
+12. **Resultados honestos:** exit 0 solo para `committed`; ningún fallo estructural se degrada a warning.
+13. **Idempotencia:** reintento de la misma intención converge a `unchanged` o completa recovery sin duplicar registro ni outputs.
+14. **Contenido humano:** solo el bloque Axiom de `axiom.yaml` es propiedad del writer; prefijo y sufijo se preservan byte a byte.
+15. **Fail-closed markerless:** solo se convierte un renderer legacy conocido con identidad inequívoca y sin campos conflictivos; ambiguo, inválido o desconocido se rechaza.
+16. **Topología única:** E consume exclusivamente los contratos schema 2 y writers autorales producidos por B/C/D.
+
+### Recursos y frontera transaccional
+
+Recursos estructurales requeridos, según la operación: `axiom.yaml` de cada repo afectado, topology autoral schema 2, `topology-bindings.yaml`, `.axiom-state/<projectKey>/workspace.json`, `init.json`, `~/.axiom/projects.yml` solo cuando se solicite registro y directorios creados por la operación. Un directorio solo puede retirarse en rollback si fue creado por esa operación y continúa vacío/poseído.
+
+Quedan post-commit como derivados: AGENTS, configuración materializada, MCP, adapters, skills, rules, process surfaces, base de spec, code-intel e imports. Aunque no pertenezcan al rollback estructural, sus destinos se incluyen en el preflight de ownership y solapamiento.
+
+### Contratos mínimos a implementar
+
+Ubicación preferida: junto a los comandos en `Axiom/apps/cli/src/commands/`; no crear un paquete `packages/structural-mutation` salvo evidencia nueva que justifique ese coste.
+
+- `workspace-structural-types.ts`: `StructuralMutationIntent`, `StructuralMutationPlan`, `StructuralResourceChange`, `StructuralMutationResult`, `ResourceOutcome`, warnings y errores estables.
+- `workspace-structural-plan.ts`: `planStructuralMutation(...)`, comparación de snapshots, preflight común y enumeración completa de outputs.
+- `workspace-structural-transaction.ts`: apply, lock ordering, replan, journal, staging, commit, rollback y `recoverStructuralMutations(...)`.
+- `workspace-axiom-yaml.ts`: parser/renderer/merger de bloque gestionado y conversión legacy conservadora.
+- `workspace-derived-steps.ts`: catálogo/runner post-commit de derivados, preparado para que F lo sustituya o generalice sin duplicarlo.
+
+Resultado mínimo:
+
+- Estado global: `committed | rejected | failed | recovery-required`.
+- Recurso: `created | updated | unchanged | skipped`.
+- Warnings derivados separados de errores estructurales.
+- Envelope JSON v1 coherente con los contratos de C y los wrappers existentes; stdout JSON limpio y diagnóstico humano por stderr.
+- `rejected`, `failed` y `recovery-required` terminan con exit no cero.
+
+El bloque de identidad usa exactamente:
+
+```text
+# AXIOM:MANAGED:START
+...contenido propiedad de Axiom...
+# AXIOM:MANAGED:END
+```
+
+El merger localiza offsets, sustituye solo ese rango y conserva exactamente BOM, newline style, prefijo, sufijo, comentarios y extensiones humanas. Cero o múltiples pares, orden inválido, YAML no interpretable o identidad conflictiva producen error de preflight. `Axiom/axiom.yaml` no se convierte automáticamente solo por ser dogfood: debe pasar las mismas condiciones o recibir una migración explícita revisada.
+
+### Archivos y símbolos de integración previstos
+
+Después de aplicar B/C/D al HEAD, E debe refactorizar o delegar, no mantener caminos paralelos, en:
+
+- `apps/cli/src/commands/workspace-setup.ts`: `writeOneRepo`, `runWorkspaceSetup`.
+- `apps/cli/src/commands/workspace-adopt.ts`: `runWorkspaceAdopt`.
+- `apps/cli/src/commands/workspace-incremental.ts`: `resolveExistingProject`, `runRepoAdd` y la ruta de role add.
+- `apps/cli/src/commands/workspace.ts`: `handleWorkspaceSetup`; setup normal mantiene apply por defecto y obtiene un `--dry-run` real que usa el planner común.
+- `apps/cli/src/commands/app-onboarding.ts`: `prepareWorkspaceInput`, `sourceDoesNotOverlapDestination` y `destinationOwnershipError` dejan de ser una frontera exclusiva y delegan en preflight común.
+- Wrappers/endpoints launcher que exponen preview/apply: reutilizan plan, resultado y envelope; no reinterpretan warnings estructurales como éxito.
+- `packages/filesystem-truth/src/path-canonical.ts`: exporta la comparison key pública junto a la canonicalización existente.
+- `packages/core/src/local-file.ts`: se reutilizan locks y atomic writer; cualquier helper multi-lock debe ser una composición pequeña de esos primitives, no otro protocolo.
+- `packages/user-workspace/src/registry.ts`: añadir una operación pura o unlocked explícita para componer el cambio bajo el coordinador, conservando la API lockeada para callers independientes.
+- Writers topology/bindings resultantes de C: exponer prepare/validate/write bajo lock o una API equivalente compatible con la transacción; retirar el camino de `saveLocalBindings` inseguro.
+
+`axiom init` reutiliza el renderer de bloque gestionado, pero la ampliación de toda su operación a la transacción multiarchivo no forma parte de E. Setup sigue aplicando por defecto para no introducir una ruptura no solicitada; preview real se activa mediante `--dry-run` y launcher.
+
+### Pasos de implementación de E
+
+1. **Gate de entrada:** comprobar que B/C/D están verificadas en runtime, sus contratos públicos se compilan y no quedan productores topology v1 en las rutas afectadas.
+2. **Filesystem truth:** publicar y probar comparison key para Windows/POSIX, ancestros no existentes, symlink, junction, 8.3, case-fold y espacios.
+3. **Tipos y errores:** definir intents, plan, snapshots, outcomes, estados globales y códigos estables sin acoplarlos a Commander o HTTP.
+4. **`axiom.yaml`:** implementar primero parse/merge/render y fixtures byte-exactos; no integrar writers hasta pasar casos ambiguos y markerless.
+5. **Planner/preflight:** reunir inputs de setup/adopt/repo/role, resolver todos los targets y read-only sources, calcular desired documents ya validados y producir preview determinista sin efectos.
+6. **Coordinador:** implementar locks, replan, journal, staging/backup adyacente, replaces, rollback y recovery con fault hooks inyectables.
+7. **Registro y writers:** adaptar registry/topology/bindings/workspace state a prepare/apply sin locks anidados ni serializaciones parciales.
+8. **Runners:** migrar setup, adopt, repo add y role add al coordinador; separar derivados; eliminar degradaciones de fallos estructurales a warnings.
+9. **Superficies:** conectar `--dry-run`, resultados humanos, JSON y launcher al mismo modelo; no duplicar guards.
+10. **Recovery de arranque:** antes de otra mutación del proyecto, inspeccionar journals incompletos y recuperar o bloquear con remediación visible.
+11. **Regresión y dogfood:** actualizar únicamente runtime/config/docs operativas que correspondan al contrato implementado, revalidar el workspace Axiom y no auto-convertir contenido humano ambiguo.
+12. **Cierre:** ejecutar la matriz completa, revisión independiente, integración estable y lifecycle por Axiom Core; no editar metadata/status/receipts a mano.
+
+### Matriz de pruebas obligatoria
+
+Crear o completar, como mínimo:
+
+- `apps/cli/tests/workspace-structural-preflight.test.ts`
+- `apps/cli/tests/workspace-structural-transaction.test.ts`
+- `apps/cli/tests/workspace-structural-recovery.test.ts`
+- `apps/cli/tests/workspace-structural-concurrency.test.ts`
+- `apps/cli/tests/workspace-axiom-yaml.test.ts`
+
+Casos mínimos:
+
+1. **Preflight positivo:** setup/adopt/repo/role legítimos, reejecución e idempotencia desde axiomRepo y code repo.
+2. **Preflight negativo y cero mutación:** ID/role reservado, duplicados, mismo path con dos identidades, foreign/invalid YAML, flags create incoherentes, destino↔legacy/context solapados, path ya poseído por otro proyecto y output derivado ajeno. Comparar árbol, bytes y ausencia de home/locks/tmp/journal antes/después.
+3. **Path/security:** symlink, junction, 8.3, case-fold, espacios, ancestro no existente, file en lugar de directory y cambios TOCTOU entre preview/apply.
+4. **YAML:** comentarios, extensiones, BOM/newline, prefijo/tail humano byte-exacto, markers múltiples/invertidos, YAML inválido, identidad conflictiva, renderer legacy conocido, markerless desconocido e idempotencia.
+5. **Fault injection:** antes y después de cada write/fsync/rename/estado de journal para todos los recursos requeridos.
+6. **Recovery:** all-before, all-after, mezcla conocida, hash desconocido, journal truncado, retry y bloqueo por `recovery-required`.
+7. **Concurrencia:** dos setup, setup frente a repo add, dos repo/role add, registro solicitado y `--no-register`; sin lost update ni deadlock.
+8. **Resultados:** outcomes por recurso, warnings derivados, JSON limpio, stderr, exit codes y paridad CLI/launcher.
+9. **Regresión:** `workspace-setup.test.ts`, `workspace-adopt.test.ts`, `workspace-incremental.test.ts` y `workspace-command.test.ts`, además de suites topology/bindings/registry afectadas por B/C/D.
+10. **No objetivos:** demostrar que derivados fallidos no revierten estructura comprometida y que contenido humano ajeno nunca se borra en rollback.
+
+Comandos post-apply previstos, no ejecutados por esta auditoría:
+
+```text
+npx vitest run apps/cli/tests/workspace-structural-preflight.test.ts apps/cli/tests/workspace-axiom-yaml.test.ts
+npx vitest run apps/cli/tests/workspace-structural-transaction.test.ts apps/cli/tests/workspace-structural-recovery.test.ts apps/cli/tests/workspace-structural-concurrency.test.ts
+npx vitest run apps/cli/tests/workspace-setup.test.ts apps/cli/tests/workspace-adopt.test.ts apps/cli/tests/workspace-incremental.test.ts apps/cli/tests/workspace-command.test.ts
+npm run typecheck
+npm run build
+npx vitest run
+npm run doctor
+npm run readiness:first-project
+```
+
+Añadir las suites focalizadas de B/C/D que resulten afectadas y una comprobación de diff/hygiene. Si la suite completa muestra interferencia concurrente, aislar y explicar la causa; una pasada aislada no sustituye una suite final reproducible.
+
+### Evidencia exigida antes de verificar/cerrar
+
+- B, C y D implementadas y verificadas; F permanece posterior a E.
+- Todos los criterios CA-E1, CA-E2 y CA-E3 trazados a tests positivos y negativos.
+- Fault injection y concurrencia verdes, no solo happy paths.
+- Typecheck, build, suite completa, doctor y readiness con resultados registrados.
+- Smoke del dogfood schema 2 sin fallback topology v1 y sin conversión destructiva de `axiom.yaml`.
+- Revisión independiente contra intención, criterios, blast radius, lock ordering y recovery; cero blockers abiertos.
+- Receipt `increment-verify` emitido por Core y transición/archivo solo mediante comandos Axiom; nunca edición manual.
+- Integración final de conocimiento estable en `specs/00..08` y `context/**`; el desired state no se publica como comportamiento vigente antes de la evidencia.
+- Documentación operativa cercana actualizada después del apply, sin reescribir artefactos archivados o receipts históricos.
+
+### Blast radius y estrategia de recuperación
+
+El blast radius incluye setup/adopt, repo/role add, init parcial por renderer, topology/bindings, registry user-level, workspace state, project resolution, launcher onboarding y todos los generadores derivados. La implementación debe conservar cambios locales no relacionados y dividir commits lógicos por dependencia; no mezclar E con seguridad del launcher o R-13.5.
+
+Ante fallo de despliegue, no se revierte eliminando archivos desconocidos. Primero se ejecuta recovery mediante journal y hashes. Si existe un hash no reconocido, se conserva evidencia, se marca `recovery-required` y se exige intervención explícita. Los backups solo se eliminan después de `committed` durable y de validar que no se necesitan para una recuperación pendiente.
+
+### Handoff para una sesión de implementación
+
+Prompt reutilizable:
+
+```text
+Implementa el bloque estructural pendiente de R-13 en C:\repos\Axiom Workspace. Lee primero Axiom.SDD/AGENTS.md, Axiom/AGENTS.md, la sección "Auditoría read-only y handoff de implementación R-13 estructural — ACC-057..ACC-069" de Axiom.Spec/plans/PLAN-REVISION-INTEGRAL-AXIOM.md y los artefactos congelados de los incrementos B, C, D, E y F. Trata Axiom/ como evidencia runtime primaria. Ejecuta estrictamente B → C → D → E → F, verificando y revisando cada incremento antes del siguiente; no adaptes E a topology v1. Implementa cambios en Axiom/, gestiona lifecycle, estados, receipts, archive e índices solo mediante Axiom Core, y consolida specs/context únicamente cuando el comportamiento esté probado. Para E respeta preflight de cero escrituras, comparison key común, lock ordering, replan, journal/recovery, resultados honestos y preservación byte a byte fuera de los markers de axiom.yaml. Ejecuta las suites focalizadas, fault injection, concurrencia, typecheck, build, suite completa, doctor y readiness. No cierres ningún incremento con blockers o dependencias pendientes y solicita revisión independiente antes de verificar/archivar.
+```
+
+Este handoff no autoriza implementar ACC-070..ACC-076 ni abrir R-13.4/R-13.5: pertenecen a incrementos y auditorías separados.
+
+## Addendum de recuperación de B y gate validator-first — ACC-057..ACC-059 (2026-09-03)
+
+### Alcance y efecto sobre el handoff anterior
+
+Este addendum registra el análisis posterior a dos ciclos de reparación de `INC-20260829-r13-topology-schema2-authority`. No reescribe la auditoría histórica de E ni crea un incremento nuevo. **Supersede únicamente las instrucciones operativas de B** dentro del handoff anterior; conserva el orden global B → C → D → E → F → G → H → I y mantiene C–I bloqueados hasta el gate GO definido al final.
+
+Esta sesión es `flow=knowledge_only`, `route=sdd`: solo actualiza este plan. No autoriza cambios de runtime, specs canónicas `00..08`, `context/**`, metadata, freeze, receipts, índices, status, archive ni Git. El futuro apply reutilizará B y deberá volver a ejecutar `axiom state` y `axiom freeze --increment INC-20260829-r13-topology-schema2-authority` antes de delegar a `axiom-increment`.
+
+### Estado observado y dictamen
+
+B permanece `plan-approved`, sin receipt `increment-verify` y sin evidencia suficiente de cierre. La última validación dirigida obtuvo build verde y 5 archivos/39 tests verdes, pero `npm run doctor` falló TC-001 y la revisión independiente confirmó incumplimientos de ACC-058/ACC-059. Esa evidencia prueba que una suite focal verde no sustituye la conformidad con el contrato.
+
+Blockers confirmados:
+
+1. **Inversión de precedencia normativa.** La spec refinada exige IDs de repos y roles globalmente únicos. Una fixture MCP reutilizaba `backend` como `codeRepos[].id` y `roles[].id`; para hacerla pasar se eliminó del validator la colisión repo↔role. Se adaptó producción a una fixture inválida en vez de corregir la fixture.
+2. **Validación dependiente de un anchor que se pierde.** `loadTopology` valida refs con el root autoritativo resuelto, pero devuelve solo `TopologyManifest`. Doctor vuelve a validar el mismo manifest con `resolution.rootPath`; desde `Axiom/`, `axiomRepo.ref: .` se reancla al code repo y converge falsamente con `codeRepos[].ref: ../Axiom`.
+3. **Una misma entrada se valida con reglas contextuales distintas.** `TopologyValidationOptions.projectRoot` es opcional y su nombre no expresa que debe ser el root de autoridad. `topology validate` vuelve a llamar al validator sin anchor; `resolveRepoPath` redescubre autoridad y, si falla, cae al cwd. El resultado depende del consumidor, no solo del manifest y su autoridad.
+4. **Pérdida de errores.** Doctor convierte cualquier `TopologyError` en `null`/`skip`; además supedita TC-001 a `profiles.yaml`, aunque la semántica schema 2 debe depender únicamente de `topology.yaml#roles`.
+5. **Autoridad inferida por ausencia de evidencia.** Una raíz sin `axiom.yaml` ni topology local se acepta hoy como axiomRepo por `kind === undefined` y recibe un default. Eso permite que una carpeta vacía o `Axiom.SDD` parezca autoridad local en vez de fallar de forma tipada.
+6. **Migración incompleta de fixtures y comentarios.** Quedan fixtures felices o comentarios que describen schema topológico 1. No toda aparición de `schemaVersion: 1` es topología: bindings locales, envelopes y otros dominios mantienen versionado propio y no deben eliminarse por búsqueda ciega.
+7. **Dogfood no integrable todavía.** `Axiom.Spec/axiom.config/topology.yaml` existe como autoridad propuesta y `Axiom/axiom.yaml` apunta a ella, pero doctor no converge y falta demostrar explícitamente que Axiom.SDD permanece read-only y que una carga directa desde una raíz legacy no identificada falla en vez de sintetizar un default.
+
+Dictamen: **B sigue pending; C no puede comenzar.** El próximo apply no es otra reparación ad hoc, sino una remediación contract-first del mismo incremento B, con tests de contrato rojos antes de cambiar producción y revisión independiente antes de cualquier verify.
+
+### Precedencia normativa cerrada
+
+Para cualquier contradicción durante el apply se usa este orden, sin excepciones implícitas:
+
+1. Decisiones cerradas y criterios de `Axiom.Spec/specs/increments/INC-20260829-r13-topology-schema2-authority/`.
+2. ACC-057..ACC-059 y este addendum del plan.
+3. Tipos públicos y findings esperados, una vez alineados con 1–2.
+4. Tests y fixtures.
+5. Comportamiento histórico y comentarios.
+
+Consecuencias:
+
+- Un test no redefine el dominio. Si una fixture feliz no pasa el validator canónico, se corrige la fixture o se detiene el apply.
+- Relajar una invariante exige primero una contradicción explícita en la spec y una decisión documental; no se hace para obtener una suite verde.
+- Los artefactos archivados pueden conservar historia. Código, fixtures felices, comentarios operativos y documentación canónica activa no pueden presentar schema topológico 1 como vigente.
+- `LocalBindings.schemaVersion: 1`, envelopes v1 y otros schemas ajenos al manifest topológico no son residuos de ACC-057.
+
+### Contrato objetivo no negociable
+
+#### 1. Unicidad e invariantes
+
+- Existe un único namespace de identidad para `axiomRepo.id`, todos los `codeRepos[].id`, todos los `legacyRepos[].id` y todos los `roles[].id`.
+- Cualquier segundo uso emite `duplicate-id`; las colisiones repo↔role usan `scope: global`.
+- El fixture válido equivalente al caso MCP usa, por ejemplo, repo `backend`, role `builder` y assignment `backend → builder`; `backend → backend` es un negativo explícito.
+- Se conservan las demás invariantes cerradas: kinds por bucket, refs no vacías, paths locales no convergentes, legacy 0..2 con funciones `sdd|spec` no repetidas y read-only, assignments solo a code repos/roles declarados, exactamente una primary por code repo, como máximo un code repo primary por role, mode coherente, shape cerrada y QA lane válida.
+
+#### 2. Validación una vez, con procedencia
+
+B introducirá un resultado cargado tipado —nombre recomendado y cerrado para el brief: `LoadedTopology`— con al menos:
+
+```ts
+interface LoadedTopology {
+  readonly manifest: TopologyManifest;
+  readonly authority: TopologyAuthority;
+  readonly validation: Extract<ValidationResult, { ok: true }>;
+}
+```
+
+- `loadTopology(startPath)` devolverá `Result<LoadedTopology, TopologyError>` y será la única frontera load→parse→validate para consumidores.
+- El éxito significa que el manifest fue validado contra `authority.rootPath`; ningún consumidor lo vuelve a validar.
+- `validateTopology` seguirá disponible para writers, builders y tests directos, pero recibirá obligatoriamente `{ authorityRoot }`. Se retiran el nombre ambiguo `projectRoot` y el anchor opcional.
+- `saveTopology` resolverá primero la autoridad y validará el desired manifest exactamente con ese `authorityRoot` antes de cualquier escritura.
+- `resolveRepoPath` recibirá el `authorityRoot` ya resuelto —o el `LoadedTopology`— y no redescubrirá autoridad ni caerá silenciosamente al cwd. C podrá endurecer después los bindings; B fija el anchor de las refs autoritativas.
+- No se añade un overload de compatibilidad que permita omitir el anchor ni una segunda validación “best effort”.
+
+#### 3. Prueba positiva de autoridad
+
+`resolveTopologyAuthority` distinguirá ausencia, identidad válida e identidad inválida:
+
+- topology local presente y repo no declarado como code/legacy: autoridad local explícita;
+- `axiom.yaml` válido con `kind: axiom` y topology ausente: único caso de default single-repo en memoria;
+- code/legacy: exige puntero local canonicalizable a un axiomRepo y manifest autoritativo existente;
+- `axiom.yaml` inválido: error tipado, nunca equivalente a ausencia;
+- raíz sin identidad y sin topology: `authority-not-found`, nunca default;
+- una copia local dentro de un code/legacy repo no gana frente al puntero ni se convierte en autoridad.
+
+Axiom.SDD no recibe `axiom.yaml`, topology ni otro marcador para hacer pasar pruebas. Está representado por el manifest autoritativo como legacy read-only. Una carga directa desde su root, al no aportar identidad/puntero, debe fallar de forma tipada y no escribir nada. La resolución desde repos sin identidad pertenece a D, no se anticipa con escaneo de padres/hermanos en B.
+
+#### 4. Consumidores fail-closed
+
+- Doctor consume `LoadedTopology`. TC-001 pasa ante load validado y falla preservando `TopologyError/findings` ante error; nunca revalida ni convierte topology inválida en skip.
+- La lectura de profiles se limita a TC-002. Ausencia o error de profiles no omite TC-001.
+- `topology show|validate` formatea el éxito ya validado o el error real del loader; no llama de nuevo a `validateTopology`. El envelope JSON estable y sus canales completos siguen perteneciendo a C/ACC-061.
+- MCP proyecta `loaded.manifest` y conserva el `TopologyError`; no sintetiza un manifest de fallback tras error.
+- Writers y mutaciones de roles construyen el desired manifest, lo validan con la autoridad y solo entonces persisten. Un error deja bytes y mtime del archivo autoral sin cambios.
+- Los demás consumidores que necesiten resolver refs usan la procedencia transportada; no reconstruyen un root desde cwd, profiles, registry o convenciones de ID.
+
+### Cierre de hallazgos P1/P2 de la segunda revisión
+
+Las referencias anteriores a build, 5 archivos/39 tests y fallo de doctor son **evidencia reportada por el apply previo**. No son un receipt, no se reprodujeron en esta sesión plan-only y no satisfacen ningún gate futuro. El próximo implementador debe volver a ejecutar y fechar toda la validación; este addendum no atribuye resultados de otra sesión a la actual.
+
+#### Tabla exhaustiva y mutuamente excluyente de autoridad
+
+La resolución aplica las filas A1–A14 en orden. “Presente” significa que la entrada de directorio existe: un fallo al leerla nunca se degrada a “ausente”. La validez de `axiom.yaml` se limita al subcontrato de identidad/autoridad; otros campos legítimos del documento no se rechazan por no pertenecer a topología. Para cerrar resultados tipados, B conserva `io-error`, `invalid-yaml`, `authority-not-found` y `missing-authority-pointer`, y añade —si aún no existen— `invalid-axiom-config` para shape/campos de identidad, incluido un `axiomRepo` no string, e `invalid-authority-pointer` **solo** para un puntero string no vacío pero inadmisible. No se reutiliza `invalid-manifest` para ocultar un error de identidad.
+
+| ID | Estado observado en `startPath` | Condición adicional | Resultado obligatorio |
+|---|---|---|---|
+| A1 | `axiom.yaml` presente pero no legible | cualquier topology local | `io-error` con path/cause; sin fallback |
+| A2 | `axiom.yaml` legible pero YAML sintácticamente inválido o con clave duplicada | cualquier topology local | `invalid-yaml`; sin fallback |
+| A3 | YAML parseado no es mapping, o el subcontrato de identidad tiene campos inválidos | incluye `kind` ausente, no string o fuera de `axiom|code|legacy` | `invalid-axiom-config`; sin tratarlo como ausencia |
+| A4 | `axiom.yaml` ausente | topology local presente | autoridad local explícita, `source: authoritative-file`; leer y validar contra `rootPath = startPath`, propagando `io-error`, `invalid-yaml` o `invalid-manifest` según lectura, sintaxis/duplicados o shape/semántica |
+| A5 | `axiom.yaml` ausente | topology local ausente | `authority-not-found`; nunca default |
+| A6 | identidad válida `kind: axiom` | topology local presente | autoridad local explícita; leer y validar anclada en `startPath`, con la misma propagación tipada de A4 |
+| A7 | identidad válida `kind: axiom` | topology local ausente | único default single-repo schema 2 en memoria, anclado en `startPath`; no escritura implícita |
+| A8 | identidad válida `kind: code|legacy` | `axiomRepo` ausente o string vacío | `missing-authority-pointer`; una topology local no rescata el caso |
+| A9 | identidad válida `kind: code|legacy` | `axiomRepo` existe pero no es string | `invalid-axiom-config`; una topology local no rescata el caso |
+| A10 | identidad válida `kind: code|legacy` | puntero string no vacío pero remoto, no canonicalizable o de sintaxis local inválida | `invalid-authority-pointer`; sin cwd, parents, siblings, catálogo ni registry |
+| A11 | puntero local canonicalizado | lectura o YAML de identidad del target falla | propagar `io-error`, `invalid-yaml` o `invalid-axiom-config` del target; sin reinterpretarlo |
+| A12 | puntero local canonicalizado | target se identifica válidamente como `code|legacy` | `invalid-authority-pointer`; un repo miembro no puede ser autoridad |
+| A13 | target sin identidad o con `kind: axiom` válido | topology autoral ausente | `authority-not-found`; el default de A7 nunca se activa a través de un puntero |
+| A14 | target sin identidad o con `kind: axiom` válido | topology autoral presente | leer y validar con `authorityRoot = target`, propagando `io-error`/`invalid-yaml`/`invalid-manifest`; además exigir `manifest.axiomRepo.kind === 'axiom'` y convergencia física de su ref con el target |
+
+Reglas transversales de la tabla:
+
+- En A8–A14 se ignora cualquier copia local dentro del code/legacy repo, tanto válida como inválida; nunca gana ni se reescribe.
+- En A4, A6 y A14, “topology presente” no presupone que pueda leerse: race/permiso es `io-error`, sintaxis o clave duplicada es `invalid-yaml`, y documento no-map, shape o semántica inválidos es `invalid-manifest` con findings cuando correspondan.
+- Punteros relativos y absolutos pasan por la misma canonicalización física. Symlink/junction, case de plataforma y espacios deben converger al mismo `rootPath` sin alterar la ruta por cwd.
+- Ausencia se decide sin excepciones; error de lectura, YAML no-map, `kind` ausente/desconocido y puntero de tipo incorrecto son estados distintos y observables.
+- El locator resuelve procedencia; el loader valida el manifest una vez. Ningún consumidor puede reconstruir otra autoridad.
+
+#### Frontera cerrada B/D
+
+| Responsabilidad | B — ACC-057..ACC-059 | D — ACC-063/ACC-064/ACC-069 |
+|---|---|---|
+| Identidad local | parsear y validar `kind` y el campo `axiomRepo` necesario para localizar autoridad | reconciliar `repoId`, kind, mode/legacyFunction y path físico de la identidad con la entrada concreta del manifest |
+| Puntero | exigir string local válido, canonicalizarlo y comprobar que llega a una autoridad admisible con manifest | decidir pertenencia del repo iniciador al proyecto y resolver identidades/catálogos cuando corresponda |
+| Anchor | fijar un único `authorityRoot`, validar refs contra él y transportarlo en `LoadedTopology` | consumir esa procedencia; no cambiar el anchor |
+| Manifest | parsear schema 2, aplicar invariantes y comprobar que `axiomRepo.ref` ancla la autoridad | comprobar que el `repoId` del iniciador está en `codeRepos|legacyRepos` y que su ref corresponde al root actual |
+| Discovery | solo las filas A1–A14; sin búsqueda por parents, siblings, IDs, registry o home | catálogo/home, selección de proyecto y resolución de repos no identificados, según la spec de D |
+
+B puede resolver un code/legacy repo con puntero válido sin afirmar todavía que su `repoId` pertenece al manifest. Esa reconciliación es de D. Para cumplir CA-B3 antes de D, los writers de roles de B se autorizan únicamente desde el axiomRepo o desde una identidad local válida `kind: code` con puntero A1–A14 válido; una identidad `kind: legacy` puede leer pero **nunca escribir**. Esta autorización temporal por identidad+punteo no constituye pertenencia ni ownership reconciliado y D debe endurecerla sin cambiar autoridad/anchor. Cualquier otra API sensible que necesite pertenencia espera a D. B sí rechaza autoridad, puntero o anchor inválidos; D no puede repararlos ni reinterpretarlos.
+
+#### Decisiones cerradas por esta revisión
+
+1. Se reutiliza B; no se crea un incremento sustituto que oculte su estado pendiente.
+2. La tabla A1–A14 sustituye cualquier inferencia por `kind === undefined`: solo A7 permite default.
+3. Las mutaciones de roles se prueban en copia/fixture temporal; el dogfood real es exclusivamente load/validate.
+4. “B técnicamente verificado” y “B closed/archived” son gates diferentes; no se simula su separación editando metadata.
+5. La evidencia cross-repo identifica dos revisiones/trees coordinados, pero no promete atomicidad entre repos Git independientes.
+
+### Estrategia de implementación validator-first
+
+El futuro worker ejecutará estas fases en orden. No se permite saltar a migrar consumidores para “ver qué rompe”.
+
+#### Fase 0 — preflight, freeze y ledger del baseline sucio
+
+1. Verificar state, dependencias y el freeze requerido con `axiom freeze --increment INC-20260829-r13-topology-schema2-authority`; si falta o no corresponde al candidato vigente, no delegar apply. Lifecycle, receipts, índices y status se gestionan solo con Axiom CLI/Core.
+2. Fijar `T0` antes de editar. En Axiom, Axiom.Spec y Axiom.SDD registrar la unión de `git status --short --untracked-files=all`, `git diff --name-status`, `git diff --cached --name-status` y un inventario/hash de cada path reportado. Así entran tracked, staged si los hubiera, renames, deletes y untracked como `packages/topology/src/paths.ts` o `axiom.config/**`; `git diff` solo nunca es inventario suficiente. No usar `git add`, `commit`, `push`, `reset`, stash ni checkout destructivo.
+3. Crear en la evidencia del apply un ledger exhaustivo por ruta/símbolo con ejes ortogonales:
+
+| Ruta/símbolo | Status/hash en T0 | Origen | Owner | Traza B | Disposición |
+|---|---|---|---|---|---|
+| cada entrada tracked/untracked | valor observado | `preexistente-T0` o `nuevo-apply` | `B|C|D|E|F|G|H|I|fuera-lote` | `CA-B1..CA-B4` o `n/a` | `B necesario` / preservar / STOP y remitir al owner |
+
+`preexistente` describe origen, no ownership. Solo una entrada con `owner=B` y traza CA-B1..CA-B4 puede clasificarse `B necesario`; una entrada preexistente puede pertenecer a B o a otro owner. Cualquier owner C–I permanece STOP y no se amplía. Ningún path ni símbolo puede quedar “misc”, y cada untracked se hashea individualmente. El ledger no autoriza descartar trabajo ajeno ni trasladar silenciosamente cambios entre incrementos.
+4. Confirmar que solo B entra en apply y clasificar cada fallo baseline como contrato, fixture, consumidor o preexistente.
+
+#### Fase 1 — oracles ejecutables sobre T0
+
+Añadir primero tests/fixtures de oracle que demuestren, al menos:
+
+- colisión global repo↔role;
+- tabla A1–A14, incluidos errores de identidad, topology y puntero;
+- mismo manifest desde axiomRepo y code pointer con igual `authority.rootPath`, `topologyPath` y manifest;
+- doctor desde code repo sin reanclaje ni falsa colisión;
+- topology inválida produce FAIL tipado en doctor, no SKIP;
+- raíz sin identidad/manifest y root de Axiom.SDD no reciben default;
+- `roles register` con ID colisionante no escribe;
+- una fixture feliz schema 2 se autovalida antes de probar el consumidor;
+- el contrato TypeScript impide invocar `validateTopology` sin `authorityRoot`.
+
+El worktree ya contiene producción modificada. Por ello la regla correcta es: **después de fijar T0, ningún cambio adicional de producción hasta observar rojo por el motivo esperado en cada oracle que representa un gap confirmado todavía incumplido**. Tests de preservación/regresión cuyo comportamiento ya es correcto se registran verdes y no se deforman para hacerlos fallar. Si un supuesto oracle de gap ya pasa, se inspecciona y reclasifica como regresión o se demuestra que no prueba el gap; nunca se introduce un fallo artificial. Antes de cerrar esta fase solo pueden añadirse tests/fixtures, y la producción preexistente se conserva sin reset.
+
+#### Fase 2 — validator puro
+
+1. Restaurar el namespace global de IDs y `duplicate-id scope: global`.
+2. Sustituir `TopologyValidationOptions.projectRoot?` por un contrato obligatorio `{ readonly authorityRoot: string }`; no overload, default ni valor derivado del cwd.
+3. Añadir `packages/topology/type-tests/validate-topology-authority-root.ts` y `packages/topology/tsconfig.type-tests.json` (sin nueva dependencia, `noEmit`, incluyendo explícitamente `src/**/*.ts` y `type-tests/**/*.ts`). El fixture contiene una llamada válida y una llamada sin `authorityRoot` marcada `@ts-expect-error`. El gate ejecuta exactamente `npx tsc -p packages/topology/tsconfig.type-tests.json --noEmit`; si el parámetro vuelve a ser opcional, TypeScript falla por directiva no usada. No colocar T1 solo bajo `tests/`, porque el `tsconfig.json` actual de topology incluye únicamente `src/**/*`.
+4. Completar una prueba negativa aislada por cada invariante de CA-B2, incluida QA lane; una fixture con varias violaciones no puede ocultar findings ausentes.
+5. Mantener parser y validator separados: duplicate keys/sintaxis/shape se detectan antes de semántica; no hay coerciones.
+6. Ejecutar la suite de topology. Si una fixture feliz falla, corregir la fixture; nunca relajar producción para salvarla.
+
+#### Fase 3 — autoridad y procedencia
+
+1. Introducir `LoadedTopology` y migrar loader/writer según el contrato de este addendum.
+2. Implementar A1–A14 en el lector/locator, con tests uno-a-uno y errores tipados preservados.
+3. Eliminar fallback al cwd y cualquier redescubrimiento de autoridad en `resolveRepoPath`.
+4. Retirar `defaultInstalledMultiRepoManifest` y su export si el inventario demuestra que no existe consumidor coherente; no conservar compatibilidad histórica sin contrato.
+5. Permitir default solo en A7; A4 carga archivo y A5 falla.
+
+#### Fase 4 — consumidores, uno por uno
+
+Orden obligatorio:
+
+1. CLI topology y roles.
+2. Doctor TC-001/TC-002.
+3. MCP tools/server.
+4. Freeze, knowledge, planes, repo-affinity, write-scope y upgrade.
+5. Workspace setup/adopt/incremental, member install y launcher afectados.
+
+Cada grupo migra a `loaded.manifest`/`loaded.authority`, ejecuta su suite focal y demuestra que no reaparecen revalidación, fallback o anclaje alternativo. Doctor preserva el `TopologyError`; TC-001 no depende de profiles y TC-002 mantiene su responsabilidad separada. No se acumula todo el fan-out antes de probar.
+
+#### Fase 5 — higiene de fixtures y productores
+
+- Crear `makeValidTopologyFixture` —o equivalente local compartido— con IDs globalmente únicos y autovalidación explícita con `authorityRoot`.
+- Las fixtures negativas nombran una sola invariante y nunca se reutilizan como happy path.
+- Convertir fixtures felices topológicas v1 a schema 2; conservar v1 solo en negativos explícitos o historia.
+- Clasificar cada `schemaVersion: 1` por dominio. `LocalBindings`, envelopes, locks y otros schemas no son topology v1 y no se editan por búsqueda ciega.
+- Eliminar comentarios activos sobre mirrors, copia por repo, normalización v1 o fallback desde `axiom.yaml`.
+
+#### Fase 6 — dogfood coordinado y ausencia de mutación
+
+1. **Fixture temporal de escritura:** crear fuera de los tres worktrees una copia/fixture coordinada con axiomRepo, code repo y legacy. Ejecutar allí las mutaciones de roles desde los roots axiom/code, comparar resultado observable y demostrar que solo cambia el topology autoral temporal. Nunca ejecutar `roles register|assign|unassign` sobre la autoridad real de Axiom.Spec durante dogfood.
+2. **Dogfood real read-only:** desde Axiom.Spec y Axiom ejecutar únicamente load/show/validate y comprobar el mismo `authority.rootPath`, `topologyPath`, manifest y findings. Desde Axiom.SDD, load/validate directo debe devolver `authority-not-found`. Ninguna de estas tres comprobaciones escribe.
+3. **Algoritmo de snapshot:** antes del run se fija una lista exacta de exclusiones: `.git/**`, `node_modules/**`, caché conocida del test runner y temporales del sistema ubicados fuera del repo. Para todos los demás ficheros regulares —tracked y untracked— se genera un inventario ordenado `path relativo | tamaño | SHA-256(bytes)` y después un SHA-256 del propio inventario. No se excluyen `axiom.yaml`, `axiom.config/**`, `.axiom-state/**`, `dist/**`, fuentes, docs ni paths nuevos desconocidos. Añadir una exclusión después invalida la evidencia hasta inspeccionarla.
+4. **Delta de Axiom.SDD:** comparar snapshot e inventario completos junto con `git status --short --untracked-files=all` antes/después; los tres resultados deben ser idénticos.
+5. **Par cross-repo reproducible:** para Axiom.Spec y Axiom registrar `HEAD`, `HEAD^{tree}`, `git status --short --untracked-files=all` y el snapshot de working tree calculado con el mismo algoritmo/exclusiones antes y después. Si cualquiera cambia durante el run, se repite. La evidencia nombra el par exacto de revisiones/trees/snapshots, pero no afirma commit atómico entre dos repos Git.
+6. Comprobar que el dogfood real no cambia bytes, mtime ni deja temporales en la autoridad.
+
+#### Fase 7 — verificación independiente y cierre documental
+
+1. Ejecutar la matriz completa y revisar por separado los diffs de `validate.ts`, `paths.ts` y `loader.ts`.
+2. Invocar revisión independiente contra CA-B1..CA-B4, A1–A14, ledger, matriz, type-test y ausencia de mutación.
+3. Una relajación de contrato, reanclaje, fallback, error degradado o cambio no clasificado mantiene B pending aunque las suites pasen.
+4. Emitir verify/receipt solo mediante la superficie Axiom/Core soportada y validar `axiom phase receipt` cuando exista phase log. No inventar receipts ni editar sus archivos.
+5. Después del gate técnico, el orquestador realiza una única integración estable según el inventario documental inferior; el worker de B no edita `specs/00..08` ni `context/**`.
+
+### Matriz de fixtures obligatoria
+
+Cada subcaso separado por “;” requiere fixture/test independiente; no se acepta un único YAML inválido para cubrir varias filas.
+
+| ID | Caso | Resultado obligatorio |
+|---|---|---|
+| V1 | identidad `kind: axiom` sin topology | default schema 2 validado, solo A7, sin escritura |
+| V2 | multi axiom/code y legacy SDD/spec opcionales, IDs todos distintos | `ok`, sin warnings legacy |
+| V3 | misma autoridad desde axiomRepo y code/legacy pointer | mismo root, topology path, manifest y validation |
+| V4 | mutación de roles desde axiom/code en fixture temporal | solo cambia la autoridad temporal; mismo resultado observable |
+| V5 | dogfood real Axiom.Spec/Axiom | load/validate idénticos y read-only |
+| V6 | topology local válida sin `axiom.yaml` | A4: autoridad local explícita, nunca default |
+| V7 | puntero local relativo/absoluto con espacios; symlink/junction; variación de case donde aplique | misma autoridad física canonicalizada; cada capacidad se ejecuta en plataforma que la soporte y una incapacidad de crear enlace es blocker explícito, nunca skip verde |
+| V8 | legacy identificado con puntero válido | localiza la misma autoridad sin escribir legacy |
+| N1 | schema 1; schema futuro; campos topológicos retirados | error tipado por fixture; cero rewrite |
+| N2 | axiomRepo ausente/wrong kind; code wrong kind; legacy wrong mode/function/cardinalidad | finding específico por fixture |
+| N3 | ID/ref vacío; duplicado repo; role; repo↔role | `duplicate-id`; `scope: global` entre dominios |
+| N4 | refs relativas/absolutas físicamente convergentes | `path-collision` anclada en `authorityRoot` |
+| N5 | ghost repo; unknown role; assignment duplicada | findings tipados correspondientes |
+| N6 | cero primary; múltiples primary por code; role primary en varios code repos | finding específico por fixture |
+| N7 | mode incoherente; unknown key; tipo incorrecto | error tipado, sin coerción |
+| N8 | puntero roto; target code/legacy; copia topology local dentro de code/legacy | fail-closed; copia nunca autoral |
+| N9 | ausencia total identidad+topology; Axiom.SDD directo | `authority-not-found`, nunca default |
+| N10 | doctor desde code repo; topology inválida; profiles ausente/inválido | TC-001 sin falsa colisión y FAIL tipado; TC-002 independiente |
+| N11 | desired manifest inválido en cada writer/roles | bytes y mtime autorales estables; sin temporales |
+| N12 | `axiom.yaml` con sintaxis YAML malformada | `invalid-yaml`, sin fallback |
+| N13 | `axiom.yaml` parseado como scalar/list/null | `invalid-axiom-config`, sin fallback |
+| N14 | `kind` ausente; no string; desconocido | `invalid-axiom-config`, incluso si hay topology local |
+| N15 | `axiomRepo` de tipo incorrecto; ausente; vacío; remoto | error diferenciado según A8–A10; una fixture por caso |
+| N16 | fallo de lectura inyectado en identidad, target o topology | `io-error` preservado; no se interpreta como ausencia |
+| N17 | clave YAML duplicada, incluida `axiomRepo` | `invalid-yaml` antes de construir el mapping |
+| N18 | `qaLane` ausente, de tipo incorrecto o fuera de `inline|parallel` | finding tipado específico por fixture |
+| N19 | target de puntero con identidad inválida; `kind: axiom` sin topology | propagar error o `authority-not-found`; nunca default indirecto |
+| N20 | topology del target declara `axiomRepo.ref` que no converge al target | `invalid-manifest`/finding de anchor; cero reanclaje |
+| T1 | `packages/topology/type-tests/validate-topology-authority-root.ts`: llamada sin options/`authorityRoot` y llamada válida | `npx tsc -p packages/topology/tsconfig.type-tests.json --noEmit` pasa solo mientras la inválida produzca el `@ts-expect-error` esperado |
+
+V7 se ejecuta con directorios temporales reales. Case-fold se exige en filesystem case-insensitive; symlink/junction en una plataforma/permisos que permitan crearlos. Si el entorno de validación no ofrece una capacidad, se repite esa fila en un lane compatible o B queda bloqueada; no se acepta `skip` silencioso ni mock que eluda `@axiom/filesystem-truth`.
+
+### Inventario de integración documental final
+
+Este inventario se obtuvo sobre claims activos actuales; por eso `00` y `02` sí entran: ambos contienen referencias topológicas afectadas. Durante el apply delegado no se edita ningún `specs/00..08` ni `context/**`. Tras B técnicamente verificado, el orquestador relee el diff/runtime real, modifica solo claims estables y conserva prosa histórica claramente rotulada.
+
+| Archivo | Claim actual que debe revisarse | Claim objetivo estable | Momento |
+|---|---|---|---|
+| `specs/00_Resumen_Ejecutivo.md` | dogfood identifica Axiom.Spec como `specRepo`; resumen de roles/topology mezcla nomenclatura previa | describir Axiom.Spec como autoridad dogfood schema 2, Axiom como code y Axiom.SDD como legacy read-only, sin borrar historia | después de review técnico; solo si el runtime dogfood real lo prueba |
+| `specs/01_Requisitos_Funcionales.md` | `repoRefs`/`roleAssignments`, `sddRepo` default y retrocompatibilidad con shape legacy aparecen como vigentes | `axiomRepo`/`codeRepos`/`legacyRepos`/`roles`/`assignments`, IDs globales, validator único y autoridad sin fallback v1 | integración final antes de cierre |
+| `specs/02_Requisitos_No_Funcionales.md` | aislamiento refiere genéricamente al `TopologyManifest` y a DF-001 con el modelo anterior | conservar el NFR, actualizar buckets/procedencia/fail-closed solo donde el runtime verificado cambie el claim | integración final; no reescribir requisitos ajenos |
+| `specs/03_Modelo_Operativo_y_Datos.md` | documenta schema 1, `sddRepo/specRepo/roleCodeRepositories`, `axiom.yaml` autoral y topology derivada/fallback | schema 2 único; topology autoral en axiomRepo; identidad/puntero; default exclusivo A7; bindings v1 claramente separado | integración final obligatoria |
+| `specs/04_Flujos_SDD_y_Ciclo_de_Vida.md` | init deriva topology y los flujos dependen de copias per-repo/materialización perezosa | consumidores cargan una autoridad por puntero/procedencia; no afirmar aún bindings/resolution de C/D | integración final, limitada a B |
+| `specs/05_Interfaces_Operativas.md` | CLI/workspace/roles describen actualizaciones y lectura con superficies previas | topology/roles muestran o mutan la autoridad validada y preservan errores; detalles envelope/bindings quedan para C | integración final, limitada a comportamiento probado |
+| `specs/06_Integraciones_y_Capacidades.md` | `defaultSingleRepoManifest`, topology local dogfood y fallback aparecen vigentes | default solo A7; fichero roto nunca se oculta; dogfood real converge en Axiom.Spec/Axiom | integración final tras smoke real |
+| `specs/07_Gobierno_y_Seguridad.md` | DF-001 usa `roleCodeRepositories`, topología fallida puede acabar en skip y dogfood se describe sin manifest real | buckets schema 2, procedencia única y postura de error exactamente observada/revisada; Axiom.SDD continúa no escribible | integración final tras doctor/review |
+| `specs/08_Glosario.md` | define `TopologyManifest` con shape v1 y “repo de control”; mezcla esa versión con `LocalBindings` v1 | definir schema 2, `TopologyAuthority`, `LoadedTopology` y legacy read-only; mantener `LocalBindings.schemaVersion: 1` como dominio distinto | integración final |
+| `context/TECHNICAL_CONTEXT.md` | afirma topology local en Axiom con `specRepo.ref` | reflejar el par Axiom.Spec autoridad/Axiom puntero y citar código/tests verificados | después de specs, en la misma pasada final |
+| `context/architecture/02-modelo-de-datos-y-configuracion.md` | topology opt-in derivada de `axiom.yaml`, fallback y materialización perezosa | frontera load→parse→validate, procedencia transportada y única autoridad schema 2; no anticipar C/D | reconciliación técnica final |
+| `context/architecture/03-ciclo-de-vida-cli-y-orquestacion.md` | `init` deriva fallback, roles materializa perezosamente y freeze/lifecycle usa `specRepo` topológico como fallback | describir consumidores sobre `LoadedTopology`/autoridad schema 2 y retirar claims activos v1/fallback; conservar historia rotulada | reconciliación técnica final, limitada a consumidores migrados en B |
+| `context/operations/02-doctor-troubleshooting-y-telemetria.md` | TC-001..003 aceptan topology “o derivación por fallback” | TC-001 consume `LoadedTopology`, error tipado es FAIL y profiles solo gobierna TC-002 | reconciliación técnica final tras doctor verde |
+| `context/references/01-inventario-de-packages.md` | `@axiom/topology` figura opt-in/derivado-en-lectura con fallback desde `axiom.yaml` | describir schema 2 autoral, `LoadedTopology`, autoridad/puntero y ausencia de fallback | reconciliación técnica final tras build/tests |
+| `context/references/03-riesgos-y-brechas-conocidas.md` | claims actuales usan topology local dogfood y `specRepo.ref` como evidencia | actualizar solo la resolución vigente: Axiom.Spec autoridad, Axiom puntero y Axiom.SDD legacy read-only; mantener baselines históricos como tales | reconciliación técnica final tras dogfood |
+
+#### Documentación runtime activa propiedad del apply B
+
+B-057.1 exige corregir documentación operativa activa del repo de código, no diferirla como conocimiento canónico. El worker la actualiza **después de tener runtime/tests focales verdes y antes del verify técnico**, sin tocar specs/context:
+
+| Archivo | Claim actual | Claim objetivo | Momento |
+|---|---|---|---|
+| `Axiom/docs/overview.md` | presenta Axiom.Spec mediante el campo topológico `specRepo` | explicar la autoridad dogfood schema 2 y el puntero desde Axiom sin confundirla con `Axiom/axiom.spec/` | apply B, antes de review técnico |
+| `Axiom/docs/cli/init.md` | `installed-multi-repo` deja una ruta de specification en `axiom.yaml` y otros comandos materializan topology | documentar exactamente el output/identidad implementados y A1–A7; retirar cualquier derivación v1/fallback o materialización perezosa incompatible | apply B, después de migrar productores |
+
+Antes de verify se ejecuta además una búsqueda domain-aware en `Axiom/docs/**/*.md`; cada match de `sddRepo|specRepo|roleCodeRepositories`, topology derivada/fallback o copia per-repo se clasifica como claim activo a corregir, historia explícita o término no topológico. Un match adicional activo amplía este inventario dentro de B; no se declara limpio por haber corregido solo dos archivos conocidos.
+
+Si una fila no coincide ya con el runtime final, no se copia el desired state del plan: se detiene el cierre y se resuelve la contradicción contra la spec B. No se crean documentos ni índices nuevos. Los índices derivados, si requieren refresh, se gestionan solo con Axiom Core después de editar sus fuentes canónicas.
+
+### Estados y gate de lifecycle de B
+
+**B técnicamente verificado** exige todo lo siguiente:
+
+1. runtime y consumidores implementados contra CA-B1..CA-B4 y A1–A14;
+2. matriz V/N/T, suites focales, type-test dedicado, typecheck, build, suite completa, doctor, readiness y dogfood read-only verdes;
+3. ledger sin entradas sin clasificar y ausencia de mutación demostrada;
+4. revisión independiente sin blockers;
+5. evidencia Core: verify/phase receipt emitido y validado si la superficie existe, o evidencia explícita de que el runtime no ofrece ninguna superficie de verify/receipt y aplicación del fallback estricto inferior.
+
+Ese estado prueba el contrato técnico, pero por sí solo **no significa `closed` ni `archived`** cuando Core permite representarlo por separado.
+
+**B closed/archived** exige además:
+
+1. integrar los claims estables del inventario en `specs/00..08`;
+2. reconciliar todas las filas `context/**` o registrar explícitamente que una fila no requiere cambio;
+3. actualizar el artifact de B con resultado, validación, review e integración usando la superficie Core permitida;
+4. satisfacer todas las reglas de cierre de `AGENTS.md` y ejecutar status/archive solo mediante Axiom CLI/Core.
+
+Protocolo de capacidad Core, decidido antes del verify:
+
+- **Core soporta receipt/verify técnico independiente:** emitirlo y validarlo manteniendo B abierta; habilita GO técnico y la integración documental queda para la pasada final.
+- **Core soporta verify pero lo acopla a close/archive o exige integración:** no emitirlo prematuramente; C permanece STOP hasta integrar documentación y completar la transición Core válida.
+- **Core no ofrece ninguna superficie verify/receipt:** registrar como evidencia el comando/capability check que lo demuestra; no inventar archivos. C permanece STOP hasta integración documental y cierre/archivo mediante las demás superficies Core disponibles. Si Core tampoco puede efectuar el lifecycle requerido, B permanece pending y C no empieza.
+
+### Comandos y gates post-apply
+
+Ejecutar desde `Axiom/` en este orden; una fase positiva roja bloquea las siguientes y no se compensa con otra suite verde:
+
+```text
+npx vitest run packages/topology/tests
+npx tsc -p packages/topology/tsconfig.type-tests.json --noEmit
+npx vitest run apps/cli/tests/topology.test.ts apps/cli/tests/roles.test.ts packages/doctor/tests/topology.test.ts packages/doctor/tests/qa-lane.test.ts packages/doctor/tests/dogfooding.test.ts packages/doctor/tests/write-scope.test.ts packages/mcp-tools/tests/topology-handlers.test.ts packages/mcp-tools/tests/implementation-context-handler.test.ts packages/mcp-server/tests/spec-scope-convergence.test.ts
+npx vitest run apps/cli/tests/member-install.test.ts apps/cli/tests/repo-affinity.test.ts apps/cli/tests/freeze.test.ts apps/cli/tests/knowledge.test.ts apps/cli/tests/upgrade-fanout.test.ts apps/cli/tests/workspace-setup.test.ts apps/cli/tests/workspace-incremental.test.ts
+npm run typecheck
+npm run build
+npx vitest run
+node apps/cli/dist/index.js topology validate --path . --json
+node apps/cli/dist/index.js topology validate --path ../Axiom.Spec --json
+npx vitest run apps/cli/tests/topology-dogfood.test.ts
+npm run doctor
+npm run readiness:first-project
+git diff --check
+```
+
+`apps/cli/tests/topology-dogfood.test.ts` es el harness de aserción del negativo real: invoca el CLI contra `../Axiom.SDD`, exige exit no cero **y** error JSON `kind: authority-not-found`, y solo entonces devuelve verde. También falla si aparece cualquier escritura según los snapshots de Fase 6. Así el negativo no se intercala como “fase roja” en una secuencia positiva ni se acepta cualquier error distinto.
+
+Añadir una búsqueda domain-aware de `normalizeLegacyShape`, `sddRepo`, `specRepo`, `roleCodeRepositories`, branches topology schema 1, revalidaciones de manifests cargados y fallbacks al cwd en runtime, tests y `Axiom/docs/**`. Cada match se clasifica como runtime activo, doc activa, test negativo, otro schema o historia; un grep vacío no es evidencia suficiente. Ejecutar `git diff --check` en cada repo modificado. La suite completa sigue siendo obligatoria para el fan-out de B y para ACC-076 al final del lote.
+
+### STOP/GO para C
+
+**STOP** si se cumple cualquiera:
+
+- una fila A1–A14 es ambigua, no está probada o degrada error a ausencia;
+- el validator acepta colisión repo↔role o puede llamarse sin `authorityRoot`;
+- T1 no está incluido en `tsconfig.type-tests.json` o su comando compile-only no se ejecutó;
+- un caller revalida `LoadedTopology`, cambia el anchor o cae a cwd/fallback/SKIP;
+- falta el ledger T0, omite staged/untracked, mezcla origen con owner o tiene entradas sin clasificar;
+- se añadió producción antes de observar los oracles rojos de gaps confirmados, o se forzó rojo un test de preservación ya verde;
+- una fixture feliz topology v1 permanece o una schema 2 feliz no se autovalida;
+- Axiom y Axiom.Spec no convergen en el mismo snapshot de autoridad;
+- se intentó una mutación sobre el dogfood real, el harness acepta un error distinto o Axiom.SDD cambió;
+- el par revision/tree/snapshot no está registrado o cambió durante la evidencia;
+- doctor/readiness, suite completa, type-test, matriz o review tienen blockers;
+- Core soporta verify/receipt y falta o es inválido;
+- Core no permite representar verify separado —incluida ausencia total de receipt— y la integración/cierre fallback aún no terminó.
+
+**GO técnico para C** solo cuando B cumple íntegramente la definición “técnicamente verificado”, Core permite conservarla abierta para integración y no queda ningún STOP. **GO lifecycle/archivo de B** solo después de integración documental y reglas de cierre. Si Core no representa ambos momentos, prevalece el gate más estricto y C espera al cierre completo de B.
+
+### No objetivos de esta remediación
+
+- No implementar bindings strict, envelopes JSON finales, locks/CAS o writer concurrente de C.
+- No implementar pertenencia/reconciliación de `repoId`, catálogo/home, repo/role add o workspace state de D.
+- No implementar transacciones estructurales de E ni seguridad launcher de G–I.
+- No añadir heurísticas de búsqueda por parents, siblings, registry o nombres convencionales.
+- No escribir identidad, topology ni proyecciones dentro de Axiom.SDD.
+- No crear otro incremento para esconder el bloqueo de B.
+- No prometer atomicidad Git cross-repo ni introducir arquitectura enterprise, MCP obligatorio, Workbench o índices nuevos.
+
+### Brief tipado y determinista para el próximo implementador de B
+
+```text
+Incremento: INC-20260829-r13-topology-schema2-authority.
+Flow/route: increment/sdd. Scope de apply: solo B (ACC-057..ACC-059) en Axiom/; C–I STOP.
+Precondición: leer AGENTS.md y este addendum; ejecutar state y axiom freeze --increment INC-20260829-r13-topology-schema2-authority. Si el freeze no es vigente, no aplicar.
+Baseline: fijar T0 con status --untracked-files=all, diffs tracked/cached e inventario/hash. Ledger por path con ejes origen(preexistente|nuevo), owner(B..I|fuera) y traza CA-B1..B4; solo owner B trazado es B necesario. Preservar trabajo ajeno y no ejecutar mutaciones Git.
+Oracle-first: desde T0 añadir solo tests/fixtures hasta observar rojo por causa esperada en cada gap confirmado. Registrar verdes de preservación sin forzarlos a rojo. Cubrir A1–A14 y T1.
+Contrato: restaurar IDs globales repo+role; validateTopology exige { authorityRoot }; loadTopology devuelve LoadedTopology(manifest, authority, validation); una sola validación anclada; errores de identidad/topology/puntero tipados; cero cwd, revalidación, fallback o SKIP.
+Frontera: B valida identidad de autoridad, puntero y anchor. Roles escribe desde axiomRepo o kind:code con puntero válido; legacy nunca escribe. Pertenencia/reconciliación de repoId, catálogo/home y demás resolution quedan en D; bindings/envelopes/locks en C, transacciones en E y launcher G–I.
+Migración: validator → locator/loader/writer → CLI roles/topology → doctor → MCP → resto de consumidores, con suite focal tras cada grupo. Corregir fixtures inválidas; nunca relajar el contrato para ponerlas verdes.
+Type gate: crear packages/topology/type-tests/validate-topology-authority-root.ts + tsconfig.type-tests.json y ejecutar npx tsc -p packages/topology/tsconfig.type-tests.json --noEmit; no confiar en Vitest para T1.
+Dogfood: mutaciones de roles solo en fixture temporal coordinada. Axiom.Spec/Axiom reales solo load/show/validate; Axiom.SDD se prueba mediante harness que exige authority-not-found. Snapshots incluyen tracked+untracked con exclusiones previas exactas; registrar HEAD/HEAD^{tree}/snapshot sin prometer atomicidad Git.
+Validación: matriz V1–V8/N1–N20/T1, lane real para symlink/case sin skip silencioso, suites focales, typecheck, build, suite completa, validates, harness dogfood, doctor, readiness, diff-check y axiom-review sin blockers.
+Docs/lifecycle: durante apply actualizar docs runtime activas inventariadas; no editar specs/00..08 ni context/**. El orquestador integra el inventario canónico final. Metadata/status/receipts/archive solo por Core. Si verify no es separable o no existe receipt, C sigue STOP hasta integración y cierre Core; si tampoco hay lifecycle soportado, B queda pending.
+Resultado: ante cualquier STOP, dejar B pending y no iniciar C.
+```
+## Síntesis vigente de cierre — bloque estructural R-13 B→F (2026-09-07)
+
+Los incrementos B→F quedaron implementados, verificados, integrados y archivados en orden mediante Axiom Core:
+
+1. `INC-20260829-r13-topology-schema2-authority` — archivado; freeze `1fa46f0330296b675a3f07f8123b84f74a89dc2dbb4c510c5daa7917194b29b5`.
+2. `INC-20260829-r13-topology-bindings-persistence` — archivado; freeze `135a2e1ad9969766dc2ca7c5175af3374383383787a684c1cea22bb4da953acb`.
+3. `INC-20260829-r13-workspace-resolution-surface` — archivado; freeze `c9b70a36cc4623ba50b4a72a44504d978b06f4d07d75bc7c6385355ba1861b0e`.
+4. `INC-20260829-r13-structural-mutation-safety` — archivado; freeze `fda546c137fe1a87852450a740716614cf06567650d5a6a03de15550262fef5b`.
+5. `INC-20260829-r13-workspace-step-reconciliation` — archivado; freeze `d61a030fd88dfd6727e484d0e1863234c7517469a4108dce81cde4d39b0dad4f`.
+
+La evidencia final suma `292` pruebas dirigidas (`42 + 121 + 25 + 32 + 19 + 53`), build, doctor (`48/61 OK`, `0` fallos), readiness, index validate y diff-check en PASS. Dos intentos de revisión delegada agotaron timeout; la revisión inline de fallback concluyó GO sin blockers. Cada incremento conserva receipts finales `verify`, `knowledge` y `increment-archive`; E conserva además su `increment-verify` vigente. El primer archive de B fue bloqueado correctamente por QA inline pendiente; se ejecutó el lifecycle soportado `qa-e2e start → verify → pass`, quedó evidencia `passed` y el archive posterior fue exitoso. La decisión ENOENT-only/commit estructural unitario/warnings post-commit quedó registrada como memoria `mtrk76gt-8qg5b9sv`.
+
+El conocimiento estable está reconciliado en `specs/00..08` y `context/**`: topology schema 2 autoral, bindings y workspace state estrictos, resolución común, preflight read-only, journals/rollback/recovery, bloque `AXIOM:MANAGED`, resultados honestos y `WORKSPACE_STEP_CATALOG`. La sección de auditoría anterior permanece solo como baseline histórica fechada.
+
+R-13.4 continúa deliberadamente fuera de este lote: `INC-20260829-r13-launcher-control-plane`, `INC-20260829-r13-launcher-catalog-ado` e `INC-20260829-r13-launcher-telemetry-regression` permanecen pendientes para ACC-070..ACC-076. No se implementó ni archivó ninguno de ellos durante este cierre.

@@ -57,7 +57,7 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 | Package | Responsabilidad | Exports/tipos clave | Notas |
 |---|---|---|---|
 | `@axiom/toolchain` | Manifest `toolchain.yaml`, detección, repair | `ToolchainManifest`, `detectAllTools`, `repairToolchain` | Spec 0023/0027; catálogo real reconciliado en ADR-0031 (`cmm` reemplaza codegraph/graphify) |
-| `@axiom/topology` | Manifest `axiom.config/topology.yaml` (multi-repo, roles, QA lanes); ahora opt-in/derivado-en-lectura | `TopologyManifest`, `RepoRef`, `RoleAssignment`, `loadTopology` | Spec 0021/0022; `INC-20260703-config-dedup` (cerrado) — `init` ya no lo escribe, `loadTopology` deriva fallback desde `axiom.yaml` |
+| `@axiom/topology` | Autoridad única `axiom.config/topology.yaml` schema 2, bindings locales schema 2, roles y QA lanes | `TopologyManifest`, `LoadedTopology`, `LocalBindingsV2`, `TopologyError`, `loadTopology` | R-13 ACC-057..062: autoridad `axiomRepo`, validación fail-closed y writers lockeados/atómicos; no deriva fallback desde un repo code/legacy |
 | `@axiom/workflow` | State machine SDD, hooks, branch naming, **receipts de fase** | `WorkflowState`, `applyTransition`, `createHookEngine`, `writePhaseReceipt`, `PhaseReceipt` | Spec 0022 |
 | `@axiom/model-routing` | Routing de modelo por slot, assignments, projection a opencode, checks de drift MRC-001..004 | `ModelRoutingPolicy`, `resolveSlot`, `SUPPORT_MATRIX` | Ver `../architecture/04-adapters-y-model-routing.md`. Sus checks corren vía `axiom model validate`, NO como parte de `@axiom/doctor` |
 | `@axiom/tool-routing` | Dispatcher de `ToolCall`, fallback chain, telemetría | `routeTool`, `resolveToolDispatch` | Spec 0008 (ADR-0008/0013/0020) |

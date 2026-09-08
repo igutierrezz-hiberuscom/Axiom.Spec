@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-topology-bindings-persistence",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-05T03:54:12.916Z",
+  "details": "ACC-060/061/062 verificados: loadLocalBindings rechaza bindings no marcados sin reescritura; inspectLocalBinding propaga stat I/O no-ENOENT/ENOTDIR como TopologyError; MCP conserva McpToolError estructurado en content[0]. Suite focalizada 7 suites/107 tests, suite completa 338 archivos/3318 tests, suite final de superficies 4 suites/43 tests, typechecks topology/mcp-tools/mcp-server, npm run build, npm run doctor (0 fallos) y git diff --check PASS. Review estática independiente GO técnico; observaciones P3 de textos/prueba corregidas. Integración specs 00..08/context diferida a la pasada final.",
+  "hash": "9b533a3a4a370eb863ae30177c4160576c156e89ed9fb61f5b31ddbef9ef89e9"
+}

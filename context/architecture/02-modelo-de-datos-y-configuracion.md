@@ -4,27 +4,46 @@ Fuente: `Axiom/docs/configuration/**`, `Axiom/docs/generated-files.md`, `Axiom/d
 
 > Reconciliado 2026-07-29: este documento describía dos nombres de carpeta que `INC-20260703-config-folder-renames` (cerrado) ya renombró en el código real — el overlay oculto project-scoped (antiguo prefijo, hoy `.axiom-state`) y la carpeta de catálogo declarativo (antigua `axiom.spec` + subcarpeta `config`, hoy `axiom.config`). Verificado en `packages/filesystem-truth/src/discovery.ts#LOCAL_OVERLAY_DIRNAME`/`AXIOM_CONFIG_DIRNAME` (re-exportados vía `@axiom/core`); no queda ningún literal de los nombres antiguos en el código fuente (solo en `dist/` sin recompilar).
 
-## `axiom.yaml` — manifiesto raíz por proyecto adoptante
+## `axiom.yaml` — identidad local y región gestionada
 
-Generado por `axiom init`. Campos relevantes (`Axiom/docs/configuration/project-structure.md`): `project.name`, `project.status`, `project.product_implementation_status`, `project.mode`, `scopes`, `rules`, `artifact_id_policy`, `lifecycle_commands`, `initial_capabilities`.
+`axiom init` y las operaciones de workspace materializan la identidad del repo.
+En un repo `code`, el documento contiene `projectId`, `repoId`, `kind` y el
+pointer `axiomRepo` hacia la autoridad topológica; no replica el grafo. El modo
+efectivo sigue siendo `local-only` y el adapter pertenece a los 8 targets
+canónicos activos. `configure` puede normalizar el literal histórico
+`copilot-vscode` desde `init.json`, pero ese valor no es un target público.
 
-Materializa la configuración efectiva `builder` + `local-only` + `adapterTarget`. `builder` y
-`local-only` son implícitos y no seleccionables; los estados legacy se normalizan en
-los bordes de lectura. `adapterTarget` pertenece al conjunto de 8 targets canónicos
-activos (ver `../architecture/04-adapters-y-model-routing.md`). Si un `init.json` ya
-persistido contiene el literal histórico `copilot-vscode` en
-`profileTriple.adapterTarget`, sólo `axiom configure` lo migra y persiste como
-`github-copilot` antes de instalar o despachar; no es un alias ni una entrada pública.
-LiteLLM fue retirado.
+Los writers estructurales gestionan únicamente el bloque delimitado
+`# AXIOM:MANAGED:START` / `# AXIOM:MANAGED:END`. Al actualizarlo preservan byte
+a byte el prefijo, sufijo, comentarios y extensiones humanas. Un documento
+markerless solo se convierte cuando el parser demuestra identidad compatible y
+ningún campo conflictivo; YAML inválido, ambiguo o foráneo falla en preflight.
+La lectura de compatibilidad de `axiom.yaml` v1/v2 en consumidores concretos no
+reintroduce una topología schema 1 ni autoriza reserializar contenido humano.
 
-Editable con criterio a mano; no editar `init.json`, `install-profile.json`, `last-start.json`, `last-sync.json` salvo diagnóstico (son estado derivado). **`init.json` ya no incluye `projectName`** (`INC-20260703-config-dedup`, cerrado): solo persiste el campo de compatibilidad `profileTriple` normalizado a `builder` + `local-only` + target, además de `createdAt` y `version`. El segmento físico se deriva de `projectKey`: `projectId` v2 o slug estable de `project.name` v1.
+`init.json`, `install-profile.json`, `last-start.json` y `last-sync.json` son
+estado derivado y no deben editarse salvo diagnóstico. `init.json` no incluye
+`projectName`: persiste `profileTriple`, `createdAt` y `version`; el segmento
+físico se deriva de `projectKey` (`projectId` v2 o slug estable de v1).
 
 ## `.axiom-state/` — estado project-scoped
 
 > Renombrado desde el antiguo prefijo oculto (`sdd`, con punto delante, sin este sufijo `-state`) por `INC-20260703-config-folder-renames` (cerrado). Verificado: `packages/filesystem-truth/src/discovery.ts#LOCAL_OVERLAY_DIRNAME = '.axiom-state'`.
 
 - `.axiom-state/local/`: overlay NO versionada exclusivamente local al repo/operador: overrides, bindings de topología y audit trail.
-- `.axiom-state/<projectKey>/`: único namespace físico del estado ligado al proyecto: `init.json`, `members.yaml`, `install-profile.json`, `workspace.json`, `last-start.json`, `last-sync.json`, `toolchain.lock`, `managed-state.json`, `model-assignments.json`, `components-state.json`, workflow, memoria, MCP bindings, plugins, skills pendientes y checkpoints.
+- `.axiom-state/<projectKey>/`: único namespace físico del estado ligado al proyecto: `init.json`, `members.yaml`, `install-profile.json`, `workspace.json`, `last-start.json`, `last-sync.json`, `toolchain.lock`, `managed-state.json`, `model-assignments.json`, `components-state.json`, workflow, memoria, MCP bindings, plugins, skills pendientes, checkpoints y `structural-transactions/<operationId>/`.
+
+`WorkspaceStateV1` es el único contrato de `workspace.json`: exige `projectId`,
+`adapters`, `providers`, `createdAt` y `updatedAt`, admite solo las extensiones
+`profile`/`overlay` y rechaza schema futuro/campos/tipos/identidad inválidos. La
+ausencia `ENOENT` inicializa estado únicamente dentro de un update autorizado;
+el writer usa lock + temporal validado + rename y conserva bytes en no-op.
+
+`LocalBindingsV2` (`schemaVersion: 2`) vive en `local/`, separado de topology.
+Solo admite IDs del manifest y paths absolutos canonicalizados. Los journals
+estructurales contienen `intent.json`, hashes, staging y estado durable; recovery
+los inspecciona antes de una mutación nueva y deja `recovery-required` cuando no
+puede demostrar con seguridad rollback o roll-forward.
 - `.axiom-state/executions/<executionId>/`: estado aislado por ejecución, separado del namespace project-scoped.
 
 La lectura de estado legacy sigue la precedencia canonical, proyecto directo,
@@ -64,7 +83,7 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 
 ## Ficheros generados por comando
 
-> Tabla actualizada 2026-07-29: el prefijo oculto antiguo se sustituyó por `.axiom-state` en todas las filas (renombre verificado). Además, `init` **ya no** escribe `topology.yaml` para el layout `installed-multi-repo` (`INC-20260703-config-dedup`, cerrado): `topology.yaml` pasó a ser opt-in / derivado-en-lectura — `@axiom/topology#loadTopology` deriva un manifest de fallback a partir de `axiom.yaml` cuando el fichero está ausente (`tryLoadTopologyHint` + `defaultInstalledMultiRepoManifest`), y `topology.yaml` solo se materializa de forma perezosa cuando el proyecto corre `axiom roles assign`. Fuente: comentario junto a la escritura de `init.json` en `apps/cli/src/commands/init.ts`.
+> Tabla actualizada para R13: `.axiom-state` es el estado local y `TopologyManifest.schemaVersion: 2` tiene una única autoridad física. `init` no crea una topología derivada. Un repo `code`/`legacy` solo conserva identidad y el pointer `axiomRepo`; el manifest se lee desde `<axiomRepo>/axiom.config/topology.yaml`. Ausencia de pointer, autoridad, YAML o schema válido es fail-closed: no existe fallback desde `axiom.yaml` ni materialización por repo.
 
 | Comando | Escribe |
 |---|---|
@@ -77,7 +96,8 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 | `toolchain upgrade` | `.axiom-state/<projectKey>/toolchain.lock` (schema 1), con checkpoint/rollback |
 | `model set/unset/reset` | `.axiom-state/<projectKey>/model-assignments.json` (+ `.opencode/model-routing.json`) |
 | `components install/uninstall` | `.axiom-state/<projectKey>/components-state.json` |
-| `roles assign` | Materializa `axiom.config/topology.yaml` de forma perezosa si estaba ausente (nuevo comportamiento, ver nota arriba) |
+| `workspace setup` / `repo add` | Actualizan únicamente `<axiomRepo>/axiom.config/topology.yaml`; escriben identidad/pointer en repos code/legacy sin copiar el manifest |
+| `roles assign` | Actualiza el manifest autoral después de resolver y validar su autoridad; no crea una topología local alternativa |
 
 ## Ficheros generados por adapter target
 
