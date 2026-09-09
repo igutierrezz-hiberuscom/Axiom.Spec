@@ -1,7 +1,7 @@
 # Control plane, transportes y confirmación del launcher R-13
 
 > **Código**: INC-20260829-r13-launcher-control-plane
-> **Estado documental**: implementación verificada; lifecycle gestionado por Axiom Core (`verifying`); cierre `pending` por provenance no aislable
+> **Estado lifecycle**: gestionado exclusivamente por Axiom Core; este README no fija status estructural
 > **Fecha**: 2026-08-29
 > **Acciones**: ACC-070..ACC-072 y matriz correspondiente de ACC-076
 > **Dependencias**: independiente de A-E en comportamiento; se ejecuta después de I para minimizar colisiones de CLI
@@ -55,20 +55,21 @@ No se mantiene API launcher sin sesión, CORS, `confirmed:true` como autorizaci�
 
 Servidor real: auth/origin/content-type/body/timeouts/headers/browse/SSE; SSRF/redirect/DNS fixtures locales; delivery ack; token mismatch/replay/race/expiry/edit/required; build y diff-check.
 
-## Resultado de verificación (2026-09-08)
+## Resultado de verificación y evidencia final (2026-09-08)
 
-- Freeze de candidate revalidado por Core: `92406c1068e037b2cca17b2e1047d6096134d65b595f98eb06ab30929a36b061`.
-- Validación focal R-13: 8 suites, 192 tests PASS; typecheck de `packages/launcher` y `apps/cli` PASS; `npm run build` PASS; `git diff --check` focal PASS.
+- La candidate freeze vigente se materializa y verifica exclusivamente mediante Axiom Core en `candidate-freeze.json`; este README no duplica hashes estructurales.
+- La matriz ejecutable `Axiom/apps/cli/tests/r13-acc-076-matrix.test.ts` cubre ACC-070..ACC-075: **35 casos PASS, 0 FAIL, 0 TIMEOUT**, con **14 comprobaciones de ausencia de mutación**; la suite incluye una aserción del resumen exacto.
+- La review independiente posterior a la matriz confirma CA-F1/ACC-070, CA-F2/ACC-071 y CA-F3/ACC-072; required-fields se ejercita para catálogo, onboarding, plugins, roles/Git y ADO.
+- Validación focal observada: 12 suites y 233 tests PASS; matriz 36 tests (35 casos + resumen), `npm run typecheck` PASS, `npm run build` PASS y `git diff --check` PASS.
 - `npm run doctor`: PASS, 48/61 OK, 0 fallos, 2 advertencias y 11 omitidos. `npm run readiness:first-project`: PASS.
-- Review independiente: `ready_for_lifecycle`; CA-F1/ACC-070, CA-F2/ACC-071, CA-F3/ACC-072 y la evidencia ACC-076 conformes en el estado observado.
-- Core ejecutó `plan-approved → verifying` mediante `axiom-increment verify`. Receipts: `increment-verify` hash `256618ad116836db81767b2372c5083107b314d209049d5418abe690be43275c` y fase `verify` hash `b53eed4dc56758c26d052427146019a79b06949b6926f8c5c7326f94c7d55697`.
+- Core gestiona freeze, verify, knowledge, phase receipts y archive; sus receipts son inmutables y no se editan manualmente.
 
 ## Provenance y decisión de cierre
 
-El worktree de `Axiom` contiene cambios concurrentes de numerosos incrementos y no existe una commit focal aislada; `Axiom.Spec` también tiene cambios concurrentes. Por tanto, la evidencia certifica el estado observado del worktree, pero no permite atribuir todos los resultados exclusivamente a R-13. Conforme a la regla del lote, no se ejecuta `archive`, no se marca `closed` y el cierre queda `pending` hasta disponer de provenance focal o una matriz de atribución reproducible.
+La atribución se mantiene explícita y reproducible a nivel de worktree: el candidate freeze de Core fija inputs documentales; la matriz ACC-076 fija el conjunto ejecutado y sus conteos; los receipts de fase fijan la secuencia Core; y el inventario de rutas compartidas identifica que `app-api.ts`, `app-launcher.ts`, seguridad y wrappers pueden pertenecer a más de una lane R-13. No se crea commit ni se ejecuta Git mutante. Esta limitación se registra como provenance compartida, no como evidencia funcional faltante.
 
-La observación no bloqueante de la review sobre comentarios históricos de `VSCodeLaunch` y el fallback SPA profundo queda registrada para una limpieza/documentación posterior; no cambia el alcance funcional aceptado de R-13.
+La observación no bloqueante de la review sobre comentarios históricos de `VSCodeLaunch` y el fallback SPA profundo queda registrada para limpieza/documentación posterior; no cambia el alcance funcional aceptado de R-13.
 
 ## Integración estable
 
-Consolidada al final de la verificación, sin editar metadata estructural ni índices: el contrato del control plane local, los límites HTTP/SSE, el transporte HTTP configurado/allowlisted, los estados honestos de clipboard, el rechazo de VSCode ficticio, el single-use grant y la separación entre Doctor diagnóstico y autorización fueron reconciliados en `Axiom.Spec/specs/02_Requisitos_No_Funcionales.md`, `05_Interfaces_Operativas.md`, `06_Integraciones_y_Capacidades.md`, `07_Gobierno_y_Seguridad.md` y el contexto técnico existente. No se archivó el incremento por la provenance no certificable.
+El contrato del control plane local, los límites HTTP/SSE, el transporte HTTP configurado/allowlisted, los estados honestos de clipboard, el rechazo de VSCode ficticio, los grants single-use, required-fields y la separación entre Doctor diagnóstico y autorización fueron reconciliados en `Axiom.Spec/specs/00..08` donde aplica y en `context/**`. La matriz ACC-076 y los receipts de Core son la evidencia de cierre; el lifecycle real se gobierna exclusivamente mediante Axiom Core.

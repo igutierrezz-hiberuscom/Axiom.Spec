@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-telemetry-regression",
+  "phase": "knowledge",
+  "status": "success",
+  "timestamp": "2026-09-08T12:47:45.652Z",
+  "details": "Knowledge freeze/harvest completed via Core after final review. knowledge-candidate.json contains 0 inputs and harvest generated knowledge-harvest.md with no memories found. Stable R-13 telemetry knowledge is already reconciled in Axiom.Spec/specs/00..08 and context/**; no manual knowledge artifact or receipt edit was performed.",
+  "hash": "0d966af95797706432e1f03b2518a1a33509a2da0ee9c370c6557747ef66bf6a"
+}

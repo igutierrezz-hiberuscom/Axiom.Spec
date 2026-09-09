@@ -562,3 +562,7 @@ Nota de fondo relevante para cualquier futura garantía "de tipos": los `tsconfi
 Catálogo cerrado, documentado y **anclado a throw sites reales**; añadir un código va de la mano de migrar el/los sitio(s) correspondiente(s) en el mismo cambio. Entradas vigentes: `AXIOM_NO_PROJECT`, `AXIOM_GATE_FAILURE`, `AXIOM_MEMORY_SCOPE`, `AXIOM_MEMORY_QUERY`, `AXIOM_INIT_NOT_FOUND`, `AXIOM_INIT_INVALID_JSON`, `AXIOM_INSTALL_PROFILE_FAILED`, `AXIOM_INVALID_OPTION`, `AXIOM_ARTIFACT_ID_EXHAUSTED`, `AXIOM_BRANCH_TEMPLATE_VAR_MISSING`, `AXIOM_CHECKPOINT_NOT_FOUND`, `AXIOM_INVALID_CONFIG`.
 
 `AXIOM_INVALID_OPTION` cubre toda validación de **input de CLI** (enum cerrado, flag requerido ausente, formato de `--role`, canal de toolchain); `AXIOM_INVALID_CONFIG` cubre **config inválida en disco**. Se mantienen distintos a propósito: permiten a un subagente distinguir "el operador escribió mal el comando" de "el fichero de configuración del proyecto está roto", que tienen recuperaciones diferentes.
+
+## Modelo R-13 del launcher y telemetría (2026-09-08)
+
+El envelope público del panel de telemetría es versionado (`schemaVersion: 2`) y contiene `projectMetrics` derivados del `projectRoot` resuelto y `processMetrics` etiquetados `process-wide`; `recentEvents` se proyecta newest-first desde la ventana tail. `readAuditTrailTail({ projectRoot, maxEvents, maxBytes })` es la API sancionada para leer el audit trail de forma acotada y reportar corrupción/I/O sin mezclar roots. Los grants y deliveries permanecen en estado runtime local, no en la spec.

@@ -357,3 +357,9 @@ Los entrypoints públicos son `axiom-increment`, `axiom-bug`, `axiom-plan`, `axi
 `axiom app` sirve el launcher bajo `/launcher/` y expone API/SSE same-origin sobre loopback. Las rutas de craft generan un snapshot y un grant server-side; execute exige el `confirmationToken` correspondiente al mismo proyecto, acción, payload normalizado, sesión y adapter cuando aplica. El grant es single-use, expira a los 120 s y se consume antes del side effect; replay, carrera, edición, expiry o mismatch fallan cerrado. Los envelopes que combinan `actionKey` con targets de plugin, o `adapterId` con un target plugin, se rechazan antes de consumir o despachar.
 
 El endpoint `/launcher/execute` conserva únicamente el alias compatible para acciones plugin-scoped; no es una autorización distinta ni permite mezclar targets. Los runners CLI/workflow siguen siendo la única fuente de lógica de negocio y Doctor solo se proyecta como diagnóstico de la preview.
+
+## Contrato launcher R-13 consolidado (2026-09-08)
+
+`axiom app` expone un control plane HTTP local con sesión por proceso, `Host`/`Origin` local, schemas cerrados, límites de body y headers de seguridad. Browse queda confinado a raíces autorizadas; SSE exige sesión, tiene límite/backpressure/heartbeat y cleanup en shutdown. `HttpLaunch` selecciona un endpoint configurado por `endpointId`, permite solo HTTP(S), valida allowlist/DNS/IP, rechaza redirects y limita timeout/respuesta. Clipboard permanece `client-instructed` hasta ack/evidence; no se presenta un transporte VS Code ficticio.
+
+El catálogo publica comandos ejecutables desde `ACTION_RECONCILIATION`; adapters desconocidos fallan cerrado para acciones lifecycle. Todas las lanes validan required-fields e identidad antes de preview/execute. El panel de telemetría devuelve un envelope `schemaVersion: 2` con project/process scopes separados y una ventana bounded de audit trail.

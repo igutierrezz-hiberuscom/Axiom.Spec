@@ -359,3 +359,7 @@ Matiz preservado deliberadamente por call site: **fail-closed significa rechazar
 `installProfile` aplica la misma frontera: un `profiles.yaml` ausente usa
 `DEFAULT_PROFILES`; un archivo presente ilegible, malformado o que no cumple
 el schema devuelve `invalid-profiles-yaml` y no continúa con el fallback.
+
+## Reconciliación funcional R-13 (2026-09-08)
+
+La superficie launcher debe conservar paridad entre catálogo, routing y workflow: `ACTION_RECONCILIATION` es la fuente declarativa de acciones y los previews muestran invocaciones CLI reales. Las mutaciones lifecycle requieren identidad caller-owned explícita y rechazan ID ausente o mismatch antes de receipt, transición o artefacto. El launcher valida required-fields en catálogo, onboarding, plugins, roles/Git y ADO; la entrega ADO separa resultado local y remoto y los enlaces externos se limitan a HTTP(S). La evidencia conjunta vive en `Axiom/apps/cli/tests/r13-acc-076-matrix.test.ts`.

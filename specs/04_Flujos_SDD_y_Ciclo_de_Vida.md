@@ -343,3 +343,7 @@ Cualquier fase que persista conocimiento debe aportar `rationale` y `source` (RF
 `runGovernedTransition` es el único límite mutante: calcula legalidad, preview, confirmación, QA, efectos soportados, metadata, archive recuperable, state y receipts habilitados. Un preview no escribe y `--force`/`--no-verify` no sustituyen `confirmed: true` cuando la transición exige aprobación. La aprobación de plan sólo permite `draft → plan-approved` tras validar su metadata; `axiom-role start` requiere state y metadata de ese plan aprobado.
 
 Antes de archivar incrementos o bugs, `QaArchiveDecision` aplica un contrato único. Con `qaLane: parallel`, `pending`, `failed` o `cancelled` permiten continuar con aviso; con carril inline o rol QA requerido, sólo `passed` permite archive y policy/evidencia no evaluable bloquea. El comando `axiom-qa-e2e` registra también el carril inline por el runner común: `start → verify [--run-validation] → pass` produce la evidencia `passed`; sólo entonces el gate inline permite archive.
+
+## Reconciliación del flujo launcher R-13 (2026-09-08)
+
+El launcher no crea un lifecycle paralelo: craft es preview read-only, execute exige el token server-side ligado al snapshot y los wrappers CLI reciben el ID explícito del caller. Un adapter no registrado no puede degradar silenciosamente una acción lifecycle a clipboard. Verify, knowledge, freeze, receipts y archive se ejecutan desde Axiom Core; la matriz ACC-076 y los tests focales constituyen evidencia del runtime, mientras la integración estable se conserva en esta spec y el contexto técnico.

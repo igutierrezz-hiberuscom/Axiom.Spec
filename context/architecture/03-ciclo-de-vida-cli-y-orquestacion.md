@@ -159,3 +159,8 @@ El resolver único toma un YAML de workflow presente y válido; sólo la ausenci
 El launcher web (`apps/cli/src/commands/app-api.ts` y `app-launcher.ts`) es una superficie fina sobre los runners de CLI/workflow. Su control plane exige loopback literal, sesión por proceso, `Host`/`Origin` local, schemas cerrados y límites de lectura; `launcher-security.ts` liga grants single-use al snapshot normalizado y consume el token antes de ejecutar. El alias plugin-scoped de `/launcher/execute` es deliberado y no sustituye la validación del target.
 
 La entrega HTTP usa endpoints configurados y allowlisted con DNS/IP gobernado, sin redirects, timeout/respuesta acotados y evidencia de status; clipboard queda pendiente de ack/evidence y no se materializa un transporte VS Code ficticio. `LauncherEventHub.closeAll()` se invoca en el shutdown real para liberar respuestas SSE e intervalos. La transición `axiom-increment verify` y los receipts de fase se ejecutan desde el repo de SPEC, mientras la implementación y sus tests viven en el repo de código.
+
+
+### R-13: catálogo, confirmación y evidencia agregada (2026-09-08)
+
+`ACTION_RECONCILIATION` mantiene una única relación declarativa entre acción launcher, workflow y comando/skill real. El routing falla cerrado si un adapter desconocido intenta resolver una acción lifecycle declarada; solo una acción sintética/no lifecycle puede usar el fallback explícito. La evidencia ACC-076 se ejecuta en el repo de código sobre server/wrappers reales y registra 35 PASS, 0 FAIL, 0 TIMEOUT y 14 no-mutaciones. El envelope de telemetría y la provenance de fase se reconcilian en `Axiom.Spec`; Core conserva la autoridad de freeze, receipts, knowledge y archive.

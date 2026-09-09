@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-catalog-ado",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-09-08T12:43:07.185Z",
+  "details": "R-13 apply already present in the shared worktree; candidate freeze refreshed b46929d9cdad480425e9f8db0bb144200d63a0ccc8c4d6e637d2926ba72d9c6c. ACC-073/074 and ACC-076 evidence: matrix 35 PASS, 0 FAIL, 0 TIMEOUT, 14 no-mutation checks; focal validation 12 suites/233 tests PASS; typecheck, build, doctor, readiness and diff-check PASS. Shared implementation paths are intentionally worktree-scoped/shared; no Git mutation or focal commit.",
+  "hash": "544682c915d133891943ed677aaf5da0a4c6d56152b3071459276fc51a56bbe7"
+}

@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-telemetry-regression",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-09-08T12:43:15.376Z",
+  "details": "R-13 apply already present in the shared worktree; candidate freeze refreshed 89d8b20183f5437ad3047257760f5788591d6a975c2578afc506ef79e8f61845. ACC-075/076 evidence: matrix 35 PASS, 0 FAIL, 0 TIMEOUT, 14 no-mutation checks; focal validation 12 suites/233 tests PASS; typecheck, build, doctor, readiness and diff-check PASS. Shared telemetry/launcher paths are intentionally worktree-scoped/shared; no Git mutation or focal commit.",
+  "hash": "0286da64ec60f90ed4aebd58071f37dc0479185f5d9fc7eb6b556c0264113cd0"
+}

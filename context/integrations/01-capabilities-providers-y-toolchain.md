@@ -84,3 +84,8 @@ La memoria usa `MemoryKind` (`decision`, `bug`, `learning`, `pattern`, `context`
 La integración de entrega del launcher es local-only y no recibe URLs arbitrarias desde la request. `HttpLaunch` selecciona un endpoint configurado por id, valida allowlist y protocolo, fija la resolución DNS, bloquea destinos privados/link-local/metadata y rebinding no autorizado, rechaza redirects y acota timeout/respuesta. `ClipboardLaunch` comunica una instrucción al cliente y solo alcanza `delivered` después de evidence/ack; VS Code no se ofrece como transporte runtime hasta existir bridge cliente. La cobertura real usa fixtures `node:http` sobre loopback y no red externa.
 
 El alias plugin-scoped del launcher se mantiene por compatibilidad con el catálogo existente; la validación de envelopes impide combinar targets plugin con `actionKey` o `adapterId`.
+
+
+### R-13: ADO local-first y telemetría bounded (2026-09-08)
+
+El bridge ADO del launcher es opcional: la operación local se informa antes y se conserva separada de `remote`; los tests usan un tracker/transport fake, sin Azure DevOps real. `sanitizeExternalUrl` permite solo `http:`/`https:` sin userinfo, query ni fragment. El panel usa `readAuditTrailTail` como boundary público, acota bytes/eventos, conserva parse diagnostics, aísla roots y separa `projectMetrics` de `processMetrics` con etiqueta `process-wide`; `lessons` no forma parte del contrato.

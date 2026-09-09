@@ -209,3 +209,7 @@ Seis incrementos que cierran el bloque de gobierno de los flujos desatendidos, c
 Dos límites se registran explícitamente en vez de declararse cubiertos: el freeze hashea memoria filtrada + `README.md`, **no** lockfiles ni `metadata.yml`; y el receipt cubre los fallos con `exitCode` distinto de cero pero no una excepción que escape del core de la transición.
 
 Detalle en [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md) (RF-AXM-057..061), propiedades en [02_Requisitos_No_Funcionales.md](02_Requisitos_No_Funcionales.md) (NFR-AXM-023), artefactos en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md), gates en [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md).
+
+## Reconciliación estable R-13 (2026-09-08)
+
+El launcher web vigente es un control plane local sobre los runners canónicos: sesión por proceso, loopback/origin local, preview→confirmación server-side y entrega HTTP/clipboard con estados honestos. El catálogo usa `ACTION_RECONCILIATION` para publicar comandos reales `axiom ...`; una acción lifecycle no recibe fallback de adapter desconocido. ADO es opcional/local-first y la telemetría del panel deriva de un tail bounded con scopes `project` y `process-wide` separados. La matriz ejecutable ACC-076 registra 35 casos PASS, 0 FAIL, 0 TIMEOUT y 14 comprobaciones de ausencia de mutación.

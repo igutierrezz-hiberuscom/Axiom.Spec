@@ -647,3 +647,9 @@ Regla derivada, aplicable a futuras integraciones: **si ya existe un schema can�
 `HttpLaunch` no acepta una URL request-controlled: selecciona un `endpointId` de configuración validada, restringe protocolos y hosts allowlisted, resuelve y fija la dirección DNS, rechaza destinos privados/link-local/metadata y DNS rebinding no permitido, desactiva redirects y aplica timeout de 5 s y respuesta máxima de 64 KiB. La evidencia de éxito es un status HTTP recibido de ese endpoint; los redirects, timeouts y respuestas oversized no se marcan como entregados. La cobertura incluye fixtures HTTP locales reales sin red externa.
 
 `ClipboardLaunch` informa `client-instructed` y crea un registro de delivery; solo un ack con digest, token y evidence puede progresar a `delivered`. No existe `VSCodeLaunch` como transporte efectivo: targets VS Code pueden usar clipboard hasta que exista un bridge cliente con ack.
+
+## Integraciones launcher R-13 consolidadas (2026-09-08)
+
+La integración ADO es opcional y local-first: el artefacto/resultado local se conserva aunque el bridge remoto no esté configurado o falle; preview, local y remote se muestran por separado. Las pruebas usan tracker/transport fake y no red externa. Los enlaces ADO solo se proyectan como `href` para `http:`/`https:` sin userinfo, query o fragment; otros valores permanecen texto.
+
+La telemetría launcher usa `@axiom/telemetry` como boundary sancionado para `readAuditTrailTail`; el endpoint no lee `fs` ni conoce el path físico. La ventana se limita por bytes/eventos, conserva parse diagnostics, aísla project roots y presenta counters process-wide fuera de las métricas de proyecto. La matriz ACC-076 en el repo de runtime es la evidencia ejecutable conjunta de estas integraciones.

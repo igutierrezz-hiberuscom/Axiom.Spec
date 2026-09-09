@@ -1,10 +1,13 @@
 id: INC-20260829-r13-launcher-telemetry-regression
 kind: increment
 title: r13-launcher-telemetry-regression
-status: plan-approved
+status: archived
 createdAt: '2026-08-29T13:03:51.276Z'
-updatedAt: '2026-08-29T13:09:44.252Z'
+updatedAt: '2026-09-08T12:47:49.683Z'
 externalRefs: []
+integration:
+  status: integrated
+  integratedAt: '2026-09-08T12:47:49.683Z'
 origin:
   source: axiom-native
 managedBy:

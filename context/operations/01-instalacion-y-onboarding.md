@@ -131,3 +131,8 @@ El launcher web (`axiom app`) expone `/api/launcher/workspace/setup` y `/api/lau
 ## Fuera de la baseline inicial (no-goals explícitos del MVP)
 
 Como contexto histórico, los overlays `standard`/`enterprise` no formaron parte del camino inicial de readiness; hoy están retirados. También quedan fuera de la baseline inicial `visual-studio-2026` como target de primer arranque, exigir `engram`/`cmm` como requisito de entrada, bridges externos/plugins/lanes paralelos avanzados e instalación user-level del binario como paso obligatorio. `cmm` es el reemplazo vigente de `codegraph`/`graphify` (ver `../integrations/01-capabilities-providers-y-toolchain.md`).
+
+
+### Required-fields y confirmación launcher R-13 (2026-09-08)
+
+Las superficies de install/join/setup/adopt, catálogo, plugins, roles/Git y ADO rechazan cuerpos incompletos antes de crear grants, escribir filesystem, invocar bridge o cambiar metadata. Las pruebas ACC-076 ejercitan esas superficies sobre el servidor real y comparan snapshots de no mutación; una preview nunca autoriza por sí sola el side effect.

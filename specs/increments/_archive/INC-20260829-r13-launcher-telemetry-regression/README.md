@@ -1,7 +1,7 @@
 # Telemetría y regresión final del launcher R-13
 
 > **Código**: INC-20260829-r13-launcher-telemetry-regression
-> **Estado documental**: especificación refinada; lifecycle gestionado por Axiom Core
+> **Estado lifecycle**: gestionado exclusivamente por Axiom Core; este README no fija status estructural
 > **Fecha**: 2026-08-29
 > **Acciones**: ACC-075 y cierre agregado de ACC-076
 > **Dependencias**: F y G
@@ -48,6 +48,13 @@ El campo ambiguo `busCounters` puede retirarse o reemplazarse por el bloque scop
 
 Tests unitarios tail grande/corrupto/orden/límites/dos proyectos; endpoint/panel; búsqueda de acceso directo; matriz completa launcher real; build, full focused suites y diff-check.
 
+## Resultado de implementación y evidencia (2026-09-08)
+
+- `readAuditTrailTail` es la única lectura bounded/validated del tail para la proyección launcher; la ventana pública conserva orden `oldest-first` y el panel deriva los 20 eventos recientes en `newest-first`.
+- `projectMetrics` deriva del root resuelto y `processMetrics` etiqueta counters `process-wide`; no se mezclan roots ni se reintroducen `lessons`.
+- La matriz conjunta `Axiom/apps/cli/tests/r13-acc-076-matrix.test.ts` ejecuta ACC-075 y el cierre agregado de ACC-076 con **35 PASS, 0 FAIL, 0 TIMEOUT** y **14 no-mutaciones**; no usa red externa.
+- Validación observada: 12 suites y 233 tests PASS en la batería focal conjunta; matriz 36 tests PASS, `npm run typecheck` PASS, `npm run build` PASS y `git diff --check` PASS.
+
 ## Integración estable
 
-Diferida al cierre final junto con F/G; no editar specs 00..08/context durante apply.
+El contrato bounded/order/scope de telemetría, la separación project/process y la matriz reproducible ACC-076 fueron reconciliados en `Axiom.Spec/specs/00..08` donde aplica y en `context/**`. El lifecycle, harvest, receipts y archivado los gestiona exclusivamente Axiom Core.

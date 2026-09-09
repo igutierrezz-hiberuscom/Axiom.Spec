@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-control-plane",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-09-08T12:43:10.919Z",
+  "details": "R-13 apply already present in the shared worktree; candidate freeze refreshed ea33ebfa84c3cb8c6209bb399db598f2bba4f11d5beb7621edf03626a5291739. ACC-070/071/072 and ACC-076 evidence: matrix 35 PASS, 0 FAIL, 0 TIMEOUT, 14 no-mutation checks; focal validation 12 suites/233 tests PASS; typecheck, build, doctor, readiness and diff-check PASS. Shared launcher/control-plane paths are intentionally worktree-scoped/shared; no Git mutation or focal commit.",
+  "hash": "de0024851db94b271b58b95753349f5fdf580257529c1abf3cd7255aa7bce912"
+}

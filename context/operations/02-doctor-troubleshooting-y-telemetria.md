@@ -127,4 +127,9 @@ El panel es completamente read-only sobre telemetría y audit trail: no escribe 
 
 ## Validación operativa del control plane R-13
 
-La validación de R-13 combina suites focales del launcher (server real, seguridad de grants, transportes, onboarding, paneles, push, ADO y `@axiom/launcher`), typechecks separados, `npm run build`, `npm run doctor` y `npm run readiness:first-project`. En la ejecución del 2026-09-08 pasaron 8 suites y 192 tests; Doctor devolvió PASS con 48/61 OK, 0 fallos, 2 advertencias y 11 omitidos; readiness devolvió PASS. Las advertencias/omitidos de Doctor son diagnóstico del proyecto y no autorizan ni bloquean por sí mismos las mutaciones del launcher.
+La validación de R-13 combina suites focales del launcher (server real, seguridad de grants, transportes, onboarding, paneles, push, ADO y `@axiom/launcher`), typechecks separados, `npm run build`, `npm run doctor`, `npm run readiness:first-project` y `git diff --check`. En la revalidación final del 2026-09-08 pasaron 12 suites y 233 tests; la matriz ACC-076 reportó 35 casos PASS, 0 FAIL, 0 TIMEOUT y 14 comprobaciones de no-mutación. Doctor devolvió PASS con 48/61 OK, 0 fallos, 2 advertencias y 11 omitidos; readiness devolvió PASS. Las advertencias/omitidos de Doctor son diagnóstico del proyecto y no autorizan ni bloquean por sí mismos las mutaciones del launcher.
+
+
+### Revalidación operativa R-13 (2026-09-08)
+
+La evidencia actual añade `apps/cli/tests/r13-acc-076-matrix.test.ts`: 35 casos más un resumen afirmado, `PASS=35 FAIL=0 TIMEOUT=0` y 14 comprobaciones de no mutación. Las suites focales, `npm run typecheck`, `npm run build`, `npm run doctor`, `npm run readiness:first-project` y `git diff --check` pasan. El diagnóstico de Doctor sigue siendo informativo: no autoriza mutaciones launcher ni sustituye el grant de preview. La lectura de actividad del panel usa `readAuditTrailTail`; no debe reintroducirse lectura directa de `audit.log`, `fs`, `auditLogPath` ni `lessons` en el launcher.

@@ -15,11 +15,13 @@ Conservar el contexto técnico estable y específico de R-13 que ayuda a revisar
 
 ## Evidencia final
 
-La verificación del 2026-09-08 registró 8 suites y 192 tests, typechecks de launcher/CLI, build, doctor PASS y readiness PASS. El lifecycle Core alcanzó `verifying` y emitió receipts de `increment-verify` y `verify`.
+La matriz `Axiom/apps/cli/tests/r13-acc-076-matrix.test.ts` ejecuta 35 casos de ACC-070..ACC-075 más un test de resumen: `PASS=35 FAIL=0 TIMEOUT=0`, con 14 snapshots explícitos de ausencia de mutación. Incluye required-fields de catálogo, onboarding, plugins, roles/Git y ADO, además de server/wrapper real, fixtures loopback y fake ADO.
 
-## Pendiente
+La validación complementaria observada es `npm run typecheck`, `npm run build`, `npm run doctor`, `npm run readiness:first-project` y `git diff --check`, todos PASS. Core conserva los receipts previos y emitirá los receipts finales de freeze/verify/knowledge/archive.
 
-El incremento no se archiva ni se marca cerrado: el worktree observado contiene cambios concurrentes sin commit focal y la provenance no permite atribución exclusiva a R-13. La review dejó además como observaciones no bloqueantes el drift de comentarios históricos de VSCode y el alcance no demostrado del deep-link SPA anidado.
+## Provenance
+
+La provenance es reproducible a nivel de candidate freeze + matriz + receipts y declara rutas compartidas entre las lanes F/G/H; no se ejecutan commits ni operaciones Git. El drift de comentarios históricos de VSCode y el alcance no demostrado del deep-link SPA anidado son observaciones no bloqueantes.
 
 ## Qué no debe vivir aquí
 

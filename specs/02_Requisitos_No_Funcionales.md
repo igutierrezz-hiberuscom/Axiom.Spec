@@ -168,3 +168,7 @@ Refuerza `NFR-AXM-006` (sin excepciones para control de flujo): con `AXIOM_ERROR
 El launcher web opera como control plane local y fail-closed: solo acepta bind literal `127.0.0.1` o `::1`, crea una sesión aleatoria por proceso y exige cookie válida, `Host` exacto y `Origin` local en la API. Las mutaciones JSON requieren `application/json`, schema cerrado, body máximo de 256 KiB y timeout de lectura de 5 s; las respuestas 5xx no exponen paths ni stacks. La superficie servida y browse canonicalizan rutas y rechazan traversal y symlink escape.
 
 SSE conserva el aislamiento de sesión, máximo 8 suscriptores, heartbeat de 15 s, cola máxima de 64 KiB y cleanup por desconexión, backpressure y shutdown. La autorización de una mutación no se deriva de Doctor, de un flag recibido por HTTP ni de `confirmed:true` externo.
+
+## Reconciliación no funcional R-13 (2026-09-08)
+
+La auditabilidad del launcher exige una matriz reproducible con casos negativos, conteos PASS/FAIL/TIMEOUT separados y snapshots de no mutación. El control plane no acepta fallback genérico para acciones lifecycle declaradas; los grants de preview son single-use, acotados por sesión/proyecto/acción/payload y consumidos antes del side effect. La telemetría del panel lee únicamente una ventana tail bounded/validated, mantiene `projectMetrics` separado de `processMetrics` (`scope: process-wide`) y no expone `lessons`.

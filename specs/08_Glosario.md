@@ -207,3 +207,12 @@
 - **Candidate freeze**: congelado del estado de entrada de un incremento (`candidate-freeze.json`) para que un `apply` posterior sea determinista respecto de los inputs revisados. Distinto del `knowledge freeze`, específico de la fase de harvest. `INC-20260730-candidate-freeze`.
 - **`checkCandidateFreeze`**: API de validación que devuelve `{ ok, reason? }` — nunca lanza — comparando el hash actual de los inputs contra el congelado. `INC-20260730-candidate-freeze`.
 - **Fail-closed sobre inválido, no sobre ausente**: regla de validación de config adoptada por la tanda — rechazar un fichero presente pero estructuralmente inválido, sin convertir en fatal un fichero opcional legítimamente ausente. `INC-20260730-exact-scope`.
+
+## Términos R-13 consolidados (2026-09-08)
+
+- **Control plane local**: servidor launcher de `axiom app` limitado a loopback, sesión/origin local y runners canónicos; no es un backend remoto.
+- **`ACTION_RECONCILIATION`**: catálogo declarativo que enlaza una acción launcher con workflow, skill/comando real y campos de ejecución.
+- **Grant de preview**: token server-side single-use con TTL y binding de sesión, proyecto, acción y payload; no se sustituye por `confirmed: true` del cliente.
+- **`readAuditTrailTail`**: API bounded/validated de `@axiom/telemetry` para leer una ventana del audit trail sin exponer el path físico.
+- **`projectMetrics` / `processMetrics`**: bloques separados del envelope de telemetría; el primero deriva del root del proyecto y el segundo etiqueta contadores process-wide.
+- **ADO local-first**: semántica en la que el resultado local se crea/valida primero y cualquier resultado remoto opcional se informa aparte, sin borrar o invalidar lo local.

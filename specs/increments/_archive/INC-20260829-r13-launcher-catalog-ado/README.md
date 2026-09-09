@@ -1,7 +1,7 @@
 # Catálogo, targeting e integración ADO del launcher R-13
 
 > **Código**: INC-20260829-r13-launcher-catalog-ado
-> **Estado documental**: especificación refinada; lifecycle gestionado por Axiom Core
+> **Estado lifecycle**: gestionado exclusivamente por Axiom Core; este README no fija status estructural
 > **Fecha**: 2026-08-29
 > **Acciones**: ACC-073, ACC-074 y pruebas correspondientes de ACC-076
 > **Dependencia**: F; reutiliza el workflow canónico vigente de R-10
@@ -52,6 +52,14 @@ Se retira derivación implícita de ID, previews con binarios ficticios, fallbac
 
 Paridad catálogo-workflows, todos adapters/actions, help/previews ejecutables, mismatch por lane, receipts ausentes en rechazo, ADO local/remote split, URL schemes, server real, build y diff-check.
 
+## Resultado de implementación y evidencia (2026-09-08)
+
+- `ACTION_RECONCILIATION` es la fuente declarativa de catálogo/routing; los comandos preview usan invocaciones reales `axiom ...`.
+- Un adapter desconocido falla cerrado para cualquier acción lifecycle declarada; el fallback clipboard queda limitado a acciones sintéticas/no lifecycle. ID ausente o mismatch sigue rechazándose antes de receipt, transición o artifact mutation.
+- ADO permanece local-first y opcional: preview/local/remote están separados, el bridge de tests es fake y los enlaces solo aceptan `http:`/`https:` sin userinfo, query ni fragment.
+- La evidencia conjunta ACC-076 aporta los casos `ACC-073-01..03` y `ACC-074-01..02`; resultado agregado: 35 PASS, 0 FAIL, 0 TIMEOUT, con 14 checks de no mutación.
+- Validación observada: 12 suites y 233 tests PASS en la batería focal conjunta; `npm run typecheck` PASS, `npm run build` PASS y `git diff --check` PASS.
+
 ## Integración estable
 
-Diferida al final; no editar specs 00..08/context durante apply.
+El contrato de catálogo declarativo, routing fail-closed, comandos CLI reales, identidad caller-owned, ADO local-first y URL segura fue reconciliado en `Axiom.Spec/specs/00..08` donde aplica y en `context/**`. El lifecycle, los receipts y el archivado se gestionan exclusivamente mediante Axiom Core.

@@ -3,11 +3,11 @@
   "workflows": {
     "increment": {
       "workflowId": "increment",
-      "state": "verifying",
+      "state": "archived",
       "vars": {
-        "metadataId": "INC-20260829-r13-launcher-control-plane"
+        "metadataId": "INC-20260829-r13-launcher-telemetry-regression"
       },
-      "updatedAt": "2026-09-08T07:25:34.396Z"
+      "updatedAt": "2026-09-08T12:47:49.683Z"
     },
     "qa-e2e": {
       "workflowId": "qa-e2e",

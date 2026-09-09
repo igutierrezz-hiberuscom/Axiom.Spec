@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260829-r13-launcher-telemetry-regression",
+  "phase": "increment-verify",
+  "status": "success",
+  "timestamp": "2026-09-08T12:47:27.425Z",
+  "details": "Core runner adoption by explicit artifact ID after prior singleton reached terminal state; ACC-075/076 final evidence: matrix 35 PASS, 0 FAIL, 0 TIMEOUT, 14 no-mutation checks; focal validation 12 suites/233 tests PASS; typecheck, build, doctor, readiness and diff-check PASS; provenance worktree-scoped/shared, no Git mutation.",
+  "hash": "4f7410e6e532d656f0b10cf6a15d2c0d3acbf3517920a4cf3d9d1f62f781fcc2"
+}
