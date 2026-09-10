@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260909-r13-self-update-transactional-updater",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-10T06:16:05.167Z",
+  "details": "Review independiente final GO técnico para verify; no blockers funcionales reproducibles en ownership, journal, recovery, plan digest, remoteName, branch/upstream observable, signals, lock deadline, progress sink ni legacy wiring. Validación runtime: npm run build exit 0; foco packages/core/tests/self-update.test.ts + apps/cli/tests/self-update-contract.test.ts + packages/core/tests/install-state.test.ts 47/47; smoke compilado 3/3; workflow lifecycle 21/21; local-file 15/15; git diff --check limpio. Suite global final exit 1: 24 archivos/54 tests fallidos y conjunto sin delta frente al baseline conocido; 331 archivos/3647 tests pass, clasificado baseline/interferencia ajena a R13. Gates aún pendientes para archive: POSIX, dos procesos reales, fault matrix completa y handoff G8.",
+  "hash": "fd492abb0bc0859d4adf348bd9dc12bc0cf4567dc1556d62f802f82198f8e447"
+}

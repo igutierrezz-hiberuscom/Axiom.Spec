@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260909-r13-self-update-release-identity",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-09T21:44:34.248Z",
+  "details": "G0-G6 GO; build raíz y build aislado @axiom/cli exit 0; focal Core/status 37/37; legacy 30/30; smoke proceso+generator 3/3; suite global exit 1 con 24/54 baseline y freeze.test aislado 8/8; review independiente GO.",
+  "hash": "3eb62d3397fab8f59bccf48981d213c7ff1ee1e0b0e5bcefe29506f0bb487206"
+}

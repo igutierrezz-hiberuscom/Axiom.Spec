@@ -1,0 +1,36 @@
+id: PLAN-INC-20260909-r13-self-update-launcher-integration
+kind: plan
+title: Plan de integración de self-update en el Launcher
+status: draft
+createdAt: '2026-09-09T11:28:19.571Z'
+updatedAt: '2026-09-09T11:28:31.287Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-09T11:28:19.571Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  incrementId: INC-20260909-r13-self-update-launcher-integration
+  bugId: null
+targetRepos:
+  - axiom-code-builder
+taskType: runtime-change
+allowedWriteScope:
+  - repo: axiom-code-builder
+    paths:
+      - '**'
+roles:
+  required:
+    - builder
+  roleFiles:
+    - role: builder
+      slug: builder
+      file: role-builder.md
+      status: queued
+      startCondition: ''
+      doneCondition: ''

@@ -5,9 +5,9 @@
       "workflowId": "increment",
       "state": "archived",
       "vars": {
-        "metadataId": "INC-20260829-r13-launcher-telemetry-regression"
+        "metadataId": "INC-20260909-r13-self-update-release-certification"
       },
-      "updatedAt": "2026-09-08T12:47:49.683Z"
+      "updatedAt": "2026-09-10T17:34:48.523Z"
     },
     "qa-e2e": {
       "workflowId": "qa-e2e",
@@ -16,6 +16,25 @@
         "qaLane": "inline"
       },
       "updatedAt": "2026-09-07T18:16:43.801Z"
+    },
+    "plan": {
+      "workflowId": "plan",
+      "state": "plan-approved",
+      "vars": {
+        "planId": "PLAN-INC-20260909-r13-self-update-transactional-updater",
+        "metadataId": "PLAN-INC-20260909-r13-self-update-transactional-updater"
+      },
+      "updatedAt": "2026-09-10T02:05:55.593Z"
+    },
+    "bug": {
+      "workflowId": "bug",
+      "state": "specifying",
+      "vars": {
+        "id": "BUG-20260910-baseline-adoption-e2e-provenance",
+        "slug": "baseline adoption e2e provenance and eject convergence",
+        "metadataId": "BUG-20260910-baseline-adoption-e2e-provenance"
+      },
+      "updatedAt": "2026-09-10T11:30:24.820Z"
     }
   }
 }

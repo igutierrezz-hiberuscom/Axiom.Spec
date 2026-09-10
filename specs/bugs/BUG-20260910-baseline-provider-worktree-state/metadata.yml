@@ -1,0 +1,18 @@
+id: BUG-20260910-baseline-provider-worktree-state
+kind: bug
+title: baseline provider selection and worktree project state
+status: specifying
+createdAt: '2026-09-10T11:30:20.044Z'
+updatedAt: '2026-09-10T11:30:20.044Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-10T11:30:20.044Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

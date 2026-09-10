@@ -41,7 +41,17 @@ Un `checkpointId` inexistente da un error claro SIN mutar nada (el chequeo de ex
 
 ## `axiom self-update`
 
-Actualiza el propio binario/instalación de la CLI de Axiom (distinto del `ManagedState` del proyecto, que gestiona `axiom upgrade`). Útil cuando hay una versión nueva del paquete `@axiom/cli` disponible. También accesible desde el menú de bootstrap `setup` de la TUI ("Actualizar Axiom").
+La superficie activa R13 inspecciona, planifica y ejecuta la actualización transaccional de una instalación user-level gestionada, distinta del `ManagedState` del proyecto que gestiona `axiom upgrade`. `~/.axiom/install.json` es un receipt/cache derivado: la identidad real del entrypoint es la autoridad.
+
+| Comando | Comportamiento R13 |
+|---|---|
+| `axiom self-update status [--json]` | Lee identidad y receipt sin mutar. |
+| `axiom self-update check [--json]` | Compara la release instalada con la publicada sin persistir el resultado. |
+| `axiom self-update plan [--json] [--dry-run]` | Produce un plan declarativo read-only. |
+| `axiom self-update apply [--json] [--plan-file <path>]` | Consume un plan sellado y devuelve `installed`, `unchanged`, `failed` o `recovery-required`. |
+| `axiom self-update recover [--json]` | Reconcilia journal, entry, manifest y receipt; devuelve un outcome cerrado. |
+
+`--dry-run` solo es válido con `plan`. Los flags legacy `--check`, `--apply`, `--recover` y `--target-version` se rechazan; la implementación histórica no es la gramática activa R13.
 
 ## Relacionado
 

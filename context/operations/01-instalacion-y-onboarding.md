@@ -21,14 +21,14 @@ Comportamiento Windows: crea `%USERPROFILE%\.local\bin\` si falta; si `axiom.cmd
 
 ## `axiom self-update`
 
-Gestiona la versión user-level, separada de `axiom upgrade` (project-scoped). Manifest: `~/.axiom/install.json`.
+La superficie user-level usa `~/.axiom/install.json` como receipt/cache derivado de la instalación real y queda separada de `axiom upgrade` (project-scoped). En R13 las operaciones son:
 
-- `--check`: reporta versión, persiste manifest (sin mutar binario).
-- `--target-version <X.Y.Z>`: preview puro, sin mutación.
-- `--target-version <X.Y.Z> --apply`: ejecuta update real vía `install-global.mjs --install`.
-- Sin flags: placeholder que fuerza ser explícito (no-op).
+- `axiom self-update status [--json]`: inspección local de identidad y receipt, sin mutación.
+- `axiom self-update check [--json]`: comparación con la release publicada, sin persistir el resultado.
+- `axiom self-update plan [--json] [--dry-run]`: plan declarativo read-only.
+- `axiom self-update apply [--json] [--plan-file <path>]` y `axiom self-update recover [--json]`: motor transaccional; devuelven `installed`, `unchanged`, `failed` o `recovery-required` y no adoptan una instalación inicial.
 
-GATE crítico: el update NO se aplica sin `--apply`. En Windows, antes de aplicar hace backup del shim (`axiom.cmd.bak`); si el install falla, restaura el backup.
+La identidad real del entrypoint es la autoridad; `status`, `check` y `plan` no crean locks, temporales, receipts ni migraciones. `--dry-run` solo es válido con `plan`. La selección legacy mediante `--check`, `--apply`, `--recover` o `--target-version` se rechaza con error de uso. La implementación histórica de esos flags no forma parte de la gramática activa R13.
 
 ## Catálogo y entrada a proyectos
 

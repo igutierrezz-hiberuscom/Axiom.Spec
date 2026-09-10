@@ -1,0 +1,18 @@
+id: BUG-20260910-baseline-acc076-matrix-timeouts
+kind: bug
+title: baseline R13 ACC-076 matrix timeout and evidence
+status: specifying
+createdAt: '2026-09-10T11:30:21.355Z'
+updatedAt: '2026-09-10T11:30:21.355Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-10T11:30:21.355Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

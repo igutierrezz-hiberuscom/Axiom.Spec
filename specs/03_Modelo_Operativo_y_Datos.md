@@ -1,5 +1,7 @@
 # 03 Modelo Operativo y Datos
 
+> **R13 validado:** el modelo de self-update transaccional, manifiesto v2 como cache/receipt y estado de instalación global están validados y cerrados en los incrementos R13-1 a R13-5.
+
 > Esta sección documenta el modelo de datos REAL implementado hoy en `Axiom/`. `~/.axiom/projects.yml` es el único catálogo user-level. El modelo de topología de repos por rol y `axiom.yaml schemaVersion: 2` están implementados; `single-repo` sigue siendo el modo por defecto práctico y la ruta multi-repo se activa explícitamente.
 
 ## Modelo de datos real: `axiom.yaml` (manifiesto raíz por proyecto)
@@ -35,6 +37,12 @@ resolución conflictiva conserva el canonical o el primer candidato legacy
 determinista y emite warning. `restoreCheckpoint` aplica el mismo principio a
 los destinos del manifest: no basta con encontrar el snapshot, debe restaurar
 el contenido bajo `projectKey`.
+
+## Estado user-level del self-update (R13)
+
+La instalación global del CLI conserva `~/.axiom/install.json` como receipt/cache derivado de la instalación real. La identidad del entrypoint y su procedencia son la autoridad; un receipt ausente, legacy, corrupto o no reconciliable no fabrica una versión por defecto.
+
+La superficie R13 expone `axiom self-update status`, `check`, `plan`, `apply` y `recover`. `status`, `check` y `plan` son read-only; `--dry-run` solo se admite en `plan`. `apply` y `recover` consumen el motor transaccional de R13-3 y solo operan sobre una instalación gestionada: sus outcomes son `installed`, `unchanged`, `failed` o `recovery-required`, con códigos efectivos `0`, `70` y `74` según el resultado. Las escrituras usan el lock user-level, revisión/fingerprint esperados, journal y reemplazo atómico del Core; la lectura de un receipt v1 informa `migration_required` y no migra automáticamente.
 
 ## Catálogo de configuración declarativa: `axiom.config/*.yaml`
 

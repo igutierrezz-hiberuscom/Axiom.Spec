@@ -1,0 +1,72 @@
+metadataVersion: 1
+kind: plan
+identity:
+  id: PLAN-INC-20260909-r13-self-update-release-identity
+  title: Plan de identidad y descubrimiento de releases de self-update
+  status: draft
+scope:
+  artifactKind: increment
+  artifactId: ''
+  parentArtifactRoot: ''
+  specVersion: v1
+  planVersion: p1
+  e2eStrategy: none
+ownership:
+  architectOwner: ''
+  plannerOwner: ''
+lifecycle:
+  createdAtUtc: ''
+  updatedAtUtc: ''
+  approvedAtUtc: ''
+  supersededAtUtc: ''
+  archivedAtUtc: ''
+paths:
+  root: ''
+  readme: ''
+  contextFolder: ''
+  roleFilePattern: role-<slug>.md
+roles:
+  required:
+    - builder
+  roleFiles:
+    - role: builder
+      slug: builder
+      file: role-builder.md
+      status: queued
+      startCondition: ''
+      doneCondition: ''
+riskModel:
+  risks:
+    - id: RISK-001
+      severity: medium
+      description: ''
+      mitigation: ''
+      ownerRole: backend
+gates:
+  preStart:
+    - plan-approved
+    - no-unresolved-blocking-questions
+    - spec-plan-version-aligned
+  preDone:
+    - required-role-evidence-published
+    - required-tests-passed
+  preArchive:
+    - verify-passed
+    - integration-map-complete
+verification:
+  manifestRef: ''
+  preproductionTestPlanRef: ''
+  e2eCandidateRefs:
+    - ''
+integration:
+  consolidationTargets:
+    - targetDocument: ''
+      targetAnchor: ''
+      operation: append
+      deltaSummary: ''
+executionTrace:
+  - sessionId: ''
+    command: /axiom-increment-plan
+    decision: plan-generated
+    humanConfirmation: false
+    executedAtUtc: ''

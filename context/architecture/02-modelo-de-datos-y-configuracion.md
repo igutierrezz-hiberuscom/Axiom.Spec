@@ -130,7 +130,7 @@ El binario `axiom` se instala una sola vez por operador (no por proyecto), vía 
 - macOS/Linux: `npm prefix -g` o `$HOME/.local/bin` (`npm link`).
 - Windows: `%USERPROFILE%\.local\bin\axiom.cmd` (shim, con rollback si el smoke post-install falla).
 
-Manifest de versión user-level: `~/.axiom/install.json` (`@axiom/user-workspace`, `UserWorkspacePaths.installPath`). `axiom self-update` gestiona esta versión, separada del `axiom upgrade` project-scoped; requiere `--apply` explícito para mutar (preview-only por defecto).
+Receipt/cache user-level: `~/.axiom/install.json` (`@axiom/user-workspace`, `UserWorkspacePaths.installPath`). La identidad real del CLI es la autoridad; el receipt se reconcilia con ella y no decide por sí mismo la versión instalada. La gramática R13 es `axiom self-update status|check|plan|apply|recover`: `status`, `check` y `plan` son read-only, `--dry-run` solo aplica a `plan`, y `apply`/`recover` usan el motor transaccional con outcomes `installed`, `unchanged`, `failed` o `recovery-required`. Los flags legacy `--check`, `--apply`, `--recover` y `--target-version` se rechazan.
 
 ## Catálogo user-level de proyectos
 

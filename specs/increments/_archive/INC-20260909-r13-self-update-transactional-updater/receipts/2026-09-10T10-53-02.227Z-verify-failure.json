@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260909-r13-self-update-transactional-updater",
+  "phase": "verify",
+  "status": "failure",
+  "timestamp": "2026-09-10T10:53:02.227Z",
+  "details": "Independent validation after hardening: packages/core/tests/self-update.test.ts 35/35; apps/cli/tests/self-update-contract.test.ts + self-update-status.test.ts 41/41; npm run typecheck exit 0; npm run build exit 0; get_errors clean. STOP remains: global baseline 28 files/65 tests failed, POSIX and full fault/recovery/permission matrix absent, G8 fake consumer and final independent gate absent. No archive authorized.",
+  "hash": "0575856e45630a2b12e8029be7933880457363b688a35325935b4995483fed2f"
+}

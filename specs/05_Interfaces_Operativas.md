@@ -1,5 +1,7 @@
 # 05 Interfaces Operativas
 
+> **R13 validado:** la interfaz operativa de self-update en CLI y Launcher está validada y cerrada en los incrementos R13-1 a R13-5.
+
 ## Surfaces principales
 
 1. CLI del runtime (`axiom`, entry point `apps/cli/dist/index.js`, instalado vía `scripts/install-global.mjs` como shim/`npm link` único en el PATH del usuario);
@@ -11,6 +13,10 @@
 ## CLI: comandos documentados en profundidad
 
 `init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `model` (`show`/`set`/`unset`/`reset`/`validate`), `components` (`list`/`show`/`install`/`uninstall`/`restore`), `skills` (`list`/`refresh`/`drift`). Fuente: `Axiom/docs/cli/*.md`. `tui` ya no es un comando registrado.
+
+### `axiom self-update`: contrato R13 vigente
+
+La instalación global usa `~/.axiom/install.json` como receipt/cache derivado; la identidad real del entrypoint es la autoridad. `status`, `check` y `plan` no mutan estado, no crean locks ni receipts, y `--dry-run` solo es válido con `plan`. `apply` consume un plan sellado (también mediante `--plan-file`) y `recover` reconcilia el journal con la realidad; ambos devuelven únicamente `installed`, `unchanged`, `failed` o `recovery-required`. Los selectores legacy `--check`, `--apply`, `--recover` y `--target-version` se rechazan con error de uso. En JSON se emite un único envelope v1 por stdout.
 
 ## CLI: comandos presentes en código sin documentación operativa equivalente
 
@@ -204,9 +210,9 @@ launcher web, la CLI headless y MCP.
 
 Las pantallas `mcp-inventory`/`memory-inventory` permanecen accesibles solo por flag de CLI, no como `MENU_ITEMS` de primera clase — promoverlas es un incremento explícitamente no iniciado (`INC-20260702-tui-menu-promote-inventory-screens`, diferido), no un hueco de esta spec.
 
-## TUI — menú de bootstrap `setup` y wizard guiado de setup de workspace (`INC-20260705-tui-workspace-setup-wizard`)
+## TUI histórica — menú de bootstrap `setup` y wizard guiado de setup de workspace (`INC-20260705-tui-workspace-setup-wizard`)
 
-Cuando `axiom`/`axiom tui` abre en una carpeta sin proyecto Axiom, la screen `setup` (items estáticos `SETUP_ITEMS`) ofrece: "Inicializar Axiom en esta carpeta" · "Actualizar Axiom" (self-update) · "Ver proyectos Axiom registrados" · "Salir". Elegir un proyecto de la lista de registrados hace `chdir` + abre la TUI operativa sobre él.
+En la implementación histórica, cuando `axiom`/`axiom tui` abría en una carpeta sin proyecto Axiom, la screen `setup` (items estáticos `SETUP_ITEMS`) ofrecía: "Inicializar Axiom en esta carpeta" · "Actualizar Axiom" (self-update) · "Ver proyectos Axiom registrados" · "Salir". Esa referencia no describe una surface vigente: `axiom tui` ya no está registrado y la gramática activa es la CLI headless R13 descrita arriba. Elegir un proyecto de la lista de registrados hacía `chdir` y abría la TUI operativa sobre él.
 
 Elegir "Inicializar Axiom en esta carpeta" recorre un WIZARD GUIADO MULTI-REPO que prepara un entorno de trabajo completo (SDD + Spec + repos de rol, cruzados entre sí, registrados y con MCP configurado) en una sola operación. **Supersede al wizard single-repo de 6 pasos de `INC-20260703-tui-init-wizard`**: aquella acción `init` ya no llama a `runInit`, sino que ahora ensambla un `WorkspaceSetupSpec` y llama a `runWorkspaceSetup` (`INC-20260705-workspace-multirepo-setup-engine`, con generación MCP de `INC-20260705-workspace-mcp-generation`). El comando no-interactivo `axiom init`/`runInit` (RF-AXM-006) sigue siendo single-repo y sin cambios; solo cambió la acción `init` de la screen `setup`.
 

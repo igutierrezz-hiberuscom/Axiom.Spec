@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260909-r13-self-update-transactional-updater",
+  "phase": "verify",
+  "status": "failure",
+  "timestamp": "2026-09-10T09:20:56.412Z",
+  "details": "Independent verification: npm run typecheck, npm run build, focused self-update contract/process tests and isolated Windows parent-child timeout passed; STOP remains because global baseline is red (24 files/54 tests), POSIX, full fault matrix, recovery retry and G8 evidence are not complete. No archive authorized.",
+  "hash": "7b05e34a5a949a5da0d8dc1013199ad085b6c1ee6fcccc63e169d7dd5ed3f3ad"
+}

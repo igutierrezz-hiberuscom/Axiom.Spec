@@ -1,0 +1,18 @@
+id: BUG-20260910-baseline-adoption-e2e-provenance
+kind: bug
+title: baseline adoption e2e provenance and eject convergence
+status: specifying
+createdAt: '2026-09-10T11:30:24.820Z'
+updatedAt: '2026-09-10T11:30:24.820Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-10T11:30:24.820Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

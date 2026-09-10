@@ -1,0 +1,18 @@
+id: INC-20260909-r13-self-update-launcher-integration
+kind: increment
+title: r13-self-update-launcher-integration
+status: archived
+createdAt: '2026-09-09T11:28:05.490Z'
+updatedAt: '2026-09-10T17:22:04.781Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-09T11:28:05.490Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-INC-20260909-r13-self-update-launcher-integration
