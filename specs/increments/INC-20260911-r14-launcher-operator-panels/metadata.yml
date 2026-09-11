@@ -1,0 +1,18 @@
+id: INC-20260911-r14-launcher-operator-panels
+kind: increment
+title: r14 launcher operator panels
+status: specifying
+createdAt: '2026-09-11T18:48:26.117Z'
+updatedAt: '2026-09-11T18:49:23.797Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-11T18:48:26.117Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-INC-20260911-r14-operator-control-surfaces

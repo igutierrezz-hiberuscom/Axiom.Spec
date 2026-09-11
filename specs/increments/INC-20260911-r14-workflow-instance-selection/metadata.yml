@@ -1,0 +1,18 @@
+id: INC-20260911-r14-workflow-instance-selection
+kind: increment
+title: r14 workflow instance selection
+status: specifying
+createdAt: '2026-09-11T18:48:52.417Z'
+updatedAt: '2026-09-11T18:49:11.759Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-11T18:48:52.417Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-INC-20260911-r14-operator-control-surfaces

@@ -3,11 +3,13 @@
   "workflows": {
     "increment": {
       "workflowId": "increment",
-      "state": "archived",
+      "state": "specifying",
       "vars": {
-        "metadataId": "INC-20260909-r13-self-update-release-certification"
+        "id": "INC-20260911-r14-workflow-instance-selection",
+        "slug": "r14 workflow instance selection",
+        "metadataId": "INC-20260911-r14-workflow-instance-selection"
       },
-      "updatedAt": "2026-09-10T17:34:48.523Z"
+      "updatedAt": "2026-09-11T18:48:52.417Z"
     },
     "qa-e2e": {
       "workflowId": "qa-e2e",
