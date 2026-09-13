@@ -1,0 +1,8 @@
+id: INC-20260913-baseline-group-a-onboarding-allowlist
+title: baseline group A — onboarding HTTP allow-list
+status: implemented
+created: 2026-09-13
+type: increment
+plan: PLAN-BASELINE-TESTS-20260913
+related-bugs:
+  - BUG-20260910-baseline-launcher-onboarding-schema
