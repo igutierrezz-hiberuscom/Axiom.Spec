@@ -1,8 +1,9 @@
 # baseline group B — init role identity (no repoRole leak into authority identity)
 
 > **Código**: INC-20260913-baseline-group-b-init-role-identity
-> **Estado**: Implementado (pendiente de revisión humana)
+> **Estado**: Closed
 > **Fecha de creación**: 2026-09-13
+> **Fecha de cierre**: 2026-09-13
 > **Tipo de cambio**: corrección de identidad persistida en `axiom init` (Grupo B del plan de baseline)
 > **Plan**: `PLAN-BASELINE-TESTS-20260913` (paso 2 de 7)
 > **Bug relacionado**: `BUG-20260910-baseline-workspace-setup-adoption-contract`
@@ -165,23 +166,27 @@ e2e del schema v2.
 ## Result
 
 Implementado y validado. Estado de criterios: AC-B-01 a AC-B-05 verificados.
-El incremento queda `pending` de cierre formal hasta revisión humana y
-consolidación en la spec canónica.
+Cierre formal completado el 2026-09-13: criterios verificados, validación
+ejecutada, revisión independiente del orquestador OK (diff de `init.ts`
+verificado contra el brief ajustado y re-ejecución independiente de
+`workspace-incremental`, `init` y `schemaversion2-e2e` en verde) y conocimiento
+estable integrado en la spec canónica. La suite completa final del plan
+(`npx vitest run`) terminó 358/358 archivos y 3765/3765 tests en verde.
 
 ## General spec integration
 
-Al cierre, consolidar en la spec canónica del schema v2 de `axiom.yaml` el
-contrato dual del campo `role` persistido emitido por `init`:
-
-- `kind: axiom` (repo de autoridad) → `role: axiom` (identidad canónica; el
-  repoRole interno `sdd` nunca se filtra a la identidad persistida).
-- `kind: legacy` (control-repo del layout default installed-multi-repo, con
-  `legacyFunction: sdd`) → `role: sdd` (contrato consumido por el fan-out de
-  `axiom upgrade` y el guard de repo-affinity).
-
-Y registrar que `expectedIdentity` (`workspace-structural-plan.ts`) valida la
-identidad con match estricto (`optionalRoleMatches` sin alias), por lo que
-cualquier emisor de `axiom.yaml` debe respetar ese contrato dual.
+Conocimiento estable integrado al cierre (2026-09-13) en
+`specs/03_Modelo_Operativo_y_Datos.md` (sección "`axiom.yaml` —
+`schemaVersion: 2`"): el campo `role` persistido que emite `buildAxiomYaml`
+sigue un contrato dual por `kind` — `axiom` para el repo de autoridad
+(`kind: axiom`; el repoRole interno `sdd` nunca se filtra a la identidad
+persistida) y `sdd` para el control-repo legacy del layout default
+`installed-multi-repo` (`kind: legacy`, con `legacyFunction: sdd`), contrato
+que consumen el fan-out de `axiom upgrade` y el guard de repo-affinity.
+`expectedIdentity` (`workspace-structural-plan.ts`) valida la identidad con
+match estricto (`optionalRoleMatches` sin alias), por lo que cualquier emisor
+de `axiom.yaml` debe respetar ese contrato dual. La unificación del vocabulario
+de roles queda registrada como deuda futura.
 
 ## Trazabilidad y fuentes
 
@@ -193,4 +198,7 @@ cualquier emisor de `axiom.yaml` debe respetar ese contrato dual.
 
 ## Estado de validación humana
 
-Pendiente de revisión humana.
+OK. Revisión independiente del orquestador (2026-09-13): el ajuste de dirección
+respecto al plan (contrato dual por `kind` en lugar del revert literal) quedó
+verificado contra los consumidores reales (`upgrade.ts:308`, `_repo-affinity.ts`,
+tests e2e) y re-ejecutado de forma independiente en verde.

@@ -255,6 +255,8 @@ Toda mutación ejecuta load→validate→modify→save dentro de `withLocalFileL
 
 `role` (`REPO_ROLES`: `sdd|spec|code`), `layout` (`PROJECT_LAYOUTS`) y `ADAPTER_TARGETS` son const arrays exportados por `apps/cli/src/commands/init.ts`, fuente única para la validación de `runInit` y para las opciones del launcher de onboarding. `builder` y `local-only` no son selectores.
 
+El `role` **persistido** en el `axiom.yaml` emitido por `buildAxiomYaml` sigue un contrato dual por `kind` (INC-20260913-baseline-group-b-init-role-identity): `axiom` para el repo de autoridad (`kind: axiom`; el repoRole interno `sdd` nunca se filtra a la identidad persistida) y `sdd` para el control-repo legacy del layout default `installed-multi-repo` (`kind: legacy`, con `legacyFunction: sdd`), contrato que consumen el fan-out de `axiom upgrade` y el guard de repo-affinity. `expectedIdentity` (`workspace-structural-plan.ts`) valida la identidad con match estricto (`optionalRoleMatches` sin alias), por lo que cualquier emisor de `axiom.yaml` debe respetar ese contrato dual; la unificación del vocabulario de roles queda como deuda futura.
+
 ### Setup/adopción multi-repo y unidad estructural
 
 `runWorkspaceSetup` y `runWorkspaceAdopt` comparten el modelo de una autoridad

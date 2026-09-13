@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "engram": {
+      "type": "stdio",
+      "command": "C:\\Users\\igutierrezz\\go\\bin\\engram.exe",
+      "args": ["mcp", "--tools=agent"],
+      "env": {
+        "ENGRAM_PROJECT": "axiom"
+      }
+    }
+  }
+}

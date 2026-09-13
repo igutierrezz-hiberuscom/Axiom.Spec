@@ -1,6 +1,8 @@
 # Plan de corrección de la baseline de tests de Axiom (2026-09-13)
 
 > **Estado: CERRADO (2026-09-13).** Los 7 grupos se implementaron secuencialmente con subagentes y verificación independiente por grupo. Validación final: `npx vitest run` → **Test Files 358 passed (358), Tests 3765 passed (3765)** en 478s, y `npx tsc -b` exit 0. Los ajustes sobre el diagnóstico original quedan documentados en cada grupo.
+>
+> **Cierre documental (2026-09-13):** los incrementos de registro de los grupos A y B quedaron cerrados y archivados en `specs/increments/_archive/` (`INC-20260913-baseline-group-a-onboarding-allowlist`, `INC-20260913-baseline-group-b-init-role-identity`), con conocimiento estable consolidado en `specs/03_Modelo_Operativo_y_Datos.md` (contrato dual del `role` persistido) y `specs/07_Gobierno_y_Seguridad.md` (campo `confirmed` en el schema de onboarding). Los grupos C–G son fixes de tests/índice sin incremento propio: su registro es este plan.
 
 ## Objetivo
 

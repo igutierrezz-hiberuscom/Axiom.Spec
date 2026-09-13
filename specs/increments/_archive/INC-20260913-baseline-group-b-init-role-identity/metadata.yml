@@ -1,0 +1,9 @@
+id: INC-20260913-baseline-group-b-init-role-identity
+title: baseline group B — init role identity (no repoRole leak into authority identity)
+status: closed
+created: 2026-09-13
+closedAt: '2026-09-13'
+type: increment
+plan: PLAN-BASELINE-TESTS-20260913
+related-bugs:
+  - BUG-20260910-baseline-workspace-setup-adoption-contract

@@ -1,8 +1,9 @@
 # baseline group A — onboarding HTTP allow-list
 
 > **Código**: INC-20260913-baseline-group-a-onboarding-allowlist
-> **Estado**: Implementado (pendiente de revisión humana)
+> **Estado**: Closed
 > **Fecha de creación**: 2026-09-13
+> **Fecha de cierre**: 2026-09-13
 > **Tipo de cambio**: corrección de contrato HTTP de onboarding (Grupo A del plan de baseline)
 > **Plan**: `PLAN-BASELINE-TESTS-20260913` (paso 1 de 7)
 > **Bug relacionado**: `BUG-20260910-baseline-launcher-onboarding-schema`
@@ -66,9 +67,14 @@ tests es de tests, no de producto.
 
 ## Consolidación en la spec general
 
-Al cierre, dejar registrado en la spec canónica de onboarding que `confirmed` es
-parte del schema HTTP de setup/adopt (permitido, opcional, sin efecto
-autorizativo sobre HTTP) y que la confirmación HTTP exige preview grant.
+Conocimiento estable integrado al cierre (2026-09-13) en
+`specs/07_Gobierno_y_Seguridad.md` (sección "Control plane del launcher"):
+los endpoints de onboarding (`workspace/setup`, `workspace/adopt`) aceptan el
+campo opcional `confirmed` en su schema cerrado de body, pero es ignorado
+autorizativamente sobre HTTP; la ejecución real exige preview grant de un solo
+uso. No se requirió cambio en `specs/05_Interfaces_Operativas.md`: la regla
+preview→grant→execute ya estaba descrita de forma genérica para el control
+plane del launcher.
 
 ## Estrategia E2E
 
@@ -84,7 +90,11 @@ Plan `Axiom.Spec/plans/PLAN-BASELINE-TESTS-20260913.md` (Grupo A), bug
 
 ## Estado de validación humana
 
-Pendiente de revisión humana. Validación automatizada ejecutada:
+OK. Revisión independiente del orquestador (2026-09-13): diff de `app-api.ts`
+verificado contra el brief (solo allow-lists, sin cambios de lógica), diff del
+test verificado (flujo preview→token→confirmar, sin tocar autorización) y
+re-ejecución independiente de ambas suites en verde. Validación automatizada
+ejecutada:
 
 - `npx vitest run apps/cli/tests/launcher-onboarding-migration.test.ts` →
   **8/8 passed** (13.55s).
@@ -120,6 +130,7 @@ los 8 fallos eran del allow-list (400); los 2 restantes ya fallaban desde
 El fix del allow-list solo desbloqueó 6/8; los otros 2 requerían alineación de
 tests al contrato vigente.
 
-Estado de criterios: AC-A-01 a AC-A-05 verificados. El incremento queda
-`pending` de cierre formal hasta revisión humana y consolidación en la spec
-canónica de onboarding.
+Estado de criterios: AC-A-01 a AC-A-05 verificados. Cierre formal completado el
+2026-09-13: criterios verificados, validación ejecutada, revisión independiente
+OK y conocimiento estable integrado en la spec canónica. La suite completa final
+del plan (`npx vitest run`) terminó 358/358 archivos y 3765/3765 tests en verde.
