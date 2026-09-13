@@ -1,0 +1,18 @@
+id: INC-20260912-r15-canonical-roots-dedup
+kind: increment
+title: r15 canonical roots dedup
+status: archived
+createdAt: '2026-09-12T22:59:45.107Z'
+updatedAt: '2026-09-13T09:52:36.138Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-12T22:59:45.107Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-INC-20260912-r15-documentation-single-source

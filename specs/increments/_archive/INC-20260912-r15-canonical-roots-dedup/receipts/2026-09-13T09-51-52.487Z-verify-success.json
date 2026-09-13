@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260912-r15-canonical-roots-dedup",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-13T09:51:52.487Z",
+  "details": "ACC-094: index validate 36/36; create→archive hermético 1/1 con 4 receipts; archiveArtifactDir 3/3; referencias canónicas sin destinos rotos; build/diff check PASS; review N=1 OK.",
+  "hash": "ae5fab078bce9dc96efb70db7e1a8870910cf85824d258dfbb46ed8fcb444013"
+}

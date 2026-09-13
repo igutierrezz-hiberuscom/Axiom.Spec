@@ -1,0 +1,70 @@
+{
+  "incrementId": "INC-20260912-r15-docs-closure-verification",
+  "phase": "increment-archive",
+  "status": "success",
+  "timestamp": "2026-09-13T15:06:45.190Z",
+  "documentationReview": {
+    "mode": "block",
+    "disposition": "allow",
+    "scope": "documents",
+    "documents": [
+      {
+        "document": "specs/increments/INC-20260912-r15-docs-closure-verification/01_Requisitos.md",
+        "status": "unchanged",
+        "reason": "criterios revisados y sin cambios adicionales"
+      },
+      {
+        "document": "specs/increments/INC-20260912-r15-docs-closure-verification/02_Cambios_Modelo.md",
+        "status": "unchanged",
+        "reason": "modelo revisado y sin cambios adicionales"
+      },
+      {
+        "document": "specs/increments/INC-20260912-r15-docs-closure-verification/03_Criterios_Aceptacion.md",
+        "status": "updated",
+        "reason": "criterios marcados con evidencia final"
+      },
+      {
+        "document": "specs/increments/INC-20260912-r15-docs-closure-verification/04_Interacciones_UI.md",
+        "status": "unchanged",
+        "reason": "interacciones revisadas y sin cambios adicionales"
+      },
+      {
+        "document": "specs/increments/INC-20260912-r15-docs-closure-verification/context/README.md",
+        "status": "unchanged",
+        "reason": "contexto del incremento revisado y sin cambios adicionales"
+      },
+      {
+        "document": "specs/increments/INC-20260912-r15-docs-closure-verification/README.md",
+        "status": "updated",
+        "reason": "evidencia final y estado de cierre actualizados"
+      },
+      {
+        "document": "specs/increments/INC-20260912-r15-docs-closure-verification/review-ledger.md",
+        "status": "updated",
+        "reason": "re-review final registrada"
+      },
+      {
+        "document": "specs/plans/PLAN-INC-20260912-r15-documentation-single-source/context/README.md",
+        "status": "unchanged",
+        "reason": "contexto del plan revisado"
+      },
+      {
+        "document": "specs/plans/PLAN-INC-20260912-r15-documentation-single-source/plan.metadata.yml",
+        "status": "unchanged",
+        "reason": "metadata gobernada por Core; no se edita manualmente"
+      },
+      {
+        "document": "specs/plans/PLAN-INC-20260912-r15-documentation-single-source/README.md",
+        "status": "unchanged",
+        "reason": "plan revisado; su tracking se actualiza despues del archive"
+      },
+      {
+        "document": "specs/plans/PLAN-INC-20260912-r15-documentation-single-source/role-builder.md",
+        "status": "unchanged",
+        "reason": "rol revisado y sin cambios adicionales"
+      }
+    ],
+    "message": "Documentation review: alcance documental satisfecho. specs/increments/INC-20260912-r15-docs-closure-verification/01_Requisitos.md=unchanged (criterios revisados y sin cambios adicionales); specs/increments/INC-20260912-r15-docs-closure-verification/02_Cambios_Modelo.md=unchanged (modelo revisado y sin cambios adicionales); specs/increments/INC-20260912-r15-docs-closure-verification/03_Criterios_Aceptacion.md=updated (criterios marcados con evidencia final); specs/increments/INC-20260912-r15-docs-closure-verification/04_Interacciones_UI.md=unchanged (interacciones revisadas y sin cambios adicionales); specs/increments/INC-20260912-r15-docs-closure-verification/context/README.md=unchanged (contexto del incremento revisado y sin cambios adicionales); specs/increments/INC-20260912-r15-docs-closure-verification/README.md=updated (evidencia final y estado de cierre actualizados); specs/increments/INC-20260912-r15-docs-closure-verification/review-ledger.md=updated (re-review final registrada); specs/plans/PLAN-INC-20260912-r15-documentation-single-source/context/README.md=unchanged (contexto del plan revisado); specs/plans/PLAN-INC-20260912-r15-documentation-single-source/plan.metadata.yml=unchanged (metadata gobernada por Core; no se edita manualmente); specs/plans/PLAN-INC-20260912-r15-documentation-single-source/README.md=unchanged (plan revisado; su tracking se actualiza despues del archive); specs/plans/PLAN-INC-20260912-r15-documentation-single-source/role-builder.md=unchanged (rol revisado y sin cambios adicionales)"
+  },
+  "hash": "53f1b8233a5320c106ece389dff96e0b93a2bde72590c4a957e49c1f364384e5"
+}

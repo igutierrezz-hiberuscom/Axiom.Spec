@@ -95,9 +95,14 @@ Tabla de 9 entradas (los 8 targets activos + `cli`). Cada target rutea sus accio
 
 El prompt generado (`prompt-builder.ts`) incluye un bloque adapter-neutral **"Herramientas y ubicación"**: servers MCP disponibles, el mcp-tool de mutación confirmada, el skill a aplicar y las rutas de spec/metadata resueltas (`resolveArtifactDir`). El bloque es idéntico entre adapters skill-ruteados; `cli` omite la línea de skill.
 
+Asimismo, `craftPrompt` integra el aviso de recomendación de modelo en la cabecera (ACC-086) para acciones asociadas a un slot SDD, distinguiendo el nivel de soporte del adapter:
+- `multi-mode` (`opencode`): sin aviso.
+- `single-mode` (`claude-code`): aviso de alcance de sesión global indicando la clase de modelo recomendada.
+- `fallback-only` (`github-copilot`, `vscode`, `cursor`, etc.): aviso explícito de selección manual indicando la clase de modelo recomendada.
+
 ## GATE 0031 / cobertura de adapters en doctor
 
-`@axiom/doctor` corre `TC-009-adapter-runtime-coverage`: los **8** packages `@axiom/adapters-<target>` activos deben tener `src/generator.ts` y `dist/index.js` materializados; si falta alguno, el doctor falla. La support matrix refleja comportamiento real verificado, no aspiracional.
+`@axiom/doctor` corre `TC-009-adapter-runtime-coverage`: los **8** packages `@axiom/adapters-<target>` activos deben tener `src/generator.ts` materializado (si falta $\rightarrow$ `FAIL`). Si `dist/index.js` no está compilado en un clone limpio pero las fuentes existen, emite un `WARN` informativo indicando ejecutar `npm run build` en lugar de un fallo estructural falso (ACC-084). Los artefactos compilados en `src/` y `packages/adapters/*/dist/` no se versionan en Git y quedan excluidos en `.gitignore`.
 
 ### Probes de runtime (opt-in, `axiom doctor --deep` / launcher `?deep=1`)
 

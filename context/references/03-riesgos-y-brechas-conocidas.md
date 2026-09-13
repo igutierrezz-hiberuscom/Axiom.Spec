@@ -2,14 +2,14 @@
 
 Este documento existe para que la spec general no maquille el estado real. Cada punto fue verificado directamente contra el filesystem del repo, no inferido de la documentación.
 
-## Estado de resolución (actualizado 2026-08-03)
+## Estado de resolución (actualizado 2026-09-13)
 
 Varias brechas de este documento (redactado el 2026-07-02) ya están resueltas; las que siguen abiertas se han vuelto a medir contra el árbol real:
 
 - **Brecha 1 — RESUELTA** (`INC-20260708-product-repo-self-bootstrap`): `Axiom/axiom.spec/`, `AGENTS.md`, `axiom.skills.lock` y `axiom.config/` (con sus YAML canónicos) existen hoy en la raíz de `Axiom/`; `_builder/` sigue ausente, pero el script de readiness lo crea vacío en el proyecto temporal.
 - **Brecha 4 — RESUELTA**: el roadmap de rediseño quedó cerrado y archivado (23/24 incrementos ejecutados; INC-24 Workbench sigue diferido).
 - **Ola 2026-07-10 (10 incrementos)** — resolvió además: drift de schemas en `mcp-manifest.yaml`/`integrations.yaml` (CLI `mcp`/`toolchain` ya funcionan contra los artefactos reales; con tests que los cargan de verdad, no fixtures); ausencia de `workflows.yaml`/`topology.yaml` en el propio repo (dogfooding); roles fijos → registro dinámico de roles de equipo (1..N) con validador reconciliado; planes sin separación por rol; contexto técnico que el MCP servía como `null` (ahora indexado y servido); paridad de comandos del antiguo wizard interactivo; separación arquitecto↔miembro (compartido/committeado vs personal/gitignored) con `member install`/`bindings`; y correctitud (`archive` mueve carpeta, `self-update`, estados reales de toolchain, código muerto del orchestrator). Ver [../../specs/00_Resumen_Ejecutivo.md](../../specs/00_Resumen_Ejecutivo.md) §"Ola de endurecimiento 2026-07-10".
-- **Brecha 2 — VIGENTE**: hay 81 ficheros de comando CLI y solo una minoría tiene página operativa dedicada.
+- **Brecha 2 — RESUELTA** (`INC-20260912-r15-manual-command-coverage`, revalidada 2026-09-13): las familias registradas por Commander tienen página correspondiente en `Axiom/docs/cli/`; `apps/cli/tests/docs-command-coverage.test.ts` deriva la cobertura de la ayuda compilada y detecta páginas faltantes, huérfanas o sobrantes. El manual runtime se distribuye además bajo `docs/axiom/` mediante `@axiom/document-bootstrap` (`INC-20260912-r15-manual-distribution`).
 - **Brecha 3 — VIGENTE**: la mayoría de los 42 packages no tiene README propio y su descripción requiere contrastar `src/` y `package.json`.
 - **Brecha 5 — MITIGADA (ADR-0032, 2026-08-03)**: la similitud de nombres `Axiom.Spec/` vs `axiom.spec/` sigue siendo un riesgo de lectura, pero el ownership ya está decidido y verificado. `Axiom.Spec/` es el repo canónico del workspace; `Axiom/axiom.spec/` es baseline product-owned consumida por el runtime y se conserva en su ubicación actual.
 
@@ -40,7 +40,7 @@ configuración runtime actual es `axiom.config/`, no `axiom.spec/config/`.
 `Axiom/README.md`, `Axiom/docs/first-project-readiness.md`, `Axiom/docs/cli/*.md` y `Axiom/scripts/verify-first-project-readiness.mjs` (función `seedCanonicalBaseline`) asumen que la raíz del propio repo `Axiom/` contiene:
 
 - `axiom.spec/config/` (~20 YAML de política/capacidad);
-- `axiom.spec/templates/`;
+- `Axiom/axiom.spec/templates/`;
 - `axiom.spec/target-axiom-skills/`;
 - `axiom.spec/target-axiom-agents/`;
 - `AGENTS.md`;
@@ -59,22 +59,30 @@ proyecto adoptante en general. La instancia materializada actual se verifica
 en `Axiom/axiom.config/`; la arquitectura vigente se documenta en
 `../architecture/02-modelo-de-datos-y-configuracion.md`.
 
-## 2. Brecha de documentación operativa de comandos CLI
+## 2. Brecha de documentación operativa de comandos CLI (resuelta)
 
 `apps/cli/src/commands/` contiene **81 ficheros**; 10 son helpers internos con
-prefijo `_` y no comandos invocables por sí mismos. `Axiom/docs/cli/`
-documenta en profundidad los 12 comandos del baseline (`init`, `join`,
-`configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `model`,
-`components`, `skills`), pero la cobertura no alcanza a la mayoría de las
-superficies añadidas después.
+prefijo `_` y no comandos invocables por sí mismos. Las familias registradas por
+Commander tienen página correspondiente en `Axiom/docs/cli/`, y la prueba
+`apps/cli/tests/docs-command-coverage.test.ts` deriva el conjunto desde la
+ayuda compilada para detectar faltantes, huérfanas y sobrantes.
 
-Persisten comandos sin página propia o con cobertura parcial, entre ellos las
-familias `workspace*`, `app*`/launcher, `member-install`, `native-mcp-config`,
-`external-sync` y varias superficies de workflow y tracker. La lista exacta
-debe reconstruirse desde `apps/cli/src/commands/` antes de afirmar cobertura
-para un comando concreto.
+La unidad de cobertura es la familia de primer nivel; la prueba valida también
+opciones y subcomandos contra Commander. El manual runtime se distribuye desde
+`Axiom/docs/**` en `docs/axiom/` durante setup, adopción y upgrade explícito,
+con manifest, hash y política stale. `Axiom.Spec/specs/manuales/` no es una
+fuente alternativa ni entra en ese bundle.
 
-**Recomendación operativa**: antes de citar el comportamiento de cualquier comando no documentado como contrato estable en un incremento nuevo, verificar directamente en el código (`apps/cli/src/commands/<comando>.ts`), no asumir paridad con los documentados.
+La cobertura no sustituye la verificación de comportamiento vigente en código:
+un cambio de comando debe actualizar su página y mantener la prueba de cobertura
+en verde.
+
+### Registro histórico de la brecha
+
+Antes de `INC-20260912-r15-manual-command-coverage`, persistían comandos sin
+página propia o con cobertura parcial, entre ellos `workspace*`, `app*`/launcher,
+`member-install`, `native-mcp-config`, `external-sync` y varias superficies de
+workflow y tracker. Ese diagnóstico ya no describe el estado actual.
 
 ## 3. Inferencia de responsabilidad en packages sin README
 

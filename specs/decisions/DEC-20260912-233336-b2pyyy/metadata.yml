@@ -1,0 +1,21 @@
+id: DEC-20260912-233336-b2pyyy
+kind: decision
+title: Estructura del manual único de Axiom
+status: proposed
+createdAt: '2026-09-12T23:33:36.406Z'
+updatedAt: '2026-09-12T23:33:38.021Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-12T23:33:36.406Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: Fija una estructura documental verificable antes de completar la cobertura de comandos del lote R-15.
+links:
+  incrementId: INC-20260912-r15-docs-truth-baseline
+  planId: PLAN-INC-20260912-r15-documentation-single-source
+  adrId: null

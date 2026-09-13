@@ -1,0 +1,18 @@
+id: INC-20260912-r15-manual-command-coverage
+kind: increment
+title: r15 manual command coverage
+status: archived
+createdAt: '2026-09-12T22:59:42.045Z'
+updatedAt: '2026-09-13T01:45:30.285Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-12T22:59:42.045Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-INC-20260912-r15-documentation-single-source

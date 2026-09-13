@@ -1,0 +1,24 @@
+id: DEC-20260913-150856-jqjert
+kind: decision
+title: D-06 Sobrescritura del manual distribuido R-15
+status: proposed
+createdAt: '2026-09-13T15:08:56.937Z'
+updatedAt: '2026-09-13T15:09:04.873Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T15:08:56.937Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  La primera escritura crea docs/axiom/ con huella de fuente. En actualizaciones, archivos intactos se refrescan por
+  contenido; un archivo editado localmente se preserva, se marca stale y se deja una salida actualizada separada o
+  diagnostico accionable, sin perder contenido en silencio. No se pisa docs/ del equipo fuera de docs/axiom/.
+links:
+  incrementId: INC-20260912-r15-manual-distribution
+  planId: PLAN-INC-20260912-r15-documentation-single-source
+  adrId: null

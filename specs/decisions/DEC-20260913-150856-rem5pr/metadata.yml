@@ -1,0 +1,24 @@
+id: DEC-20260913-150856-rem5pr
+kind: decision
+title: D-05 Destino del manual distribuido R-15
+status: proposed
+createdAt: '2026-09-13T15:08:56.256Z'
+updatedAt: '2026-09-13T15:09:03.348Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T15:08:56.256Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  Materializar el manual generico del runtime en docs/axiom/ dentro del repositorio autoral del proyecto. La carpeta es
+  visible, separa el contenido de producto de la documentacion propia del equipo y no distribuye
+  Axiom.Spec/specs/manuales ni contexto de esta instalacion.
+links:
+  incrementId: INC-20260912-r15-manual-distribution
+  planId: PLAN-INC-20260912-r15-documentation-single-source
+  adrId: null

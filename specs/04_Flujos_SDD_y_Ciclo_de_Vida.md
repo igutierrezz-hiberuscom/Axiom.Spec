@@ -48,6 +48,14 @@ commit se ejecutan adapters, reglas, MCP, catálogos y otras proyecciones como
 pasos derivados: una avería ahí produce warnings tipados y `exitCode: 0`, pero no
 revierte la identidad/topología ya válida.
 
+Entre esos outputs derivados, `distributeManual` materializa el manual runtime
+completo en `docs/axiom/` del repositorio autoral. `workspace setup` y
+`workspace adopt` lo ejecutan a través de `runWorkspaceSetup`; `axiom upgrade`
+lo ejecuta después de la migración. `manifest.json` registra `sourceHash` y
+hashes por archivo, las ediciones locales se conservan como `stale` y la versión
+nueva se separa bajo `.stale/`. `sync` y `configure` no distribuyen el manual,
+y los previews no escriben manual, manifest ni salidas stale.
+
 Modelo de datos tras el init: `axiom.yaml` es el manifiesto de identidad del repo (`projectId`/`name`/`repoId`/`role`) y, en repos `code`/`legacy`, contiene el puntero `axiomRepo` hacia la autoridad. No contiene el mapa completo de repos. `init` escribe `axiom.yaml`, `AGENTS.md` canónico (aditivo, best-effort), `.gitignore`, `.axiom-state/local/` y `.axiom-state/<projectKey>/init.json` (con `profileTriple`+`createdAt`+`version`, sin `projectName` propio); `projectKey` es `projectId` v2 o el slug estable del nombre v1. `init` no escribe `topology.yaml`: un repo que no es la autoridad no deriva una topología local. El loader solo usa el manifest schema 2 desde `<axiomRepo>/axiom.config/topology.yaml` cuando el pointer y la autoridad son válidos; ausencia o malformación queda fail-closed y no activa fallback. Además intenta registrar el proyecto en el registry user-level de forma best-effort y admite opt-out con `--no-register`. Un `axiom.yaml` v1/v2 con `mode: gateway` o `mode: hybrid` se lee por compatibilidad y se normaliza a `local-only`; esos literales no abren una rama operativa.
 
 ## Baseline operativa actual
@@ -70,7 +78,7 @@ Capacidad añadida de forma aditiva por el roadmap de rediseño (23 incrementos,
 
 1. **Creación**: `axiom-increment/bug/plan/adr/decision create` escribe una carpeta nueva `<specPath>/{increments,bugs,plans,adr,decisions}/<ID>/` con `metadata.yml`, vía las primitivas de `@axiom/workflow`'s `artifact-store.ts`. El ID se genera por sistema (no texto libre).
 2. **Refinado/especificación**: `refine`/`specify` actualizan el `metadata.yml` existente; `link-plan`/`link-increment`/`link-bug` establecen relaciones entre artefactos.
-3. **Transición de estado**: para `increment`/`bug`/`plan`, el estado (`status: WorkflowState`, 9 valores) es dirigido por la máquina de estados de `workflow-state.json` — pero esa máquina es UN registro singleton por `WorkflowId` (tipo de workflow), no por instancia de artefacto; `metadata.yml` (identidad de instancia) y `workflow-state.json` (máquina de estados por tipo) son almacenes independientes. Para `adr`/`decision`, el estado sigue su propio vocabulario no dirigido por máquina de estados (`AdrStatus`/`DecisionStatus`, ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md)) y se escribe directamente en `metadata.yml`, sin pasar por `workflow-state.json`.
+3. **Transición de estado**: para `increment`/`bug`/`plan`, el estado (`status: WorkflowState`, 9 valores) es dirigido por la máquina de estados de `workflow-state.json` (`schemaVersion: 2`, ACC-087). El almacén indexa las instancias activas por `metadataId`, permitiendo múltiples instancias simultáneas en vuelo con selección explícita mediante `--id <id>` o el comando `select --id <id>`, y purgando instancias terminales al archivar. Para `adr`/`decision`, el estado sigue su propio vocabulario no dirigido por máquina de estados (`AdrStatus`/`DecisionStatus`, ver [01_Requisitos_Funcionales.md](01_Requisitos_Funcionales.md)) y se escribe directamente en `metadata.yml`, sin pasar por `workflow-state.json`.
 4. **Supersesión de ADR**: `axiom-adr supersede <old-id> <new-id>` es la única transición especial — actualiza ambos ADR atómicamente; Decision no tiene equivalente (sin cadena de supersesión en su schema).
 5. **Cierre**: sigue las mismas reglas de cierre que el flujo base de dogfooding — `closed` solo si objetivo claro, acceptance criteria, implementación o justificación no-code, validación ejecutada, revisión contra intent, y conocimiento estable integrado.
 6. **Archivado físico y coordinado (`INC-20260710-lifecycle-correctness-fixes`, ACC-041)**: `axiom-increment archive` / `axiom-bug archive` no sólo escriben `status: archived` en `metadata.yml` — `runGovernedTransition` resuelve legalidad, preview, confirmación y gate QA antes de mutar, coordina metadata y efectos locales declarados compatibles, mueve físicamente (rename atómico) la carpeta de la instancia de `<specPath>/{increments,bugs}/<ID>/` a `<specPath>/{increments,bugs}/_archive/<ID>/` (`archiveArtifactDir`, `@axiom/workflow`'s `artifact-store.ts`), y persiste `workflow-state.json` al final. Nunca sobreescribe: si ya existe una carpeta archivada con el mismo ID, la operación falla con un mensaje claro en vez de clobberear. Ante un error del efecto, move o persistencia de state, el runner restaura los snapshots y el move cuando puede; si la recuperación no es completa, devuelve una inconsistencia explícita. No existe éxito parcial silencioso. `listArtifacts`/`axiom-increment list` sólo escanea el nivel directo de `<kindFolder>/`, así que un artefacto archivado deja de aparecer en el listado por defecto tras esta relocación — comportamiento esperado, consistente con la convención `_archive/` ya usada por el propio repo de spec (`specs/increments/_archive/`).
@@ -144,11 +152,11 @@ La revisión de write-scope pasa de estar conceptualmente solo en el archive-tim
 
 El paso de archive / `WS-001` de doctor preexistente se mantiene como red de seguridad; estas dos superficies añaden puntos de validación más tempranos (local) y más amplios (multi-repo). Superficie de comandos en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
 
-## Generador canónico, subcomandos de ciclo y plano de control MCP (2026-07-11) — tanda sdd-launcher-port
+## Generador canónico, subcomandos de ciclo y plano de control MCP (registro histórico de 2026-07-11) — tanda sdd-launcher-port
 
 El ciclo de vida gana una **ruta de estructura scriptada** (la IA solo rellena prosa, nunca inventa estructura) y un **plano de control cross-repo**, portados del sdd-launcher de KVP25 sobre `@axiom/workflow` sin reescribir la máquina de estados existente:
 
-- **Generador canónico (P0) + subcomandos de ciclo (P1, `INC-20260711-sdd-launcher-p1-cli-subcommands`)**: `axiom scaffold increment|bug|plan` emite el esqueleto completo desde `Axiom.Spec/templates/*` (delega en el generador P0, sin duplicar); el generador prioriza el directorio `templates/` del scope del proyecto y usa el contenido bundleado como fallback, escribe el árbol por archivo con no-clobber y deja `metadata.yml` bajo la responsabilidad del artifact store; `axiom normalize` canonicaliza el `status` de forma idempotente contra la tabla de vocabulario de ciclo de vida; `axiom integrate` archiva + aplica la transición terminal (reusa `archiveArtifactDir`); `axiom validate transition` rechaza transiciones ilegales con el error tipado `invalid-transition`; `axiom state` inspecciona estado actual / disponibles / recomendado. Superficie en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
+- **Generador canónico (P0) + subcomandos de ciclo (P1, `INC-20260711-sdd-launcher-p1-cli-subcommands`)**: `axiom scaffold increment|bug|plan` emite el esqueleto completo desde la fuente vigente `Axiom/axiom.spec/templates/*` (delega en el generador P0, sin duplicar); el generador prioriza el directorio `templates/` del scope del proyecto y usa el contenido bundleado como fallback, escribe el árbol por archivo con no-clobber y deja `metadata.yml` bajo la responsabilidad del artifact store; `axiom normalize` canonicaliza el `status` de forma idempotente contra la tabla de vocabulario de ciclo de vida; `axiom integrate` archiva + aplica la transición terminal (reusa `archiveArtifactDir`); `axiom validate transition` rechaza transiciones ilegales con el error tipado `invalid-transition`; `axiom state` inspecciona estado actual / disponibles / recomendado. Superficie en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
 - **Efectos por transición declarados (P0)**: cada transición del grafo declara su mutación de YAML local y su llamada opcional al tracker (`{ localYaml, tracker }` + runner `transition-effects.ts`), sacando la lógica de lockstep de los wrappers de CLI al grafo; la variante `script/action` se entrega en `INC-20260711-git-services` (ver la sección de abajo y [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)).
 - **Plano de control cross-repo (PX, `INC-20260711-cross-repo-mcp-wiring`)**: el gate de `axiom-role start` y el review de write-scope por rol leen el estado/`allowedWriteScope` aprobado del plan DESDE EL REPO DE SPEC (lectura directa de bindings como vía primaria de la CLI; las tools MCP `spec.planRead`/`sdd.allowedWriteScopeRead` cubren clientes externos; se preserva el fallback local-only). La nueva tool MCP de ACCIÓN `sdd.transitionApply` aplica una transición detrás de un gate `confirmed` (sin confirmar → preview; ilegal → error tipado; project-pinned): MCP pasa a ser un plano de control bidireccional, no solo lectura (ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)).
 
@@ -190,8 +198,8 @@ confirm-gated (preview→confirmar), best-effort y reutilizan los mismos
 run-functions del CLI. Antes de lanzar cualquier acción, el launcher corre el
 doctor del proyecto y muestra lo que falta; también presenta el prompt
 pregenerado para el adapter seleccionado. Superficies en
-[05_Interfaces_Operativas.md](05_Interfaces_Operativas.md); guía de usuario en
-[manuales/11_Launcher_Visual.md](manuales/11_Launcher_Visual.md).
+[05_Interfaces_Operativas.md](05_Interfaces_Operativas.md); guía runtime en
+`Axiom/docs/cli/app.md`.
 
 ## Ciclo con gates de calidad instaladas (2026-07-15) — tanda INC-20260715-*
 
@@ -241,7 +249,7 @@ Como los worktrees comparten el repo `<project>.axiom` central, al leer/editar u
 
 Cierre del batch: una suite e2e encadena la mayor parte del flujo (adopción → `<project>.axiom` → MCP unificado → worktree start/close → eject dry-run → skills RTK/concisión → AutoSkills) y una revisión adversarial busca defectos de integración cruzada. Encontró y reprodujo los 2 defectos HIGH de cierre en worktree, corregidos en INC-20260724-worktree-close-correctness. No cambió código de producto.
 
-Las disciplinas transversales (`axiom-structured-doubts`, `axiom-functional-checklist-coverage`, `axiom-plan-drift-alignment`, `axiom-role-close-doc`) atraviesan todas las fases. Detalle de superficies por rol en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
+Las disciplinas transversales (`axiom-structured-doubts`, `axiom-functional-checklist-coverage`, `axiom-plan-drift-alignment`, `axiom-role-close-doc`) atraviesan todas las fases. Detalle de superficies por rol en [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y el manual runtime `Axiom/docs/usage/README.md`.
 
 ## Memoria viva entre fases y Knowledge Harvest (2026-07-29) — tanda INC-20260729-knowledge-*
 
@@ -283,7 +291,7 @@ En el backend engram, la metadata se codifica como frontmatter YAML-like al inic
 
 ### Contrato de memoria por fase
 
-Ver [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md) §"Contrato de memoria Engram por fase" para las reglas detalladas de qué guardar y qué NO guardar en cada fase.
+Ver el manual runtime `Axiom/docs/cli/knowledge.md` y las skills materializadas del proyecto para las reglas detalladas de qué guardar y qué NO guardar en cada fase.
 
 ### Knowledge Harvest al archivar
 

@@ -38,6 +38,19 @@ solo sustituye `AXIOM:GENERATED`; el contenido humano fuera de ese bloque y
 el destino y la fuente contienen zonas humanas divergentes, la fuente se
 conserva y se emite un warning.
 
+### Manual runtime distribuible (`@axiom/document-bootstrap`, R-15)
+
+El runtime embebe como constantes TypeScript el árbol completo de `Axiom/docs/**`
+mediante `scripts/generate-manual-bundle.mjs`; el build regenera el archivo
+antes de compilar y un test compara la salida completa con la fuente. El único
+writer `distributeManual` lo materializa en `docs/axiom/` para `workspace setup`,
+`workspace adopt` y `axiom upgrade`. `manifest.json` registra `sourceHash` y
+hashes SHA-256 individuales. El writer es project-root guarded y atómico,
+preserva archivos editados localmente, los marca `stale` y escribe la nueva
+versión bajo `.stale/`; preview no escribe. `sync` y `configure` no invocan esta
+integración. `Axiom.Spec/specs/manuales/**` no entra en el bundle ni se entrega a
+proyectos adoptantes.
+
 ### Registro histórico: adapter depth y snapshot diagnóstico — INC-20260708-adapters-depth
 
 > Este bloque conserva el diagnóstico de `claude-code` y las decisiones intermedias sobre `antigravity`/`visual-studio-2026`. Para el contrato vigente de generadores y MCP nativo, prevalecen las secciones de paridad de adapters de 2026-07-26 al final de este capítulo.
@@ -152,11 +165,16 @@ Coherente con el backend de memoria real (`createEngramBackend`, arriba), que ya
 
 ### Metadata de fase en memoria y Knowledge Harvest — INC-20260729-knowledge-*
 
+Las referencias `manuales/...` que permanezcan dentro de bloques históricos de
+esta spec apuntan a evidencia específica de la instalación canónica; el contrato
+operativo vigente se mantiene en `Axiom/docs/**` y, cuando se distribuye, en
+`docs/axiom/**`.
+
 La capa de memoria gana trazabilidad de fase SDD y un comando de harvest para clasificar conocimiento entre fases:
 
 - **Metadata de fase en `MemoryEntry`** (`INC-20260729-knowledge-phase-metadata`, reconciliado por R-12): 7 campos opcionales (`increment`, `phase`, `actorRole`, `knowledgeKind`, `stability`, `visibility`, `sourceArtifact`) + 5 tipos cerrados (`SddPhase`, `ActorRole`, `KnowledgeKind`, `Stability`, `Visibility`). Engram codifica la metadata como frontmatter YAML-like al inicio de `content` y la lectura la decodifica a través de `mem_get_observation`, incluido el envelope `result` de la versión real. `phase-metadata.ts` aporta `encodePhaseMetadata`/`decodePhaseMetadata`; no existe preservación mediante backend JSON.
 - **`axiom knowledge harvest --increment <id>`** (`INC-20260729-knowledge-harvest-command`): comando read-only respecto a la spec que lee únicamente la memoria Engram del proyecto, filtra por `increment`, clasifica por `stability` y genera `knowledge-harvest.md`. `--dry-run` imprime sin escribir. Engram no disponible es un error visible, no un harvest vacío ni un fallback JSON.
-- **Contrato de memoria en skills** (`INC-20260729-knowledge-skill-contract`): documentado en [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md) §"Contrato de memoria Engram por fase".
+- **Contrato de memoria en skills** (`INC-20260729-knowledge-skill-contract`): documentado en el manual runtime `Axiom/docs/cli/knowledge.md` y en las skills materializadas del proyecto.
 - **`axiom knowledge sync` y `axiom knowledge pull`** (`INC-20260820-r11-knowledge-sync-hardening`): intercambio de memoria entre miembros mediante chunks JSON append-only y `manifest.json` en `<project>.axiom`. `sync --increment --phase` es preview por defecto y exige `--confirm` para escribir o ejecutar Git local, y `--push` para enviar remoto. Solo exporta `visibility: project-shared`, conserva la evidencia completa de `MemoryEntry`, revisa secretos en todo campo textual serializado y explica las exclusiones private/sin visibilidad/secretos. `pull` no admite `--increment`; al confirmar procesa todos los chunks pendientes y solo marca éxito completo cuando persistió todas las entradas válidas. Su marker personal es `.axiom-state/<projectKey>/knowledge/imported-chunks.json`, con migración/ignorancia compatible de `.engram/.imported`; no se versiona. Schema inválido, corrupción y fallos parciales quedan visibles y reintentables.
 - **Selección determinista de contexto técnico por tags** (`INC-20260820-r11-context-tag-selection`): `axiom context index` mantiene como derivado el índice de `context/**/*.md`. Un documento puede declarar `tags` en frontmatter YAML; sin metadata recibe la tag de su carpeta o `repo` en la raíz. `spec.recommendedContextList` y `spec.implementationContextRead` usan un selector único: obligatorio siempre, obligatorio condicionado por coincidencia ALL y disponible recomendado por coincidencia ANY, con deduplicación por path. Sin tags explícitas de tarea no exponen documentos disponibles; no hay scoring, IA, inferencia libre, índice nuevo ni salida fuera del spec repo.
 
@@ -421,7 +439,7 @@ Axiom puede ahora ADOPTAR un proyecto que precede a Axiom, convirtiéndolo a for
 
 Las cuatro **garantías preservadas** en toda ruta de adopción: no-clobber (nunca sobrescribe un artefacto / `axiom.yaml` / doc de contexto existente), provenance (`AXIOM:MIGRATED` nombrando la fuente), dry-run (cero escrituras, reporta qué crearía y a qué estado) y collision-skip (una entrada mala se salta con motivo, nunca aborta el lote).
 
-**Refinamientos 2026-07-27 (validados end-to-end contra KVP25 real — ver `manuales/E2E-20260727-kvp25-adoption.md`):**
+**Refinamientos 2026-07-27 (validados end-to-end contra KVP25 real; la evidencia detallada pertenece al material específico de la instalación canónica):**
 - **Migración de contexto técnico POR DEFECTO** (INC-20260727-adopt-context-default): la adopción ya no exige `--ingest-context`. Si el operador no lo pasa, `runWorkspaceAdopt` auto-detecta una carpeta de contexto convencional dentro del repo legacy adoptado — `autoDetectContextSource` prefiere `technical-context/` y luego `context/`, spec-repo antes que sdd-repo, y NUNCA la raíz del repo (ingeriría por error las carpetas de artefactos de spec). `--ingest-context` explícito siempre gana; sin carpeta de contexto, la adopción procede sin ingest (comportamiento previo). Verificado: adoptar KVP25 (`Kvp.Spec/context`, 164 `.md`) migra los 164 a `technical-context/{architecture,operations,references,testing}` sin flag.
 - **Ruido de telemetría eliminado** (BUG-20260727-adopt-telemetry-sinks-warn): un `axiom.config/telemetry-sinks.yaml` AUSENTE es el default local-only (nada lo scaffoldea), no un defecto — los callers (`index.ts` bus global por comando + `sync.ts`) ya no emiten WARN cuando `loadEnabledSinks` devuelve `missing-file`; sólo ante error de config REAL (`invalid-yaml`/`malformed-shape`).
 
@@ -459,7 +477,7 @@ Tanda que cierra las 5 brechas cazadas en el test de integración KVP25 (ver sec
 ## Tuning de agente por adapter + puente ADO en creación (2026-07-15) — tanda INC-20260715-*
 
 - **Tuning de agente por adapter** (`INC-20260715-adapter-agent-tuning`): la entrada de routing de adapter (`@axiom/launcher`) admite `agentTuning` (`verbosity` / `personality` / `model?`). `craftPrompt`/`buildPrompt` inyectan un preámbulo determinista ("Ajustes del agente" + directiva de trabajo directo/económico en tokens). Los tres adapters de serie traen `{ verbosity:'low', personality:'pragmatic' }` (idéntico → el cuerpo del prompt sigue siendo byte-idéntico entre adapters con el mismo tuning, invariante del snapshot preservada); un proyecto puede diferenciarlos. Capacidad de prompt-shaping pura, desacoplada de model-routing/providers. Superficie en [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
-- **Puente Azure DevOps en creación** (`INC-20260715-launcher-ado-bridge`): tras crear incremento/bug desde el launcher, si el tracker ADO está realmente configurado (`isRealTrackerRequested`: `kind:'ado'` + `enabled` + org + project), la respuesta de `execute` incluye una `trackerSuggestion` (mapeo incremento→`User Story`, bug→`Bug`) que el front ofrece como creación de work item de un clic, reusando `apiAdoCreateWorkItem` (confirm-gated). La detección es network-free (`resolveLauncherTrackerStatus`, módulo neutral `_tracker-status.ts`, sin construir tracker ni tocar red, sin import circular). NO acopla el ciclo de vida del incremento/bug ni modifica `@axiom/tracker`/`@axiom/tracker-ado`; Azure DevOps sigue siendo opcional y no bloqueante. Config del plugin y ubicación del PAT documentadas en [manuales/12_Plugin_Azure_DevOps.md](manuales/12_Plugin_Azure_DevOps.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md).
+- **Puente Azure DevOps en creación** (`INC-20260715-launcher-ado-bridge`): tras crear incremento/bug desde el launcher, si el tracker ADO está realmente configurado (`isRealTrackerRequested`: `kind:'ado'` + `enabled` + org + project), la respuesta de `execute` incluye una `trackerSuggestion` (mapeo incremento→`User Story`, bug→`Bug`) que el front ofrece como creación de work item de un clic, reusando `apiAdoCreateWorkItem` (confirm-gated). La detección es network-free (`resolveLauncherTrackerStatus`, módulo neutral `_tracker-status.ts`, sin construir tracker ni tocar red, sin import circular). NO acopla el ciclo de vida del incremento/bug ni modifica `@axiom/tracker`/`@axiom/tracker-ado`; Azure DevOps sigue siendo opcional y no bloqueante. Config del plugin y ubicación del PAT documentadas en el manual runtime `Axiom/docs/cli/external-sync.md` y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md).
 
 ## Ampliación del catálogo de skills/agents SDD (2026-07-15) — tanda INC-20260715-*
 
@@ -477,7 +495,7 @@ Tanda de graduación a *full product lifecycle*. Reordena el stack externo (prov
 
 ### `cmm` sustituye a `graphify` y `codegraph` como único proveedor estructural — ADR-0031 (INC-20260724-cmm-replaces-graphify-codegraph)
 
-**SUPERSEDE** la sección "Providers de code-intel cableados (codegraph/serena/graphify) — INC-20260708-code-intel-providers-wired" y el `SELECTABLE_PROVIDER_IDS` de "Selección de providers" (arriba). `codebase-memory-mcp` (`cmm`) pasa a ser el **único** proveedor estructural; `graphify` y `codegraph` dejan de ser seleccionables/registrables/enrutables en cualquier parte. El set cerrado `CANONICAL_PROVIDER_IDS` baja de 7 a **6** ids (fuera `codegraph`/`graphify`, dentro `cmm`); el cambio del set cerrado se autoriza vía **ADR-0031** (`Axiom.Spec/decisions/0031-adr-cmm-replaces-graphify-and-codegraph.md`), honrando la regla ADR-0021.
+**SUPERSEDE** la sección "Providers de code-intel cableados (codegraph/serena/graphify) — INC-20260708-code-intel-providers-wired" y el `SELECTABLE_PROVIDER_IDS` de "Selección de providers" (arriba). `codebase-memory-mcp` (`cmm`) pasa a ser el **único** proveedor estructural; `graphify` y `codegraph` dejan de ser seleccionables/registrables/enrutables en cualquier parte. El set cerrado `CANONICAL_PROVIDER_IDS` baja de 7 a **6** ids (fuera `codegraph`/`graphify`, dentro `cmm`); el cambio del set cerrado se autoriza vía **ADR-0031**, conservado como decisión gestionada `DEC-20260913-091608-9mnt1m` bajo `specs/decisions/`, honrando la regla ADR-0021.
 
 - `cmm` sirve AMBAS capabilities estructurales (`code.knowledgeGraph` + `code.structureAnalysis`) con un `ProviderClient` real (`cmm-client.ts`, patrón `serena-client.ts`); nuevo `ProviderKind` `'structural-code-intel'`.
 - `serena` **sin cambios** = simbólico (`code.semanticNavigation`). Separación fuerte cmm (estructural/grafo/blast-radius/dependencias/trazas) ↔ serena (def/refs/rename).

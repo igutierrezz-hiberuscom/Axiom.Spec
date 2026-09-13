@@ -1,0 +1,24 @@
+id: DEC-20260911-223525-y8j1xc
+kind: decision
+title: D-04 Contrato de aviso y recomendacion de modelo por adapter
+status: proposed
+createdAt: '2026-09-11T22:35:25.281Z'
+updatedAt: '2026-09-11T22:36:11.802Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-11T22:35:25.281Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  El aviso nombra la ModelClass recomendada (cheap/medium/strong/local); se diferencia multi-mode (sin aviso),
+  single-mode (aviso de alcance global) y fallback-only (aviso de seleccion manual); insercion en cabecera de prompt en
+  launcher; registro de limitacion visible.
+links:
+  incrementId: INC-20260911-r14-operator-decisions-baseline
+  planId: PLAN-INC-20260911-r14-operator-control-surfaces
+  adrId: null

@@ -9,7 +9,27 @@
 
 ### Ownership documental de decisiones
 
-`Axiom.Spec/decisions/` es el hogar canónico de los ADR y decisiones estructurales del workspace. Las referencias activas deben apuntar a esa ruta; `Axiom/docs/` puede conservar documentación operativa o histórica, pero no es el hogar actual de esos ADR. Esta regla es independiente de `Axiom/axiom.spec/`, que sigue siendo baseline product-owned del runtime y no una segunda fuente canónica de la spec (ADR-0032).
+`Axiom.Spec/specs/decisions/` es la raíz canónica de las decisiones estructurales gestionadas y `Axiom.Spec/specs/adr/` la de los ADR gestionados del workspace. Las referencias activas deben apuntar a esas rutas; `Axiom/docs/` puede conservar documentación operativa o histórica, pero no es el hogar actual de esos artefactos. Esta regla es independiente de `Axiom/axiom.spec/`, que sigue siendo baseline product-owned del runtime y no una segunda fuente canónica de la spec (ADR-0032).
+
+### Fuente y distribución del manual runtime
+
+`Axiom/docs/**` es la única fuente del manual operativo del producto runtime.
+`Axiom.Spec/specs/manuales/**`, cuando existe, pertenece a la instalación
+canónica del workspace y no se fusiona ni se distribuye. Los proyectos que
+instalan, adoptan o actualizan Axiom reciben una copia bajo `docs/axiom/` en el
+repositorio autoral; el materializador común conserva el alcance bajo el root,
+usa escritura atómica y mantiene `manifest.json` con `sourceHash` y hashes por
+archivo. Las ediciones locales no se pisan: quedan `stale` y la nueva versión
+se separa bajo `.stale/`.
+
+### Gate documental de cierre
+
+Las transiciones gobernadas de archive consumen una declaración estructurada de
+revisión documental. El alcance puede enumerar documentos explícitos o paths
+afectados; cada entrada declara `updated`, `unchanged` o `unreviewed` con motivo.
+En modo `warning`, un documento no revisado produce aviso; en modo `block`,
+impide la transición. Preview no escribe. El gate comparte el runner común de
+CLI, launcher y MCP y no crea una segunda vía de archivado.
 
 ## Seguridad operativa y compliance (verificado en runtime)
 
@@ -175,12 +195,12 @@ máquina o una configuración global.
 
 ## Regla conocida de build (no duplicada aquí)
 
-`Axiom/packages/cli-commands/tsconfig.json` tiene un defecto de tooling de build que rompe `--help` para varios comandos CLI transitivamente dependientes de ese paquete. Rastreado íntegramente en `Axiom.Spec/bugs/BUG-20260702-cli-commands-tsconfig-missing-emit` (status: pending) — no se duplica el detalle aquí.
+`Axiom/packages/cli-commands/tsconfig.json` tuvo un defecto histórico de tooling de build que rompía `--help` para varios comandos CLI transitivamente dependientes de ese paquete. El bug legacy `BUG-20260702-cli-commands-tsconfig-missing-emit` fue cerrado el 2026-08-06 y su corrección está documentada en el incremento archivado `INC-20260804-cli-commands-package-output`; la antigua carpeta top-level se retiró al limpiar raíces legacy. No se duplica el detalle aquí.
 
 ## Onboarding/ADO desde el launcher: mutación segura y secreto fuera del repo (2026-07-15) — tanda INC-20260715-*
 
 - **Mutación confirm-gated en todas las superficies nuevas del launcher**: los endpoints de onboarding (`install`/`join`/`roles register`/`roles assign`) y el puente ADO en creación NO mutan sin `confirmed:true` (preview primero), heredando el contrato de `/launcher/execute`. El explorador de carpetas y la detección de tracker son read-only, best-effort y no-crash (nunca tumban el server ni el front). `INC-20260715-launcher-onboarding`, `INC-20260715-launcher-ado-bridge`.
-- **PAT de Azure DevOps nunca en el repo**: el token de acceso personal se resuelve en runtime (variable de entorno declarada en `tracker.json#auth.patEnvVar`, o env de usuario Windows, o `SecretStore` bajo `axiom.ado.<org>.<project>.pat`, o prompt interactivo persistido en el store); nunca se escribe en `tracker.json` ni en ningún fichero versionado. El plugin sólo se considera configurado con `kind:'ado'` + `enabled` + org + project (`isRealTrackerRequested`); cualquier otra combinación degrada a local-only sin red. Detalle operable en [manuales/12_Plugin_Azure_DevOps.md](manuales/12_Plugin_Azure_DevOps.md); capacidad en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
+- **PAT de Azure DevOps nunca en el repo**: el token de acceso personal se resuelve en runtime (variable de entorno declarada en `tracker.json#auth.patEnvVar`, o env de usuario Windows, o `SecretStore` bajo `axiom.ado.<org>.<project>.pat`, o prompt interactivo persistido en el store); nunca se escribe en `tracker.json` ni en ningún fichero versionado. El plugin sólo se considera configurado con `kind:'ado'` + `enabled` + org + project (`isRealTrackerRequested`); cualquier otra combinación degrada a local-only sin red. Detalle operable en el manual runtime `Axiom/docs/cli/external-sync.md`; capacidad en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md).
 - **Sin arquitectura especulativa** (límites de bootstrap): el puente ADO en creación NO acopla el ciclo de vida del incremento/bug (no auto-crea; ofrece un paso confirm-gated de un clic) y no modifica los paquetes de tracker; el tuning de agente es prompt-shaping puro (no toca model-routing/providers). Azure DevOps se mantiene como plugin opcional y no bloqueante.
 
 ## Gates de revisión, QA y seguridad instaladas (2026-07-15) — tanda INC-20260715-*
@@ -203,7 +223,7 @@ Postura de gobierno/seguridad de la graduación a *full product lifecycle*. Form
 - **Cleanup seguro del worktree** (`INC-20260724-worktree-harvest-cleanup` / `-worktree-close-correctness`): orden estricto **kill → harvest → teardown → remove**; harvest SIEMPRE precede a cualquier borrado (los datos harvesteados sobreviven al borrado del worktree). Un worktree con trabajo real sin integrar es **hard stop** — nunca se fuerza por defecto. El cierre neutraliza solo los ficheros que el propio provisioning generó (registrados en `Execution.provisionedPaths`) antes del dirty check, de modo que trabajo genuino sigue bloqueando; si el cierre hace hard-stop, un rollback compensatorio evita dejar el rol `archived` junto a un worktree huérfano.
 - **Push acotado, nunca repo-wide** (`INC-20260724-sdd-artifact-freshness`): la escritura de artefactos SDD hace `git add -- <paths>` acotado a la carpeta del incremento/bug (nunca `git add -A`) — cada worktree/ejecución empuja solo lo suyo, sin arrastrar otros artefactos.
 - **Aislamiento MCP preservado en el broker unificado** (`ACC-030`): el broker `axiom` mantiene los pins project-scoped por-campo y expone la unión completa del registry, incluidas `sdd.transitionApply`, `sdd.gitRoleBranch` y `sdd.gitCommitSync`; todas las mutaciones conservan preview/confirmación y sus guards existentes.
-- **Genericidad sin fuga de gobierno**: todo el contenido nuevo es adapter/stack-agnóstico; la profundidad específica de cada proyecto se inyecta como DATO por proyecto (`skills-index/<role>.yaml` + contexto técnico), no en el producto — sin hardcodear reglas de un stack ni credenciales. Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
+- **Genericidad sin fuga de gobierno**: todo el contenido nuevo es adapter/stack-agnóstico; la profundidad específica de cada proyecto se inyecta como DATO por proyecto (`skills-index/<role>.yaml` + contexto técnico), no en el producto — sin hardcodear reglas de un stack ni credenciales. Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md) y el manual runtime `Axiom/docs/usage/README.md`.
 ## Gobierno verificable de flujos desatendidos (2026-08-02) — tanda `INC-20260730-*`
 
 La tanda cierra el bloque de gobierno de la ejecución desatendida sobre tres gates y un catálogo de errores (detalle funcional en RF-AXM-057..061, propiedades en NFR-AXM-023):

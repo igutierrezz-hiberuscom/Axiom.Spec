@@ -151,7 +151,7 @@ Cada instancia de incremento/bug/plan/ADR/decisión es una carpeta en `<specPath
 - `externalRefs` es un mecanismo agnóstico de proveedor (`artifact-store.ts` + `apps/cli/src/commands/artifact-metadata-cli.ts`'s `externalRefs add|list`), disponible en todo tipo de artefacto. No debe confundirse con el flag de UI `field.externalRef?: boolean` del plugin de Azure DevOps (ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)).
 - Carpetas ADR/Decision son intencionalmente asimétricas: `adr/<ADR-...>/` (singular) y `decisions/<DEC-...>/` (plural), tomado verbatim del documento fuente — no es una inconsistencia de nombrado a normalizar. `axiom-adr supersede <old-id> <new-id>` es la única operación específica de ADR: actualiza ambos ADR en una llamada, de forma idempotente; si `old-id` ya estaba superseded por un ADR distinto, `supersede` igual lo reasigna (corrección deliberada, no bloqueada) pero devuelve un warning explícito. Decision no tiene `supersede` (no hay cadena de supersesión en su schema) — asimetría documentada y correcta.
 - El índice de ADR/Decision es **derivado, no curado**: `axiom index rebuild`/`validate` y el check `IX-001` cubren `adr`/`decision` reusando `listArtifacts` — sin fichero de índice nuevo ni modelo de obligatoriedad/prioridad. Un índice ADR curado/versionado queda diferido hasta que exista un consumidor concreto.
-- `axiom-increment.ts`/`axiom-bug.ts`/`axiom-plan.ts`/`axiom-role.ts` implementan `create`/`refine`/`specify`/`link-plan`/`link-increment`/`link-bug`/`list` por tipo, más `plan create` (añadido por este roadmap) y generación de ID estable por sistema (no texto libre). `workflow-state.json` (`@axiom/workflow`'s `state-store.ts`) persiste UN registro singleton por `WorkflowId` (`'increment' | 'bug' | 'plan' | 'role' | 'qa-e2e'`) — una máquina de estados por tipo de workflow, no un registro por instancia de artefacto. Es un diseño deliberadamente paralelo: `metadata.yml` (identidad por instancia) y `workflow-state.json` (máquina de estados por tipo) son almacenes independientes que no se conocen entre sí. Por eso `axiom-adr create`/`axiom-decision create`, y las rutas de migración de bootstrap (ver RF-AXM-021), nunca tocan `workflow-state.json`.
+- `axiom-increment.ts`/`axiom-bug.ts`/`axiom-plan.ts`/`axiom-role.ts` implementan `create`/`select`/`refine`/`specify`/`link-plan`/`link-increment`/`link-bug`/`list` por tipo, más `plan create` y generación de ID estable por sistema. `workflow-state.json` (`@axiom/workflow`'s `state-store.ts`, schemaVersion 2, consolidado en ACC-087) gestiona estados por instancia identificada (`metadataId`) para los workflows de artefacto (`increment`, `bug`, `plan`), permitiendo múltiples artefactos en vuelo simultáneos con selección explícita mediante flag `--id` o el subcomando `select`, y purgando instancias terminales al archivar. Los carriles de workspace (`role`, `qa-e2e`) mantienen su registro singleton. Por diseño, `axiom-adr create`/`axiom-decision create` y las rutas de bootstrap no tocan `workflow-state.json`.
 - No existe ninguna vista agregada legible generada (tipo `REGISTRO_INCREMENTOS.md`); `listArtifacts` + `axiom-{kind} list` (por tipo, con `--json`) + `axiom index rebuild` (todos los tipos, conteos, un comando) ya cubren todo caso de uso concreto conocido. El único hueco es una tabla de detalle completo, todos-los-tipos, en un solo fichero — conveniencia marginal sin consumidor nombrado hoy; no se debe reproponer sin nombrar antes un consumidor concreto (paso de CI, pipeline de documentación, o herramienta MCP que necesite específicamente un fichero en vez de una llamada a `listArtifacts`).
 
 ### RF-AXM-019 Validación de write-scope
@@ -213,7 +213,7 @@ Cada adapter puede declarar `agentTuning` (`verbosity` / `personality` / `model`
 
 ### RF-AXM-030 Gate de doctor pre-lanzamiento en el launcher (`INC-20260715-launcher-doctor-gate`)
 
-El launcher web ejecuta `runDoctorChecks` del proyecto seleccionado y muestra el estado (pass/warn/fallo) y lo que falta ANTES de lanzar/ejecutar. Las acciones mutantes (ejecutar/lanzar) avisan si hay checks en fallo y requieren un segundo clic para continuar (gate visible, no bloqueo duro). Endpoint `GET /api/projects/:id/launcher/doctor`, best-effort y no-crash. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) y [09 revisiones en manuales](manuales/09_Revisiones.md).
+El launcher web ejecuta `runDoctorChecks` del proyecto seleccionado y muestra el estado (pass/warn/fallo) y lo que falta ANTES de lanzar/ejecutar. Las acciones mutantes (ejecutar/lanzar) avisan si hay checks en fallo y requieren un segundo clic para continuar (gate visible, no bloqueo duro). Endpoint `GET /api/projects/:id/launcher/doctor`, best-effort y no-crash. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) y el manual runtime `Axiom/docs/cli/app.md`.
 
 ### RF-AXM-031 Onboarding visual desde el launcher (`INC-20260715-launcher-onboarding`)
 
@@ -221,11 +221,13 @@ Desde el launcher, sin terminal ni TUI, un miembro puede: instalar Axiom en un p
 
 ### RF-AXM-032 Puente Azure DevOps en creación desde el launcher (`INC-20260715-launcher-ado-bridge`)
 
-Cuando el tracker ADO está configurado (`kind:'ado'` + `enabled` + org/project), tras crear un incremento/bug desde el launcher se ofrece un work item pre-rellenado (incremento→`User Story`, bug→`Bug`), editable y confirm-gated de un clic, reusando el endpoint ADO existente (`apiAdoCreateWorkItem`). NO acopla el ciclo de vida (la creación en Axiom es idéntica con o sin plugin); si no está configurado se muestra sólo una nota informativa sin red. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y [manuales/12_Plugin_Azure_DevOps.md](manuales/12_Plugin_Azure_DevOps.md).
+Cuando el tracker ADO está configurado (`kind:'ado'` + `enabled` + org/project), tras crear un incremento/bug desde el launcher se ofrece un work item pre-rellenado (incremento→`User Story`, bug→`Bug`), editable y confirm-gated de un clic, reusando el endpoint ADO existente (`apiAdoCreateWorkItem`). NO acopla el ciclo de vida (la creación en Axiom es idéntica con o sin plugin); si no está configurado se muestra sólo una nota informativa sin red. Ver [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y el manual runtime `Axiom/docs/cli/external-sync.md`.
 
-### RF-AXM-033 Manuales de operación en la spec (`INC-20260715-spec-manuales`)
+### RF-AXM-033 Manual runtime de producto (`INC-20260912-r15-manual-command-coverage`)
 
-La spec incluye `specs/manuales/`: guías de usuario cruzadas (qué es cada cosa, configuración, actualización de versiones, generación de spec/contexto técnico, incrementos, bugs, planes, implementación, revisiones, archivado, launcher visual y plugin de Azure DevOps), pensadas para un equipo recién instalado. Ver [manuales/README.md](manuales/README.md) y [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
+El producto mantiene un único manual operativo en `Axiom/docs/**`, con una página por cada familia de comandos registrada y contenido verificable sobre propósito, sintaxis, archivos y conexiones. `Axiom.Spec/specs/manuales/`, si existe, es material específico de la instalación canónica y no forma parte del manual runtime ni de su distribución. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md).
+
+Al instalar, adoptar o actualizar explícitamente Axiom, `@axiom/document-bootstrap` materializa ese manual bajo `docs/axiom/` en el repositorio autoral del proyecto. `manifest.json` registra `sourceHash` y hashes SHA-256 por archivo; un archivo editado localmente se conserva byte a byte, se marca `stale` y recibe la versión nueva en `.stale/`. La materialización es idempotente, usa escritura atómica y no ocurre en `sync` ni `configure`.
 
 ## Requisitos funcionales de la tanda INC-20260715-* (alineación con sistemas role-specialized, cerrado)
 
@@ -237,7 +239,7 @@ Axiom expone como skills de catálogo independientes las 4 disciplinas transvers
 
 ### RF-AXM-035 Gate de revisión por fase instalado (`INC-20260715-phase-reviewer`)
 
-`axiom-phase-reviewer` (skill+agent+superficie en el repo `sdd`) revisa spec/plan/código con lentes dedicadas, devuelve **VEREDICTO OK|KO** y aplica un barrido exhaustivo *loop-until-dry* con ledger de hallazgos; de solo lectura. La revisión se expone además como acciones del launcher (`review-spec`/`review-plan`/`review-code`, prompt-only) reusando `buildReviewPrompt`. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) y [manuales/09_Revisiones.md](manuales/09_Revisiones.md).
+`axiom-phase-reviewer` (skill+agent+superficie en el repo `sdd`) revisa spec/plan/código con lentes dedicadas, devuelve **VEREDICTO OK|KO** y aplica un barrido exhaustivo *loop-until-dry* con ledger de hallazgos; de solo lectura. La revisión se expone además como acciones del launcher (`review-spec`/`review-plan`/`review-code`, prompt-only) reusando `buildReviewPrompt`. Ver [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md) y el manual runtime `Axiom/docs/cli/README.md`.
 
 ### RF-AXM-036 Superficies de consolidación y contexto técnico (`INC-20260715-consolidation-surfaces`)
 
@@ -253,7 +255,7 @@ Axiom expone como skills de catálogo independientes las 4 disciplinas transvers
 
 ### RF-AXM-039 Canal de inyección por proyecto documentado (`INC-20260715-install-injection-guide`)
 
-Manual `manuales/13_Skills_Agentes_y_Roles.md`: qué instala Axiom por rol de repo y cómo un proyecto inyecta su profundidad de stack (patrones, permisos, build/test) vía `axiom.config/skills-index/<role>.yaml`, el contexto técnico y las skills de rol — sin tocar el producto. Es la clave de "genérico sin perder funcionalidad". Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
+El manual runtime `Axiom/docs/**` debe explicar qué instala Axiom por rol de repo y cómo un proyecto inyecta su profundidad de stack (patrones, permisos, build/test) vía `axiom.config/skills-index/<role>.yaml`, el contexto técnico y las skills de rol — sin tocar el producto. Es la clave de "genérico sin perder funcionalidad". Ver [03_Modelo_Operativo_y_Datos.md](03_Modelo_Operativo_y_Datos.md).
 
 ## Requisitos funcionales de la tanda INC-20260724-* (cerrado)
 

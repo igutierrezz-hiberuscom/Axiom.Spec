@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260911-r14-workflow-instance-selection",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-09-11T22:32:12.729Z",
+  "details": "Implementado soporte multi-instancia en state-store, CLI increment/bug/plan y state-cmd (ACC-087)",
+  "hash": "cf482eb9a0e353ce3945e7e22288312ebc27d47fc2c17370a3fcc5980b8203ba"
+}

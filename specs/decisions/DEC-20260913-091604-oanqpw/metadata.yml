@@ -1,0 +1,21 @@
+id: DEC-20260913-091604-oanqpw
+kind: decision
+title: 'Migración histórica: 0026-integration-hardening-and-target-parity'
+status: proposed
+createdAt: '2026-09-13T09:16:04.279Z'
+updatedAt: '2026-09-13T09:19:59.347Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T09:16:04.279Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: 'ACC-094: documento legacy migrado desde decisions/ mediante Core.'
+links:
+  incrementId: INC-20260912-r15-canonical-roots-dedup
+  planId: null
+  adrId: null

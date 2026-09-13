@@ -207,7 +207,7 @@ mueve su contenido.
 
 - Incremento congelado: `Axiom.Spec/specs/increments/INC-20260803-r00-axiom-spec-boundary/README.md`.
 - Plan de origen: `Axiom.Spec/plans/PLAN-REVISION-INTEGRAL-AXIOM.md`, ACC-003.
-- Plantilla usada: `Axiom.Spec/templates/decision-template.md`.
+- Plantilla usada: `Axiom/axiom.spec/templates/decision-template.md`.
 - Contrato de topología: `Axiom/axiom.config/topology.yaml`.
 - Contrato del producto: `Axiom/axiom.yaml`.
 - Corrección documental puntual asociada: `Axiom/docs/overview.md`.

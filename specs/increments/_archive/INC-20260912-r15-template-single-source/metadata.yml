@@ -1,0 +1,18 @@
+id: INC-20260912-r15-template-single-source
+kind: increment
+title: r15 template single source
+status: archived
+createdAt: '2026-09-12T22:59:43.736Z'
+updatedAt: '2026-09-13T09:11:55.923Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-12T22:59:43.736Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-INC-20260912-r15-documentation-single-source

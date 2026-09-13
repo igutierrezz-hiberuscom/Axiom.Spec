@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260911-r14-tui-package-removal",
+  "phase": "archive",
+  "status": "success",
+  "timestamp": "2026-09-11T22:42:21.387Z",
+  "details": "Incremento archivado con exito; residuo fisico de TUI eliminado (ACC-081)",
+  "hash": "9e3e4466f1ea8b51913d3162c04553c85f8a1ab16607fc0d5d4fd18555d52f1f"
+}

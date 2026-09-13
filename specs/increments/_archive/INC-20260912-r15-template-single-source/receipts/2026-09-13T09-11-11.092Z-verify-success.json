@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260912-r15-template-single-source",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-13T09:11:11.092Z",
+  "details": "ACC-090: focal 97/97 PASS; typecheck/build/doctor/readiness/diff check PASS; 45/45 templates with 7 divergences; provenance repaired; review N=1 OK; npm test global no concluyente por workspace-step-reconciliation.",
+  "hash": "461202af4867bac5b1134c4b4620fbd50996d32ef8677d7aa0fadb96003c20ec"
+}

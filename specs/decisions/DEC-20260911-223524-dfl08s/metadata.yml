@@ -1,0 +1,24 @@
+id: DEC-20260911-223524-dfl08s
+kind: decision
+title: D-03 Derivacion determinista de version de runtime desde metadata de build
+status: proposed
+createdAt: '2026-09-11T22:35:24.355Z'
+updatedAt: '2026-09-11T22:36:09.558Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-11T22:35:24.355Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  RUNTIME_VERSION deja de ser un literal en codigo y se deriva de la misma identidad de producto del CLI generada en
+  build; soporte transparente para estados preexistentes en 0.1.0; target-version default mantiene la version de
+  runtime.
+links:
+  incrementId: INC-20260911-r14-operator-decisions-baseline
+  planId: PLAN-INC-20260911-r14-operator-control-surfaces
+  adrId: null

@@ -1,0 +1,24 @@
+id: DEC-20260913-091352-moxxgf
+kind: decision
+title: Unificar decisiones R-15 en formato gestionado
+status: proposed
+createdAt: '2026-09-13T09:13:52.901Z'
+updatedAt: '2026-09-13T09:14:05.213Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T09:13:52.901Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  Migrar los nueve documentos numerados de decisions/ a la única raíz gestionada specs/decisions/ mediante comandos
+  Core. Conservar los nombres y referencias históricos dentro de la trazabilidad documental, resolver la colisión 0032
+  con IDs gestionados distintos y no borrar historia con receipts.
+links:
+  incrementId: INC-20260912-r15-canonical-roots-dedup
+  planId: PLAN-INC-20260912-r15-documentation-single-source
+  adrId: null

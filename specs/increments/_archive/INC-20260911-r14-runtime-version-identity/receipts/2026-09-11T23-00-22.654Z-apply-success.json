@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260911-r14-runtime-version-identity",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-09-11T23:00:22.654Z",
+  "details": "Derivada identidad de runtime de versioning en build desde build-metadata",
+  "hash": "de2b8699bf227d5dfa4be6bbbedee5ef13e31bca96330f602a9daf6f5f1cd6ce"
+}

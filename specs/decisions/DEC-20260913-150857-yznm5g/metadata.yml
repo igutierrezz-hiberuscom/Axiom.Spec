@@ -1,0 +1,24 @@
+id: DEC-20260913-150857-yznm5g
+kind: decision
+title: D-07 Momento de distribucion del manual R-15
+status: proposed
+createdAt: '2026-09-13T15:08:57.634Z'
+updatedAt: '2026-09-13T15:09:06.448Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T15:08:57.634Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  Distribuir el manual en workspace setup (instalacion), workspace adopt (adopcion) y upgrade explicito (actualizacion).
+  No se ejecuta en sync o configure frecuentes para no introducir coste perceptible; cada operacion es idempotente y
+  reporta estado.
+links:
+  incrementId: INC-20260912-r15-manual-distribution
+  planId: PLAN-INC-20260912-r15-documentation-single-source
+  adrId: null

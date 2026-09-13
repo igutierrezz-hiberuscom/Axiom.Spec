@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260911-r14-workflow-instance-selection",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-11T22:32:13.584Z",
+  "details": "Validado build limpio, doctor PASS, readiness PASS, 51 tests focales PASS de state-store, state-cmd, axiom-increment, axiom-bug y axiom-plan",
+  "hash": "22db64af749fe005010e9a2f961e9bc92b04d9d7b920b5a7ca1a5675ea42b705"
+}

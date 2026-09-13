@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260912-r15-docs-closure-verification",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-13T15:05:57.270Z",
+  "details": "ACC-088: alcance causal artefacto/plan; parser publico; CLI/launcher/MCP; focal 155/155; docs coverage 5/5; typecheck/build/doctor/readiness/diff check PASS; re-review N=1 OK.",
+  "hash": "01162b92531cbf4caa1093941a0707a810aa0d4a3b63b905c9dc66eb99f80cfb"
+}

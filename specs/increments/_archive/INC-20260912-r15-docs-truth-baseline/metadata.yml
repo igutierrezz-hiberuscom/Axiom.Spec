@@ -1,0 +1,18 @@
+id: INC-20260912-r15-docs-truth-baseline
+kind: increment
+title: r15 docs truth baseline
+status: archived
+createdAt: '2026-09-12T22:59:40.571Z'
+updatedAt: '2026-09-13T00:13:18.025Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-12T22:59:40.571Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-INC-20260912-r15-documentation-single-source

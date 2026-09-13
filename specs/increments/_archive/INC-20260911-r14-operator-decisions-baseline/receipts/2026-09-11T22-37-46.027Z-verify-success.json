@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260911-r14-operator-decisions-baseline",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-11T22:37:46.027Z",
+  "details": "Validado index validate OK con 28 metadatas y coherencia documental",
+  "hash": "92da75835ca82f14e37c2ffff7f0fcc6bdb7b944ebc95a392495b28e131003d9"
+}

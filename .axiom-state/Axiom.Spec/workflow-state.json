@@ -1,15 +1,138 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "workflows": {
     "increment": {
       "workflowId": "increment",
-      "state": "specifying",
-      "vars": {
-        "id": "INC-20260911-r14-workflow-instance-selection",
-        "slug": "r14 workflow instance selection",
-        "metadataId": "INC-20260911-r14-workflow-instance-selection"
-      },
-      "updatedAt": "2026-09-11T18:48:52.417Z"
+      "state": "archived",
+      "instances": {},
+      "archivedInstances": {
+        "INC-20260911-r14-workflow-instance-selection": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "id": "INC-20260911-r14-workflow-instance-selection",
+            "slug": "r14 workflow instance selection",
+            "metadataId": "INC-20260911-r14-workflow-instance-selection"
+          },
+          "updatedAt": "2026-09-11T22:32:42.601Z"
+        },
+        "INC-20260911-r14-operator-decisions-baseline": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "metadataId": "INC-20260911-r14-operator-decisions-baseline"
+          },
+          "updatedAt": "2026-09-11T22:37:54.424Z"
+        },
+        "INC-20260911-r14-tui-package-removal": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "metadataId": "INC-20260911-r14-tui-package-removal"
+          },
+          "updatedAt": "2026-09-11T22:42:20.532Z"
+        },
+        "INC-20260911-r14-build-artifact-hygiene": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "metadataId": "INC-20260911-r14-build-artifact-hygiene"
+          },
+          "updatedAt": "2026-09-11T22:49:13.435Z"
+        },
+        "INC-20260911-r14-single-self-update-surface": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "metadataId": "INC-20260911-r14-single-self-update-surface"
+          },
+          "updatedAt": "2026-09-11T22:55:13.212Z"
+        },
+        "INC-20260911-r14-runtime-version-identity": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "metadataId": "INC-20260911-r14-runtime-version-identity"
+          },
+          "updatedAt": "2026-09-11T23:00:32.686Z"
+        },
+        "INC-20260911-r14-model-recommendation-notice": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "metadataId": "INC-20260911-r14-model-recommendation-notice"
+          },
+          "updatedAt": "2026-09-11T23:29:41.787Z"
+        },
+        "INC-20260911-r14-launcher-operator-panels": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "metadataId": "INC-20260911-r14-launcher-operator-panels"
+          },
+          "updatedAt": "2026-09-12T00:00:15.438Z"
+        },
+        "INC-20260912-r15-docs-truth-baseline": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "id": "INC-20260912-r15-docs-truth-baseline",
+            "slug": "r15 docs truth baseline",
+            "metadataId": "INC-20260912-r15-docs-truth-baseline"
+          },
+          "updatedAt": "2026-09-13T00:13:18.025Z"
+        },
+        "INC-20260912-r15-manual-command-coverage": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "id": "INC-20260912-r15-manual-command-coverage",
+            "slug": "r15 manual command coverage",
+            "metadataId": "INC-20260912-r15-manual-command-coverage"
+          },
+          "updatedAt": "2026-09-13T01:45:30.285Z"
+        },
+        "INC-20260912-r15-template-single-source": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "id": "INC-20260912-r15-template-single-source",
+            "slug": "r15 template single source",
+            "metadataId": "INC-20260912-r15-template-single-source"
+          },
+          "updatedAt": "2026-09-13T09:11:55.923Z"
+        },
+        "INC-20260912-r15-canonical-roots-dedup": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "id": "INC-20260912-r15-canonical-roots-dedup",
+            "slug": "r15 canonical roots dedup",
+            "metadataId": "INC-20260912-r15-canonical-roots-dedup"
+          },
+          "updatedAt": "2026-09-13T09:52:36.138Z"
+        },
+        "INC-20260912-r15-docs-closure-verification": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "id": "INC-20260912-r15-docs-closure-verification",
+            "slug": "r15 docs closure verification",
+            "metadataId": "INC-20260912-r15-docs-closure-verification"
+          },
+          "updatedAt": "2026-09-13T15:06:45.171Z"
+        },
+        "INC-20260912-r15-manual-distribution": {
+          "workflowId": "increment",
+          "state": "archived",
+          "vars": {
+            "id": "INC-20260912-r15-manual-distribution",
+            "slug": "r15 manual distribution",
+            "metadataId": "INC-20260912-r15-manual-distribution"
+          },
+          "updatedAt": "2026-09-13T15:38:43.713Z"
+        }
+      }
     },
     "qa-e2e": {
       "workflowId": "qa-e2e",
@@ -22,21 +145,45 @@
     "plan": {
       "workflowId": "plan",
       "state": "plan-approved",
-      "vars": {
-        "planId": "PLAN-INC-20260909-r13-self-update-transactional-updater",
-        "metadataId": "PLAN-INC-20260909-r13-self-update-transactional-updater"
+      "activeInstanceId": "PLAN-INC-20260912-r15-documentation-single-source",
+      "instances": {
+        "PLAN-INC-20260909-r13-self-update-transactional-updater": {
+          "workflowId": "plan",
+          "state": "plan-approved",
+          "vars": {
+            "planId": "PLAN-INC-20260909-r13-self-update-transactional-updater",
+            "metadataId": "PLAN-INC-20260909-r13-self-update-transactional-updater"
+          },
+          "updatedAt": "2026-09-10T02:05:55.593Z"
+        },
+        "PLAN-INC-20260912-r15-documentation-single-source": {
+          "workflowId": "plan",
+          "state": "plan-approved",
+          "vars": {
+            "planId": "PLAN-INC-20260912-r15-documentation-single-source",
+            "metadataId": "PLAN-INC-20260912-r15-documentation-single-source"
+          },
+          "updatedAt": "2026-09-12T23:31:23.450Z"
+        }
       },
-      "updatedAt": "2026-09-10T02:05:55.593Z"
+      "archivedInstances": {}
     },
     "bug": {
       "workflowId": "bug",
-      "state": "specifying",
-      "vars": {
-        "id": "BUG-20260910-baseline-adoption-e2e-provenance",
-        "slug": "baseline adoption e2e provenance and eject convergence",
-        "metadataId": "BUG-20260910-baseline-adoption-e2e-provenance"
+      "activeInstanceId": "BUG-20260910-baseline-adoption-e2e-provenance",
+      "instances": {
+        "BUG-20260910-baseline-adoption-e2e-provenance": {
+          "workflowId": "bug",
+          "state": "specifying",
+          "vars": {
+            "id": "BUG-20260910-baseline-adoption-e2e-provenance",
+            "slug": "baseline adoption e2e provenance and eject convergence",
+            "metadataId": "BUG-20260910-baseline-adoption-e2e-provenance"
+          },
+          "updatedAt": "2026-09-10T11:30:24.820Z"
+        }
       },
-      "updatedAt": "2026-09-10T11:30:24.820Z"
+      "archivedInstances": {}
     }
   }
 }

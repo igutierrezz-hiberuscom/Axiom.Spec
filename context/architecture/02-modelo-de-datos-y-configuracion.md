@@ -70,6 +70,16 @@ No todos se consumen con el mismo nivel de profundidad hoy en runtime. **Esta ca
 
 Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom workspace setup`/`axiom workspace adopt` (vía el motor compartido `runWorkspaceSetup`) siembran, best-effort y no-clobber, `axiom.config/integrations.yaml` (PC-001), `axiom.config/policy-as-code.yaml` (PC-002) y `axiom.config/agents-catalog.yaml` (TC-011) más el `axiom.skills.lock` raíz (GC-001/GC-002/GC-007) en un proyecto recién adoptado/configurado — antes ningún flujo de scaffolding los producía. Fuente: `apps/cli/src/commands/workspace-config-scaffold.ts`, `workspace-catalog-scaffold.ts`.
 
+El manual runtime se distribuye por un camino separado y único: el build de
+`Axiom` genera el bundle TypeScript de `@axiom/document-bootstrap` recorriendo
+`Axiom/docs/**`. `workspace setup`, `workspace adopt` y `axiom upgrade` lo
+materializan bajo `docs/axiom/` en el repositorio autoral, junto con
+`docs/axiom/manifest.json`, que registra `sourceHash` y hashes SHA-256 por
+archivo. Un archivo local editado no se sobrescribe: se conserva, se marca
+`stale` y la versión nueva se escribe bajo `.stale/`; preview no escribe. El
+materializador no incluye `Axiom.Spec/specs/manuales/**`, `context/**` ni
+incrementos, y `sync`/`configure` no lo invocan.
+
 ### Bloques de cada YAML relevante (documentados)
 
 - **`capabilities.yaml`**: `capabilities.required/.optional/.postMvpOptional`, `supportLevels`, `degradationPolicy` y, cuando aplica, `mcpOnlyCapabilities`. El modelo provider-routed usa `id`, `domain` (`sdd`|`spec`|`code`|`memory`), `name`, `version`, `compliance`, `requiredTools`, `optionalTools`, `fallbacks`, `deprecated` y `schemaRef`; las tres capabilities MCP-only `axiom.*` se mantienen en su mapa separado.
@@ -116,8 +126,7 @@ Además, desde `INC-20260727-adoption-config-scaffolding` (cerrado), `axiom work
 
 Caso especial Copilot: `configure`, `sync`, `workspace setup` y el adapter
 `github-copilot` escriben la instrucción general compartida en
-`.github/copilot-instructions.md` vía `@axiom/document-bootstrap`. El template
-versionado de `axiom.spec/templates/` gana cuando es legible y el bundle actúa
+`.github/copilot-instructions.md` vía `@axiom/document-bootstrap`. La fuente versionada de plantillas del runtime, `Axiom/axiom.spec/templates/`, gana cuando es legible y el bundle actúa
 como fallback. El writer conserva el contenido humano fuera de
 `AXIOM:GENERATED` y `TEAM:CUSTOM`, usa escritura atómica y migra de forma
 conservadora la ruta legacy `.vscode/copilot-instructions.md`. `.vscode/` queda

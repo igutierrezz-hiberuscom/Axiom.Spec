@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260911-r14-single-self-update-surface",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-09-11T22:55:02.773Z",
+  "details": "Consolidado self-update-contract.ts y eliminado self-update.ts y tests legacy",
+  "hash": "61e6a439cdca1ded7fb9eb05a452fdd185bfa936b3b357f4e8837e861d8cae28"
+}

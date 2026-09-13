@@ -60,7 +60,7 @@ No todos se consumen hoy con el mismo nivel de profundidad en runtime, pero form
 
 ### Frontera entre `Axiom.Spec/` y `Axiom/axiom.spec/`
 
-`Axiom.Spec/` es el repositorio canónico de especificación del workspace: contiene las specs 00–08, el contexto técnico, los incrementos y bugs canónicos bajo `specs/increments/` y `specs/bugs/`, los planes, las plantillas, los prompts y `decisions/`. Cuando forma parte de una topología schema 2, su identidad se declara en el único manifest autoral `axiomRepo/axiom.config/topology.yaml`; no existe un campo `specRepo` ni una copia autoral por repositorio. El `axiom.yaml` de un repo `code` o `legacy` sólo conserva identidad y un puntero local `axiomRepo` hacia esa autoridad.
+`Axiom.Spec/` es el repositorio canónico de especificación del workspace: contiene las specs 00–08, el contexto técnico, los incrementos y bugs canónicos bajo `specs/increments/` y `specs/bugs/`, los planes, los prompts, las decisiones gestionadas bajo `specs/decisions/` y los ADR bajo `specs/adr/`. Cuando forma parte de una topología schema 2, su identidad se declara en el único manifest autoral `axiomRepo/axiom.config/topology.yaml`; no existe un campo `specRepo` ni una copia autoral por repositorio. El `axiom.yaml` de un repo `code` o `legacy` sólo conserva identidad y un puntero local `axiomRepo` hacia esa autoridad.
 
 `Axiom/axiom.spec/` es una baseline product-owned dentro del repositorio runtime: contiene incrementos, planes, agentes objetivo, skills objetivo y plantillas que consumen catálogos, adapters, readiness y el artifact store. Es legítima en su ubicación actual y no se mueve, elimina ni renombra por su similitud nominal con `Axiom.Spec/` (ADR-0032).
 
@@ -86,7 +86,8 @@ No todos se consumen hoy con el mismo nivel de profundidad en runtime, pero form
 | `configure` | `.axiom-state/<projectKey>/install-profile.json` y `workspace.json` si recibe providers (+ surfaces del target) |
 | `sync` | `.axiom-state/<projectKey>/last-sync.json` (+ regeneración de outputs del adapter) |
 | `start` | `.axiom-state/<projectKey>/last-start.json` |
-| `upgrade` | `.axiom-state/<projectKey>/managed-state.json`, checkpoints |
+| `upgrade` | `.axiom-state/<projectKey>/managed-state.json`, checkpoints y refresh de `docs/axiom/**` |
+| `workspace setup` / `workspace adopt` | `docs/axiom/**` en el repositorio autoral, incluido `docs/axiom/manifest.json` |
 | `toolchain upgrade` | `.axiom-state/<projectKey>/toolchain.lock` (schema 1), con checkpoint/rollback |
 | `model set/unset/reset` | `.axiom-state/<projectKey>/model-assignments.json` (+ `.opencode/model-routing.json` si target es opencode) |
 | `components install/uninstall` | `.axiom-state/<projectKey>/components-state.json` |
@@ -94,6 +95,21 @@ No todos se consumen hoy con el mismo nivel de profundidad en runtime, pero form
 Los readers de workspace/providers, toolchain y worktree reciben el
 `projectKey` de la resolución o de `Execution.projectId`; nunca deben elegir
 el primer `workspace.json` o marker de otro namespace.
+
+### Manual runtime distribuido
+
+`Axiom/docs/**` es la fuente única del manual operativo del runtime. Durante el
+build, `scripts/generate-manual-bundle.mjs` recorre ese árbol y genera el bundle
+TypeScript de `@axiom/document-bootstrap`; no copia archivos de
+`Axiom.Spec/specs/manuales/**`, `context/**` ni incrementos.
+
+`distributeManual(rootPath)` materializa el bundle en `docs/axiom/` del repo
+autoral y mantiene `docs/axiom/manifest.json` con `schemaVersion: 1`, el
+`sourceHash` del bundle y hashes SHA-256 por archivo. Setup, adopción y upgrade
+usan este writer único. Un archivo intacto se crea o refresca por contenido;
+una edición local se conserva, se reporta como `stale` y recibe la versión nueva
+en `docs/axiom/.stale/`. Preview no escribe y una segunda ejecución sin cambios
+es un no-op.
 
 ## Ficheros generados por adapter target
 
@@ -341,7 +357,7 @@ Formas de datos añadidas por esta tanda (el comportamiento vive en [06_Integrac
 
 - **Artefactos de la capa de reglas** (`INC-20260708-rules-layer`): `axiom.config/rules/<scope>.md` — `common.md` (siempre) + `<language>.md` por lenguaje inferido (`typescript`/`python`/`csharp`/`angular`). Ubicación canónica análoga a `axiom.config/skills-*`, escrita por `scaffoldRules` best-effort no-clobber por fichero. El `AGENTS.md` canónico gana un campo `CanonicalAgentsMdIdentity.ruleScopes?` (poblado por el caller leyendo disco en tiempo de render) que lista los scopes presentes. Proyección nativa opcional: `.cursor/rules/axiom-common.mdc` (solo `common`, no-clobber).
 
-- **Scaffold canónico del propio repo `Axiom/`** (`INC-20260708-product-repo-self-bootstrap`): el repo de producto ganó en su raíz el set canónico que su runtime/tests esperaban — `axiom.config/` con contenido schema-válido real (`skills-catalog.yaml`, `agents-catalog.yaml`, `model-routing-policy.yaml`, `profiles.yaml`, `providers.yaml`, `capabilities.yaml`, `integrations.yaml`, `policy-as-code.yaml`, `mcp-manifest.yaml`, `telemetry-sinks.yaml`), `axiom.spec/target-axiom-skills/*.md` (20), `axiom.spec/target-axiom-agents/*.md` (14), `axiom.spec/templates/` (copiadas de `Axiom.Spec/templates/`), `AGENTS.md` y `axiom.skills.lock`. El cierre de aquella tanda registró `readiness:first-project` y `doctor` verdes; esa fotografía histórica fue superada por la verificación del 2026-08-02, que devuelve ambos comandos en `PASS` (ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)). `profiles.yaml#allowedTargets` declara los 8 targets activos validados por `IP-003`; `copilot-vscode` no pertenece al conjunto público y únicamente se migra, si ya está persistido en `init.json`, durante `configure` antes de instalar o despachar. LiteLLM fue retirado.
+- **Scaffold canónico del propio repo `Axiom/` (fotografía histórica de `INC-20260708-product-repo-self-bootstrap`)**: el repo de producto ganó en su raíz el set canónico que su runtime/tests esperaban — `axiom.config/` con contenido schema-válido real (`skills-catalog.yaml`, `agents-catalog.yaml`, `model-routing-policy.yaml`, `profiles.yaml`, `providers.yaml`, `capabilities.yaml`, `integrations.yaml`, `policy-as-code.yaml`, `mcp-manifest.yaml`, `telemetry-sinks.yaml`), `axiom.spec/target-axiom-skills/*.md` (20), `axiom.spec/target-axiom-agents/*.md` (14), `axiom.spec/templates/` (copiadas entonces desde la copia del repositorio canónico), `AGENTS.md` y `axiom.skills.lock`. El cierre de aquella tanda registró `readiness:first-project` y `doctor` verdes; esa fotografía histórica fue superada por la verificación del 2026-08-02, que devuelve ambos comandos en `PASS` (ver [00_Resumen_Ejecutivo.md](00_Resumen_Ejecutivo.md) y [07_Gobierno_y_Seguridad.md](07_Gobierno_y_Seguridad.md)). La fuente vigente de plantillas es `Axiom/axiom.spec/templates/`; `profiles.yaml#allowedTargets` declara los 8 targets activos validados por `IP-003`; `copilot-vscode` no pertenece al conjunto público y únicamente se migra, si ya está persistido en `init.json`, durante `configure` antes de instalar o despachar. LiteLLM fue retirado.
 
 - **Idempotencia de las operaciones incrementales** (`INC-20260708-incremental-operations`, reconciliada por R-13): `repo add` y `role add` resuelven el proyecto contra la autoridad topology schema 2 y producen un `StructuralMutationPlan`. La unidad incluye el bloque gestionado de identidad, el único manifest autoral, bindings locales, `WorkspaceStateV1`/init state y `projects.yml` cuando se solicita registro; no vuelve a emitir paths recíprocos ni copias del grafo en cada `axiom.yaml`. Apply preflighta sin escribir, adquiere locks en orden, replantea bajo lock y termina en commit completo, rollback demostrable o `recovery-required`. `adapter add` y `provider add` actualizan arrays deduplicados mediante `updateWorkspaceState` y después materializan los outputs seleccionados de `WORKSPACE_STEP_CATALOG`; repair/regenerate no habilita capacidades. Repetir los mismos argumentos converge a `unchanged`/no-op sin duplicados ni clobber. Si falta `workspace.json`, solo una mutación autorizada crea la forma completa `WorkspaceStateV1`; corrupción, schema futuro o identidad divergente fallan sin overwrite.
 
@@ -525,7 +541,7 @@ Primera entidad de ejecución de primera clase para rastrear runs paralelos (tí
 
 `ResolvedInstallProfile` (`@axiom/install-profiles`) gana `executionMode: 'in-place' | 'worktree'` (`DEFAULT_EXECUTION_MODE = 'in-place'`), persistido en `.axiom-state/<projectId>/install-profile.json` por `axiom configure --execution-mode`. Es el default elegido por el arquitecto en la instalación; se preserva a través de re-configuraciones no relacionadas (se relee el valor previo cuando el flag se omite) y es overridable por run (ver [04_Flujos_SDD_y_Ciclo_de_Vida.md](04_Flujos_SDD_y_Ciclo_de_Vida.md) y [05_Interfaces_Operativas.md](05_Interfaces_Operativas.md)).
 
-**Canal de inyección por proyecto** (dónde va lo específico de cada stack, manteniendo el producto genérico): (i) `axiom.config/skills-index/<role>.yaml` — índice de skills por rol que leen las superficies (`sdd.skillIndexRead`); (ii) el contexto técnico del proyecto, propiedad de `axiom-tech-context`; (iii) las skills de rol del proyecto. Las superficies del producto se mantienen adapter/stack-agnósticas y parametrizables; a diferencia de un sistema role-specialized que hornea las reglas de stack en agentes por rol, Axiom las deja como DATO del proyecto para funcionar en cualquier adapter/stack sin perder profundidad. Guía operable en [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
+**Canal de inyección por proyecto** (dónde va lo específico de cada stack, manteniendo el producto genérico): (i) `axiom.config/skills-index/<role>.yaml` — índice de skills por rol que leen las superficies (`sdd.skillIndexRead`); (ii) el contexto técnico del proyecto, propiedad de `axiom-tech-context`; (iii) las skills de rol del proyecto. Las superficies del producto se mantienen adapter/stack-agnósticas y parametrizables; a diferencia de un sistema role-specialized que hornea las reglas de stack en agentes por rol, Axiom las deja como DATO del proyecto para funcionar en cualquier adapter/stack sin perder profundidad. El manual runtime `Axiom/docs/usage/README.md` describe este canal.
 ## Artefactos y tipos de gobierno verificable (2026-08-02) — tanda `INC-20260730-*`
 
 ### `candidate-freeze.json` (por incremento)

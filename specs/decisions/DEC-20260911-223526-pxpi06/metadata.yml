@@ -1,0 +1,23 @@
+id: DEC-20260911-223526-pxpi06
+kind: decision
+title: D-06 Soporte de multiples instancias en workflow-state con seleccion explicita
+status: proposed
+createdAt: '2026-09-11T22:35:26.953Z'
+updatedAt: '2026-09-11T22:36:15.566Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-11T22:35:26.953Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  Migracion a schemaVersion: 2 con soporte de multiples instancias en vuelo para increment, bug y plan; comando select y
+  soporte de --id <id>; purga de instancias terminadas al archivar.
+links:
+  incrementId: INC-20260911-r14-operator-decisions-baseline
+  planId: PLAN-INC-20260911-r14-operator-control-surfaces
+  adrId: null

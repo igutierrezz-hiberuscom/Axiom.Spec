@@ -1,0 +1,21 @@
+id: DEC-20260913-091606-293kxd
+kind: decision
+title: 'Migración histórica: 0028-workflow-ux-and-archive-safety-completion'
+status: proposed
+createdAt: '2026-09-13T09:16:06.064Z'
+updatedAt: '2026-09-13T09:20:00.870Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T09:16:06.064Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: 'ACC-094: documento legacy migrado desde decisions/ mediante Core.'
+links:
+  incrementId: INC-20260912-r15-canonical-roots-dedup
+  planId: null
+  adrId: null

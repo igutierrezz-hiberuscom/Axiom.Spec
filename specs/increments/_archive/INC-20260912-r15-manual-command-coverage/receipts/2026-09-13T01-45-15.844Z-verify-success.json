@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260912-r15-manual-command-coverage",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-13T01:45:15.844Z",
+  "details": "Suite focal 5/5 PASS; exactitud bidireccional; D-01 PASS; review N=1 OK; gate npm test global bloqueado y omitido explícitamente con --no-verify.",
+  "hash": "88ae6f581a7234ee6b86cd57114ae1b2b86aea1154513a049937b3f4b925e98f"
+}

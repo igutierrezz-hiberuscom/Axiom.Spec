@@ -19,7 +19,11 @@ Esta carpeta contiene la spec general del producto y los artefactos funcionales 
 1. `increments/`: incrementos en formato carpeta.
 2. `bugs/`: bugs en formato carpeta.
 3. `increments/_archive/`: histórico de incrementos integrado o cerrado.
-4. `manuales/`: guías de usuario / manuales de operación de Axiom — ver [manuales/README.md](manuales/README.md).
+4. `manuales/`: material específico de esta instalación canónica; no es el manual runtime distribuible ni una segunda fuente de `Axiom/docs/**` — ver [manuales/README.md](manuales/README.md).
+5. `decisions/`: decisiones gestionadas del producto.
+6. `adr/`: decisiones arquitectónicas heredadas o complementarias.
+7. `plans/`: planes de ejecución y sus artefactos.
+8. `archive/`: material archivado de la spec.
 
 ## Regla
 

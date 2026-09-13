@@ -1,0 +1,23 @@
+id: DEC-20260911-223522-6ox3vz
+kind: decision
+title: D-01 Consolidacion de self-update transaccional y shim de instalacion
+status: proposed
+createdAt: '2026-09-11T22:35:22.523Z'
+updatedAt: '2026-09-11T22:36:03.358Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-11T22:35:22.523Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  Se conserva exclusivamente self-update-contract.ts con envelope schemaVersion 1 y motor transaccional; se elimina
+  self-update.ts. scripts/install-global.mjs se mantiene como instalador de bootstrap fuera del CLI.
+links:
+  incrementId: INC-20260911-r14-operator-decisions-baseline
+  planId: PLAN-INC-20260911-r14-operator-control-surfaces
+  adrId: null

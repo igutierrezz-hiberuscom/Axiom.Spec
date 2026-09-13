@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260911-r14-operator-decisions-baseline",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-09-11T22:37:45.265Z",
+  "details": "Formalizadas decisiones D-01 a D-06 como artefactos decision",
+  "hash": "d3018b921ef6aec544c16fab40221b6f73891e76f4e498b2f59e1ba16212ca83"
+}

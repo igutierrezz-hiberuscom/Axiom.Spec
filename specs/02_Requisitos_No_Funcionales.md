@@ -47,6 +47,14 @@ con advertencia cuando el contenido humano no se puede reconciliar.
 
 Para `~/.axiom/projects.yml`, la atomicidad abarca el ciclo read-modify-write completo: lock multiproceso acotado, temporal propietario PID+UUID, flush/fsync, validación y rename atómico. El reclaim de un lock abandonado debe estar ligado a la generación observada y cercado durante la publicación de su owner; nunca puede retirar una generación sucesora ni artefactos ajenos.
 
+La misma garantía se aplica al manual runtime distribuido: `workspace setup`,
+`workspace adopt` y `axiom upgrade` usan un único materializador bajo
+`docs/axiom/`, con `manifest.json`, `sourceHash` y hashes SHA-256 por archivo.
+Los archivos editados localmente se preservan y reciben la versión nueva bajo
+`.stale/`; `sync` y `configure` no escriben esa superficie. El bundle fuente se
+regenera desde `Axiom/docs/**` al iniciar el build y el test de generación
+compara el artefacto TypeScript completo con la fuente.
+
 ## NFR-AXM-027 Mutaciones estructurales recuperables y observación fail-closed
 
 Las operaciones `workspace setup|adopt`, `repo add` y `role add` deben prevalidar conjuntamente todos los recursos estructurales y todos los límites de outputs derivados sin producir `mkdir`, home, locks, temporales, journals, telemetría o registro. `ENOENT` es la única evidencia de ausencia; `ENOTDIR`, `EACCES`, `EIO` y errores desconocidos conservan operación, path, código y causa en un error tipado.

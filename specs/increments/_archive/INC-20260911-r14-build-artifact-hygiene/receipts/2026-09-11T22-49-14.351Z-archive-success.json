@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260911-r14-build-artifact-hygiene",
+  "phase": "archive",
+  "status": "success",
+  "timestamp": "2026-09-11T22:49:14.351Z",
+  "details": "Incremento archivado con exito; higiene de artefactos versionados cerrada (ACC-084)",
+  "hash": "25b09cfcd6d89dd33805706214cb271740117e444d45684f1dec6256eaa2832b"
+}

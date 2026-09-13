@@ -1,0 +1,24 @@
+id: DEC-20260913-095638-x5idar
+kind: decision
+title: D-04 Progresión warning a block del gate documental R-15
+status: proposed
+createdAt: '2026-09-13T09:56:38.471Z'
+updatedAt: '2026-09-13T09:56:47.810Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T09:56:38.471Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  El modo warning mantiene compatibilidad durante la entrada en servicio y deja un mensaje accionable; el modo block es
+  explícito y rechaza el cierre solo cuando queda documentación en alcance sin revisar. Ningún modo altera la legalidad
+  de la transición ni la confirmación requerida.
+links:
+  incrementId: INC-20260912-r15-docs-closure-verification
+  planId: PLAN-INC-20260912-r15-documentation-single-source
+  adrId: null

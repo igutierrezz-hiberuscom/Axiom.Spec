@@ -95,7 +95,7 @@ Contrato común: `generate<Target>Config(args) → Promise<Result<GeneratorResul
 
 | Package | Responsabilidad | Exports/tipos clave | Notas |
 |---|---|---|---|
-| `@axiom/document-bootstrap` | Writer de Copilot instructions, idempotente, preserva `TEAM:CUSTOM` | `writeCopilotInstructions`, `classifyAndPreserve` | Spec 0018-B4 |
+| `@axiom/document-bootstrap` | Writers de instrucciones y del manual runtime, idempotentes, atómicos y con path-guard | `writeCopilotInstructions`, `distributeManual`, `verifyManualDistribution`, `classifyAndPreserve` | Spec 0018-B4 + R-15 |
 | `@axiom/user-workspace` | Catálogo único `projects.yml`, validación estricta, identidad/ownership, disponibilidad/resolubilidad y self-update user-level | `loadRegistryV2`, `saveRegistryV2`, `addProjectV2`, `upsertProjectReposV2`, `listProjectsV2`, `useProjectV2`, `selectProjectRepo`, `ProjectsFile`, `ProjectEntryV2`, `RepoAvailability`, `ProjectAvailability`, `loadInstallManifest` | Sí (`registry-v2.test.ts`, `registry-concurrency.test.ts` y self-update) | No exporta ni migra registry v1; las mutaciones usan el primitivo multiproceso de `@axiom/core` |
 
 ## Capa contexto/telemetría/tracking (nueva desde el baseline 2026-07-02)

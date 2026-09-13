@@ -73,6 +73,20 @@ origen.
 - `generatedDocs`: mapea outputs documentales a templates.
 - `repairPlaybooks`: qué hacer ante proyecto ambiguo, provider faltante, docs generadas ausentes.
 
+## Manual runtime en el proyecto adoptante
+
+El manual único del producto vive en `Axiom/docs/**` y se embebe en
+`@axiom/document-bootstrap` como bundle TypeScript. `workspace setup`,
+`workspace adopt` y `axiom upgrade` lo materializan en `docs/axiom/` del
+repositorio autoral, con `manifest.json`, `sourceHash` y hashes SHA-256 por
+archivo. Los archivos editados localmente se preservan, se marcan `stale` y la
+versión nueva se deja bajo `.stale/`; la ejecución es idempotente y el preview
+no escribe. `sync` y `configure` no distribuyen esta superficie.
+
+El material de `Axiom.Spec/specs/manuales/` es específico de la instalación
+canónica del workspace y no entra en el bundle ni se entrega a proyectos
+adoptantes.
+
 ## First-project readiness
 
 La readiness inicial no es solo "compila y pasan los tests unitarios": valida la secuencia operativa completa.

@@ -14,9 +14,9 @@
 
 `init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `model` (`show`/`set`/`unset`/`reset`/`validate`), `components` (`list`/`show`/`install`/`uninstall`/`restore`), `skills` (`list`/`refresh`/`drift`). Fuente: `Axiom/docs/cli/*.md`. `tui` ya no es un comando registrado.
 
-### `axiom self-update`: contrato R13 vigente
+### `axiom self-update`: contrato R13/R14 vigente
 
-La instalación global usa `~/.axiom/install.json` como receipt/cache derivado; la identidad real del entrypoint es la autoridad. `status`, `check` y `plan` no mutan estado, no crean locks ni receipts, y `--dry-run` solo es válido con `plan`. `apply` consume un plan sellado (también mediante `--plan-file`) y `recover` reconcilia el journal con la realidad; ambos devuelven únicamente `installed`, `unchanged`, `failed` o `recovery-required`. Los selectores legacy `--check`, `--apply`, `--recover` y `--target-version` se rechazan con error de uso. En JSON se emite un único envelope v1 por stdout.
+La instalación global usa `~/.axiom/install.json` como receipt/cache derivado; la identidad real del entrypoint es la autoridad. `status`, `check` y `plan` no mutan estado, no crean locks ni receipts, y `--dry-run` solo es válido con `plan`. `apply` consume un plan sellado (también mediante `--plan-file`) y `recover` reconcilia el journal con la realidad; ambos devuelven únicamente `installed`, `unchanged`, `failed` o `recovery-required`. Los selectores legacy `--check`, `--apply`, `--recover` y `--target-version` se rechazan con error de uso. En JSON se emite un único envelope v1 por stdout. La implementación legacy huérfana (`self-update.ts` y sus 16 tests) fue eliminada en ACC-083, dejando a `self-update-contract.ts` como la única superficie en CLI; la instalación inicial del shim se ejecuta fuera del CLI mediante `scripts/install-global.mjs`.
 
 ## CLI: comandos presentes en código sin documentación operativa equivalente
 
@@ -56,14 +56,12 @@ globales, y el provisioning de worktree selecciona providers por
 
 `axiom app` abre por defecto `/launcher/`. El launcher ofrece selector de
 proyecto, install/join, workspace setup/adopt, doctor, registry, acciones del
-ciclo SDD, plugins y paneles ADO/Git. Las operaciones mutantes usan
-preview→confirmacion y delegan en los runners canonicos; el servidor no
-introduce una segunda logica de negocio. Para transiciones de workflow, CLI,
-launcher y MCP convergen en `runGovernedTransition`: el launcher reenvía
-`confirmed: true` al subcomando de cada workflow y la ausencia de confirmación
-permanece como preview; `--force`/`--no-verify` no son sustitutos de esa
-confirmación. La ausencia de `axiom tui` y de la accion implicita sin
-subcomando se comprueba en el binario compilado.
+ciclo SDD, plugins, paneles ADO/Git y dos pantallas de operador dedicadas (ACC-082):
+
+- **Model Routing (`#view-models`)**: visualiza la política base, slots SDD, overrides del proyecto, nivel de soporte del destino (`SUPPORT_MATRIX`) y avisos dependientes del adapter al copiar prompt (ACC-086); expone formularios con preview y confirmación tokenizada para `set`, `unset` y `reset`, más validación ejecutada con `validate`.
+- **Actualización (`#view-self-update`)**: visualiza versión instalada, publicada y descargada con su relación tipada (`updated`, `update-available`, etc.) y frescura del cache; permite `check`, `plan`, `apply`, `recover` y `cancel` sobre el motor transaccional de self-update.
+
+Las operaciones mutantes usan preview→confirmación y delegan en los runners canónicos; el servidor no introduce una segunda lógica de negocio. Para transiciones de workflow, CLI, launcher y MCP convergen en `runGovernedTransition`: el launcher reenvía `confirmed: true` al subcomando de cada workflow y la ausencia de confirmación permanece como preview; `--force`/`--no-verify` no son sustitutos de esa confirmación. La ausencia de `axiom tui` y de la acción implícita sin subcomando se comprueba positivamente en disco y en el binario compilado.
 
 ## Adapters (surfaces por IDE/CLI externo)
 
@@ -71,7 +69,19 @@ Hay 8 adapter targets canónicos activos. Todos tienen paquete dedicado y contra
 
 ## Documentación operativa navegable
 
-`Axiom/docs/README.md` es el índice hacia manuales de instalación, configuración, uso diario, CLI, ficheros generados y troubleshooting — ya existe y está mantenido, no es un artefacto a construir desde cero.
+`Axiom/docs/README.md` es el índice del manual único de producto runtime hacia
+instalación, configuración, uso diario, CLI, ficheros generados y
+troubleshooting — ya existe y está mantenido, no es un artefacto a construir
+desde cero.
+
+Las operaciones `axiom workspace setup`, `axiom workspace adopt` y `axiom
+upgrade` materializan ese manual en `docs/axiom/` del repositorio autoral. La
+respuesta expone el resultado de distribución y los archivos `stale` cuando
+corresponde; `manifest.json` permite verificar `sourceHash` y hashes por
+archivo. La segunda ejecución sin cambios es idempotente. `axiom sync` y
+`axiom configure` no distribuyen el manual. El material de
+`Axiom.Spec/specs/manuales/` es específico de esta instalación canónica y no es
+una superficie alternativa del runtime.
 
 ## Regla
 
@@ -79,7 +89,7 @@ Las interfaces operativas se implementan en `Axiom/`, pero su comportamiento esp
 
 ## Superficie de comandos ampliada por el roadmap de rediseño (cerrado)
 
-La superficie realmente alcanzable y primaria coincide con los entrypoints con guion `axiom-increment ...`, `axiom-bug ...`, `axiom-plan ...` y `axiom-role ...` (registrados en `apps/cli/src/index.ts`), más:
+La superficie realmente alcanzable y primaria coincide con los entrypoints con guion `axiom-increment ...`, `axiom-bug ...`, `axiom-plan ...` y `axiom-role ...` (registrados en `apps/cli/src/index.ts`). Tras ACC-087, `axiom-increment`, `axiom-bug` y `axiom-plan` incorporan el subcomando `select --id <id>` y admiten múltiples instancias simultáneas en vuelo bajo `schemaVersion: 2` de `workflow-state.json`, más:
 
 - `axiom-adr`/`axiom-decision` (`create`/`link-plan`/`link-increment`/`list`, más `axiom-adr supersede <old-id> <new-id>`);
 - `axiom index rebuild|validate|list` (todos los tipos de artefacto, `--json`);
@@ -314,9 +324,9 @@ Amplía el front del launcher (`axiom app`, navegador, framework-free ES5) para 
 - **Gate de doctor pre-lanzamiento** (`INC-20260715-launcher-doctor-gate`): al seleccionar proyecto, el front pide `GET /api/projects/:id/launcher/doctor` (thin wrapper sobre `runDoctorChecks`, best-effort/no-crash) y muestra un panel de salud (ok/warn/fallo) con las incidencias (`category`/`description`/`evidence`). Ejecutar/lanzar avisan si hay fallos y exigen un segundo clic (gate visible, no bloqueo).
 - **Onboarding visual** (`INC-20260715-launcher-onboarding` / `INC-20260726-launcher-onboarding-config-front`): la pestaña "Instalar / Unirse" permite instalar un proyecto nuevo o unirse a uno existente, registrar/asignar roles y explorar carpetas. El formulario de install/join expone `name`/`path`/`profile`/`overlay`/`layout`/rol, adapter primario, adapters adicionales, tools y `execution-mode`, con preview y confirmación preservados. El adapter primario se resuelve mediante `runInit` y los adicionales mediante `generateWorkspaceAdapters`; las tools se muestran, pero solo se aplican cuando existe un catálogo de toolchain válido. Los endpoints siguen siendo server-level `POST /api/launcher/{install,join}` y project-scoped `POST /api/projects/:id/launcher/roles/{register,assign}`, junto con `GET /api/launcher/options` y `GET /api/launcher/browse`.
 - **Selección de adapter → prompt pregenerado + tuning** (`INC-20260715-adapter-agent-tuning`): el selector de adapter ya existente ahora muestra el tuning (`low/pragmatic`) y el prompt pregenerado incluye el preámbulo "Ajustes del agente". La superficie de "seleccionar adapter para generar el prompt en consecuencia" ya existía (`craftPrompt` + `apiCraftLauncherPrompt`); esta tanda la enriquece con el tuning por adapter (capacidad en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md)).
-- **Puente ADO en creación** (`INC-20260715-launcher-ado-bridge`): tras crear un incremento/bug (confirmado) en la pestaña Crear, si el plugin ADO está configurado, se ofrece un work item pre-rellenado de un clic (reusa la tarjeta/endpoint ADO existente); si no, nota informativa sin red. Detalle en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y [manuales/12_Plugin_Azure_DevOps.md](manuales/12_Plugin_Azure_DevOps.md).
+- **Puente ADO en creación** (`INC-20260715-launcher-ado-bridge`): tras crear un incremento/bug (confirmado) en la pestaña Crear, si el plugin ADO está configurado, se ofrece un work item pre-rellenado de un clic (reusa la tarjeta/endpoint ADO existente); si no, nota informativa sin red. Detalle en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md) y el manual runtime `Axiom/docs/cli/external-sync.md`.
 
-Documentación de usuario de estas superficies: [manuales/11_Launcher_Visual.md](manuales/11_Launcher_Visual.md).
+Documentación runtime de estas superficies: `Axiom/docs/cli/app.md`.
 
 ## Superficies SDD instaladas + revisión en el launcher (2026-07-15) — tanda INC-20260715-*
 
@@ -334,7 +344,7 @@ Superficies operativas nuevas de la graduación a *full product lifecycle*. Fluj
   - `axiom configure --execution-mode <in-place|worktree>`: fija el default del arquitecto (persistido en `install-profile.json`, default `in-place`, preservado entre re-configuraciones).
   - `axiom-role start --worktree` / `--in-place`: override por run (mutuamente exclusivos). En modo worktree, `start` compone worktreeAdd + Execution + provisioning, y `complete` corre harvest+cleanup (nunca `force` por defecto — un worktree con trabajo real sin integrar es hard stop).
   - **Launcher** (`axiom app`): campo `executionMode` (select `in-place`/`worktree`) en las acciones `back-new`/`front-new`, **solo para el preview** del comando CLI equivalente; el ejecutor autoritativo es la CLI (`axiom-role start --worktree`), el path de ejecución real del launcher no cambia.
-- **Catálogo runtime tras la tanda**: 18 skills / 14 agents (incluye las 4 disciplinas transversales reutilizables y el `axiom-security-reviewer` ya con cuerpo real). Detalle de capacidades en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md); guía en [manuales/13_Skills_Agentes_y_Roles.md](manuales/13_Skills_Agentes_y_Roles.md).
+- **Catálogo runtime tras la tanda**: 18 skills / 14 agents (incluye las 4 disciplinas transversales reutilizables y el `axiom-security-reviewer` ya con cuerpo real). Detalle de capacidades en [06_Integraciones_y_Capacidades.md](06_Integraciones_y_Capacidades.md); guía en el manual runtime `Axiom/docs/usage/README.md`.
 
 ### Launcher como front por defecto de `axiom app` + retirada de la UI de operador antigua (2026-07-27) — INC-20260727-launcher-default-and-old-ui-removal
 

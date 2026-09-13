@@ -1,0 +1,23 @@
+id: DEC-20260911-223526-127zvd
+kind: decision
+title: D-05 Retirada fisica total de paquete TUI y saneamiento de dependencias
+status: proposed
+createdAt: '2026-09-11T22:35:26.158Z'
+updatedAt: '2026-09-11T22:36:13.534Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-11T22:35:26.158Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  Eliminacion de packages/tui completo, retiro del junction node_modules/@axiom/tui y regeneracion del package-lock.json
+  en el mismo incremento; aserciones positivas de ausencia en tui-retirement.test.ts.
+links:
+  incrementId: INC-20260911-r14-operator-decisions-baseline
+  planId: PLAN-INC-20260911-r14-operator-control-surfaces
+  adrId: null

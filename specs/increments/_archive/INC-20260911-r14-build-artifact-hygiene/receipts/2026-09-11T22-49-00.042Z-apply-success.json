@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260911-r14-build-artifact-hygiene",
+  "phase": "apply",
+  "status": "success",
+  "timestamp": "2026-09-11T22:49:00.042Z",
+  "details": "Desversionados artefactos compilados en src y dist de adapters; extendido gitignore y ajustado TC-009",
+  "hash": "27b69d8f4406024fc1a98041545164574b67b81183bfd08aad750eef144a1f64"
+}

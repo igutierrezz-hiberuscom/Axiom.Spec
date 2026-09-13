@@ -70,3 +70,30 @@ La implementación también añade observaciones best-effort de versión, checks
 | `INC-20260730-autopilot-integration` | Las 3 directivas de gobierno propagadas a las 7 superficies de `axiom-autopilot` | Defecto de propagación: solo la copia local del workspace las tenía |
 
 Suite al cierre de la tanda: **3489 tests, 3483 verdes, 6 rojos preexistentes** (5 deterministas en `install-profiles/composer.test.ts`, 1 flake por contención en `memory/engram-backend.test.ts`). Baseline antes de la tanda: 3428 tests. Neto: **+61 tests, cero regresiones**.
+
+## Tanda R-15 — documentación, spec e historial (2026-09-13)
+
+La tanda R-15 cerró las acciones `ACC-088..ACC-095` en seis incrementos
+archivados por Core. `Axiom/docs/**` quedó como manual único del runtime, con
+50 familias de comandos cubiertas por una prueba derivada de la ayuda de
+Commander. La fuente única de templates permanece en
+`Axiom/axiom.spec/templates/`; las raíces y formatos canónicos de decisiones
+quedaron reconciliados en `Axiom.Spec/specs/`.
+
+El gate documental se integró en el runner común de transiciones y acepta una
+declaración estructurada de documentos revisados, con modos `warning` y `block`.
+El manual runtime se embebe como bundle TypeScript generado desde `Axiom/docs/**`
+y se distribuye en `docs/axiom/` durante `workspace setup`, `workspace adopt` y
+`axiom upgrade`; `manifest.json` registra `sourceHash` y hashes SHA-256, las
+ediciones locales se conservan como `stale` y los previews no escriben. `sync`
+y `configure` no ejecutan esta distribución. El material de
+`Axiom.Spec/specs/manuales/` es específico de esta instalación y no entra en el
+bundle.
+
+La validación final del incremento de distribución fue: generador `1/1`,
+materializador `6/6`, integración setup/adopt/upgrade y cobertura documental
+`41/41`, typecheck, build,
+doctor sin fallos, readiness, index validate con 39 artefactos sin fallos y
+diff check. La suite global reportó `3742/3764` tests verdes; los 22 fallos
+quedaron clasificados como contratos/timeouts preexistentes de R-14/R-13 y no
+como regresiones de R-15.

@@ -1,0 +1,21 @@
+id: DEC-20260913-091608-9mnt1m
+kind: decision
+title: 'Migración histórica: 0031-adr-cmm-replaces-graphify-and-codegraph'
+status: proposed
+createdAt: '2026-09-13T09:16:08.495Z'
+updatedAt: '2026-09-13T09:20:04.652Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T09:16:08.495Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: 'ACC-094: documento legacy migrado desde decisions/ mediante Core.'
+links:
+  incrementId: INC-20260912-r15-canonical-roots-dedup
+  planId: null
+  adrId: null

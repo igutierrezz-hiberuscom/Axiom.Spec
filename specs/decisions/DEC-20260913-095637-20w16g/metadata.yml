@@ -1,0 +1,24 @@
+id: DEC-20260913-095637-20w16g
+kind: decision
+title: D-03 Declaración auditable de revisión documental R-15
+status: proposed
+createdAt: '2026-09-13T09:56:37.847Z'
+updatedAt: '2026-09-13T09:56:46.697Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T09:56:37.847Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  La verificación usa un resultado estructurado común para CLI, launcher y MCP con cada documento en alcance y estado
+  updated, unchanged con motivo o unreviewed con razón; el resumen se incorpora al receipt de la transición y no
+  modifica contenido documental.
+links:
+  incrementId: INC-20260912-r15-docs-closure-verification
+  planId: PLAN-INC-20260912-r15-documentation-single-source
+  adrId: null

@@ -1,0 +1,18 @@
+id: INC-20260912-r15-manual-distribution
+kind: increment
+title: r15 manual distribution
+status: archived
+createdAt: '2026-09-12T22:59:47.302Z'
+updatedAt: '2026-09-13T15:38:43.713Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-12T22:59:47.302Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-INC-20260912-r15-documentation-single-source

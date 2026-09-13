@@ -1,0 +1,21 @@
+id: DEC-20260913-091553-rvx61p
+kind: decision
+title: 'Migración histórica: 0015-cavekit-discipline-post-mvp'
+status: proposed
+createdAt: '2026-09-13T09:15:53.871Z'
+updatedAt: '2026-09-13T09:19:57.994Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T09:15:53.871Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: 'ACC-094: documento legacy migrado desde decisions/ mediante Core.'
+links:
+  incrementId: INC-20260912-r15-canonical-roots-dedup
+  planId: null
+  adrId: null

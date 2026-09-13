@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260912-r15-manual-command-coverage",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-13T01:33:57.736Z",
+  "details": "Suite focal 5/5 PASS; exactitud bidireccional de opciones/subcomandos; D-01 PASS; review independiente N=1 OK.",
+  "hash": "559ea442a8bef8d957e8e652419e30e3ad7706cf5f3ffab1ffbbf0d70d1e9761"
+}

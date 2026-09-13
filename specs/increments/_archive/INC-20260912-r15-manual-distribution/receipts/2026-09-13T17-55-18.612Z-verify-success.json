@@ -1,0 +1,8 @@
+{
+  "incrementId": "INC-20260912-r15-manual-distribution",
+  "phase": "verify",
+  "status": "success",
+  "timestamp": "2026-09-13T17:55:18.612Z",
+  "details": "Validación final: bundle generator 1/1; manual-distribution 6/6; docs-command-coverage + setup + adopt + upgrade 41/41; reemplazo atómico Windows PASS; typecheck, build, doctor 0 fallos, readiness, index validate 39/39 y diff check PASS. Review independiente N=1 sin blockers.",
+  "hash": "c82d0e94350fe082077823cf65043ad30dccf9512a07c1d001d1aa4d77f9147c"
+}

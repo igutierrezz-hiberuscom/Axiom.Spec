@@ -1,0 +1,18 @@
+id: INC-20260912-r15-docs-closure-verification
+kind: increment
+title: r15 docs closure verification
+status: archived
+createdAt: '2026-09-12T22:59:46.249Z'
+updatedAt: '2026-09-13T15:06:45.171Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-12T22:59:46.249Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: PLAN-INC-20260912-r15-documentation-single-source

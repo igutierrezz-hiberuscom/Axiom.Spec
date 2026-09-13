@@ -86,9 +86,11 @@ Slots: `increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archiv
 - `components list/show/install/uninstall/restore`: catálogo derivado de `integrations.yaml`; install/uninstall mutan `components-state.json` con checkpoint (uninstall siempre crea uno salvo `--from-checkpoint`).
 - `skills list/refresh/drift`: fuente de verdad es `.opencode/skills-lock.yaml` (generado por el adapter opencode, read-only desde `axiom skills`); `refresh --recompute-hashes` recalcula `bundleHash` contra `skills-catalog.yaml`.
 
-## Comandos reales sin documentación operativa dedicada
+## Cobertura documental de comandos runtime
 
-`apps/cli/src/commands/` tiene **81 ficheros** (verificado: `ls apps/cli/src/commands/*.ts | wc -l` → 81; de esos, 10 son helpers internos con prefijo `_` — `_adapter-labels.ts`, `_cross-repo-plan.ts`, `_execution-mode.ts`, `_functional-verify.ts`, `_repo-affinity.ts`, `_role-review.ts`, `_shared.ts`, `_spec-scope.ts`, `_tracker-status.ts`, `_worktree-execution.ts` — no comandos invocables por sí mismos). Muy por encima del baseline 2026-07-02 (36). Familias completas que no existían entonces:
+`apps/cli/src/commands/` tiene **81 ficheros** (verificado: `ls apps/cli/src/commands/*.ts | wc -l` → 81; de esos, 10 son helpers internos con prefijo `_` — `_adapter-labels.ts`, `_cross-repo-plan.ts`, `_execution-mode.ts`, `_functional-verify.ts`, `_repo-affinity.ts`, `_role-review.ts`, `_shared.ts`, `_spec-scope.ts`, `_tracker-status.ts`, `_worktree-execution.ts` — no comandos invocables por sí mismos). Muy por encima del baseline 2026-07-02 (36). Las familias registradas por Commander tienen una página correspondiente en `Axiom/docs/cli/`; la cobertura se comprueba desde la ayuda compilada y el test `apps/cli/tests/docs-command-coverage.test.ts` evita que una familia nueva quede sin documentación.
+
+Familias completas que no existían entonces:
 
 - `workspace*` (16 ficheros): `workspace.ts`, `workspace-setup.ts`, `workspace-adopt.ts`, `workspace-adapters.ts`, `workspace-adapter-templates.ts`, `workspace-autoskills.ts`, `workspace-catalog-scaffold.ts`, `workspace-code-intel.ts`, `workspace-config-scaffold.ts`, `workspace-incremental.ts`, `workspace-mcp.ts`, `workspace-process-surfaces.ts`, `workspace-rules.ts`, `workspace-skills.ts`, `workspace-spec-base.ts`, `workspace-worktree-provision.ts`.
 - `app*` / launcher: `app.ts` (abre el launcher como front por defecto, ver más abajo), `app-api.ts`, `app-onboarding.ts`, `app-launcher.ts`, `app-launcher-panels.ts`, `app-launcher-ado.ts`, `app-launcher-telemetry.ts` (panel de telemetría/auditoría read-only, `INC-20260811-acc-032-launcher-telemetry`), `app-plugins.ts`, `app-plugins-azure-devops.ts`.
@@ -97,7 +99,12 @@ Slots: `increment`, `bug`, `plan`, `implementation`, `qa-e2e`, `review`, `archiv
 - Comandos backed por `@axiom/tracker`/`@axiom/tracker-ado`: `_tracker-status.ts`, `external-sync.ts`, además de `app-launcher-ado.ts`.
 - Otros ficheros nuevos desde el baseline: `axiom-adr.ts`, `axiom-decision.ts`, `artifact-metadata-cli.ts`, `bindings.ts`, `bootstrap.ts`, `eject.ts`, `external-sync.ts`, `index-cmd.ts`, `integrate.ts`, `mcp-serve.ts`, `normalize-cmd.ts`, `rollback.ts`, `scaffold.ts`, `state-cmd.ts`, `validate-changes.ts`. `learn.ts` fue retirado por R-12 junto con la captura de lecciones derivadas del audit trail; la memoria general permanece como operación explícita.
 
-Los comandos documentados en el baseline (`init`, `join`, `configure`, `sync`, `start`, `audit`, `doctor`, `upgrade`, `model`, `components`, `skills`) siguen siendo páginas históricas de `docs/cli/`; `tui` ya no forma parte de la superficie registrada. **`axiom app`** abre `${url}/launcher/` por defecto; el viejo operator UI raíz se eliminó y `GET /`/`GET /index.html` redirigen 302 a `/launcher/`. Antes de tratar el comportamiento de cualquier comando como contrato estable, verificar directamente en el código.
+Las páginas del manual runtime en `Axiom/docs/cli/` describen las familias
+registradas, sus opciones y subcomandos, con `tui` conservado solo como
+histórico. **`axiom app`** abre `${url}/launcher/` por defecto; el viejo
+operator UI raíz se eliminó y `GET /`/`GET /index.html` redirigen 302 a
+`/launcher/`. Antes de tratar el comportamiento de cualquier comando como
+contrato estable, verificar directamente en el código.
 
 ## `@axiom/cli-commands` (barrel)
 
@@ -124,6 +131,13 @@ warnings tipados sin cambiar `exitCode: 0` del commit válido. Los comandos
 granulares seleccionan sus owners/targets desde `WORKSPACE_STEP_CATALOG` y
 reportan `created | updated | unchanged | skipped | failed`; repair no habilita
 capacidades ni muta `workspace.json`.
+
+El paso derivado `manual-distribution` usa el writer único `distributeManual`
+para materializar `Axiom/docs/**` en `docs/axiom/` durante `workspace setup` y
+`workspace adopt`; `axiom upgrade` lo invoca tras la migración. El manifest
+registra `sourceHash` y hashes SHA-256 por archivo. Las ediciones locales se
+preservan y se marcan `stale`, con una copia nueva bajo `.stale/`; preview no
+escribe. `sync` y `configure` no ejecutan este paso.
 
 Para Copilot, la superficie general se comparte en
 `.github/copilot-instructions.md`; el writer de

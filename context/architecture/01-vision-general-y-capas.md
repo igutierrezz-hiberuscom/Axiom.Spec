@@ -16,6 +16,11 @@ Axiom es un CLI Node/TypeScript (`axiom`) que coordina, para un proyecto adoptan
 2. **Baseline product-owned de spec** (`axiom.spec/`, minúsculas): contenido versionado que el runtime materializa y consume dentro del repo adoptante — presente en este checkout con `increments/`, `plans/`, `target-axiom-agents/`, `target-axiom-skills/` y `templates/`; la carpeta `_builder/` sigue siendo el único hueco menor relevante de la readiness.
 3. **Runtime del producto** (`apps/` + `packages/`): implementación ejecutable real, sí presente y operativa.
 
+El manual operativo único del runtime vive en `Axiom/docs/**`. El paquete
+`@axiom/document-bootstrap` lo embebe como bundle TypeScript y lo materializa
+en `docs/axiom/` de los proyectos adoptantes; no debe confundirse con el
+material específico de instalación bajo `Axiom.Spec/specs/manuales/`.
+
 La fuente documental canónica del workspace es el repo sibling `Axiom.Spec/` (mayúsculas), cuyo `decisions/` contiene los ADR y decisiones estructurales. `Axiom/axiom.spec/` es una baseline product-owned legítima del runtime dogfoodeado; no es un alias ni una segunda ubicación que deba fusionarse con `Axiom.Spec/` (ADR-0032).
 
 ## Capas por responsabilidad (42 packages + `apps/cli`)

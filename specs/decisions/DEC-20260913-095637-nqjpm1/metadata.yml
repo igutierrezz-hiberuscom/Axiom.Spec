@@ -1,0 +1,24 @@
+id: DEC-20260913-095637-nqjpm1
+kind: decision
+title: D-02 Alcance de verificación documental R-15
+status: proposed
+createdAt: '2026-09-13T09:56:37.166Z'
+updatedAt: '2026-09-13T09:56:45.634Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-13T09:56:37.166Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+rationale: >-
+  El gate calcula el alcance a partir del artefacto cerrado, sus documentos de spec/README/criterios y los paths
+  documentales realmente afectados; no exige revisar todo el repositorio. Si no hay paths documentales afectados, debe
+  declarar alcance vacío de forma explícita.
+links:
+  incrementId: INC-20260912-r15-docs-closure-verification
+  planId: PLAN-INC-20260912-r15-documentation-single-source
+  adrId: null
