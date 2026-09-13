@@ -1,0 +1,45 @@
+{
+  "incrementId": "BUG-20260910-baseline-launcher-execution-mode-parity",
+  "phase": "bug-archive",
+  "status": "success",
+  "timestamp": "2026-09-13T21:00:34.168Z",
+  "documentationReview": {
+    "mode": "warning",
+    "disposition": "warn",
+    "scope": "documents",
+    "documents": [
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/01_Requisitos.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/02_Cambios_Modelo.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/03_Criterios_Aceptacion.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/04_Interacciones_UI.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/context/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      }
+    ],
+    "message": "Documentation review: revisá los documentos antes de endurecer el gate a block. specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/01_Requisitos.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/02_Cambios_Modelo.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/03_Criterios_Aceptacion.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/04_Interacciones_UI.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/context/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-execution-mode-parity/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02)"
+  },
+  "hash": "49011cfc2a7624ea311965873a6cfae4994cb943a0cf094ebfb21890f4998c02"
+}

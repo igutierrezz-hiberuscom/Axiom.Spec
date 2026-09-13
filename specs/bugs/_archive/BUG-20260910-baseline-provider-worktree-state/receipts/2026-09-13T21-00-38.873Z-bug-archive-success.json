@@ -1,0 +1,45 @@
+{
+  "incrementId": "BUG-20260910-baseline-provider-worktree-state",
+  "phase": "bug-archive",
+  "status": "success",
+  "timestamp": "2026-09-13T21:00:38.873Z",
+  "documentationReview": {
+    "mode": "warning",
+    "disposition": "warn",
+    "scope": "documents",
+    "documents": [
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-provider-worktree-state/01_Requisitos.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-provider-worktree-state/02_Cambios_Modelo.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-provider-worktree-state/03_Criterios_Aceptacion.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-provider-worktree-state/04_Interacciones_UI.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-provider-worktree-state/context/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-provider-worktree-state/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      }
+    ],
+    "message": "Documentation review: revisá los documentos antes de endurecer el gate a block. specs/bugs/BUG-20260910-baseline-provider-worktree-state/01_Requisitos.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-provider-worktree-state/02_Cambios_Modelo.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-provider-worktree-state/03_Criterios_Aceptacion.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-provider-worktree-state/04_Interacciones_UI.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-provider-worktree-state/context/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-provider-worktree-state/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02)"
+  },
+  "hash": "ef78dbcd09910adced6bb3152a7352467af45fd516a00cf9b4bd53d5874d2d71"
+}

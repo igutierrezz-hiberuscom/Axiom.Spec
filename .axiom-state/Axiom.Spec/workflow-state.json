@@ -170,20 +170,76 @@
     },
     "bug": {
       "workflowId": "bug",
-      "activeInstanceId": "BUG-20260910-baseline-adoption-e2e-provenance",
-      "instances": {
+      "state": "archived",
+      "instances": {},
+      "archivedInstances": {
+        "BUG-20260910-baseline-acc076-matrix-timeouts": {
+          "workflowId": "bug",
+          "state": "archived",
+          "vars": {
+            "metadataId": "BUG-20260910-baseline-acc076-matrix-timeouts"
+          },
+          "updatedAt": "2026-09-13T21:00:20.527Z"
+        },
         "BUG-20260910-baseline-adoption-e2e-provenance": {
           "workflowId": "bug",
-          "state": "specifying",
+          "state": "archived",
           "vars": {
             "id": "BUG-20260910-baseline-adoption-e2e-provenance",
             "slug": "baseline adoption e2e provenance and eject convergence",
             "metadataId": "BUG-20260910-baseline-adoption-e2e-provenance"
           },
-          "updatedAt": "2026-09-10T11:30:24.820Z"
+          "updatedAt": "2026-09-13T21:00:31.797Z"
+        },
+        "BUG-20260910-baseline-launcher-execution-mode-parity": {
+          "workflowId": "bug",
+          "state": "archived",
+          "vars": {
+            "metadataId": "BUG-20260910-baseline-launcher-execution-mode-parity"
+          },
+          "updatedAt": "2026-09-13T21:00:34.152Z"
+        },
+        "BUG-20260910-baseline-launcher-onboarding-schema": {
+          "workflowId": "bug",
+          "state": "archived",
+          "vars": {
+            "metadataId": "BUG-20260910-baseline-launcher-onboarding-schema"
+          },
+          "updatedAt": "2026-09-13T21:00:36.508Z"
+        },
+        "BUG-20260910-baseline-provider-worktree-state": {
+          "workflowId": "bug",
+          "state": "archived",
+          "vars": {
+            "metadataId": "BUG-20260910-baseline-provider-worktree-state"
+          },
+          "updatedAt": "2026-09-13T21:00:38.855Z"
+        },
+        "BUG-20260910-baseline-validate-changes-scope": {
+          "workflowId": "bug",
+          "state": "archived",
+          "vars": {
+            "metadataId": "BUG-20260910-baseline-validate-changes-scope"
+          },
+          "updatedAt": "2026-09-13T21:00:41.254Z"
+        },
+        "BUG-20260910-baseline-workflow-command-guards": {
+          "workflowId": "bug",
+          "state": "archived",
+          "vars": {
+            "metadataId": "BUG-20260910-baseline-workflow-command-guards"
+          },
+          "updatedAt": "2026-09-13T21:00:43.659Z"
+        },
+        "BUG-20260910-baseline-workspace-setup-adoption-contract": {
+          "workflowId": "bug",
+          "state": "archived",
+          "vars": {
+            "metadataId": "BUG-20260910-baseline-workspace-setup-adoption-contract"
+          },
+          "updatedAt": "2026-09-13T21:00:46.012Z"
         }
-      },
-      "archivedInstances": {}
+      }
     }
   }
 }

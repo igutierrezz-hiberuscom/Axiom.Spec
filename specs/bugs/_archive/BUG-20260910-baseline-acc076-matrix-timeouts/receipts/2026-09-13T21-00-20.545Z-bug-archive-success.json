@@ -1,0 +1,45 @@
+{
+  "incrementId": "BUG-20260910-baseline-acc076-matrix-timeouts",
+  "phase": "bug-archive",
+  "status": "success",
+  "timestamp": "2026-09-13T21:00:20.545Z",
+  "documentationReview": {
+    "mode": "warning",
+    "disposition": "warn",
+    "scope": "documents",
+    "documents": [
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/01_Requisitos.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/02_Cambios_Modelo.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/03_Criterios_Aceptacion.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/04_Interacciones_UI.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/context/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      }
+    ],
+    "message": "Documentation review: revisá los documentos antes de endurecer el gate a block. specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/01_Requisitos.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/02_Cambios_Modelo.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/03_Criterios_Aceptacion.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/04_Interacciones_UI.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/context/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-acc076-matrix-timeouts/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02)"
+  },
+  "hash": "c39b9079841d9db874a00169fb5c88b6f50d78a68c1842ce4e25a1c3ac132eae"
+}

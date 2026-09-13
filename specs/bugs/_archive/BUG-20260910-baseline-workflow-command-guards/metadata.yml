@@ -1,0 +1,18 @@
+id: BUG-20260910-baseline-workflow-command-guards
+kind: bug
+title: baseline workflow command guards infer state and ids
+status: archived
+createdAt: '2026-09-10T11:30:15.847Z'
+updatedAt: '2026-09-13T21:00:43.659Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-10T11:30:15.847Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

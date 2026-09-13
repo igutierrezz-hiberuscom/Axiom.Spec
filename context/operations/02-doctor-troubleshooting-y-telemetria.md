@@ -21,7 +21,7 @@ Familias de checks verificadas (prefijo de check ID entre paréntesis; el prefij
 | toolchain | `TC-004..006` | `toolchain-catalog.yaml`, detección/registro de tools |
 | toolchain versioning | `TC-020..023` | lockfile, compatibilidad de versiones, drift y canales |
 | memory | `TC-007/008/024` | bindings y aislamiento project-scoped; disponibilidad obligatoria del ejecutable Engram |
-| adapters | `TC-009` | los 8 packages activos `@axiom/adapters-<target>` tienen `src/generator.ts` + `dist/index.js` materializados |
+| adapters | `TC-009` | los 8 packages activos `@axiom/adapters-<target>` tienen `src/generator.ts` + `dist/index.js` materializados; distingue `FAIL` (adapter ausente) de `WARN` honesto (presente pero no construido) |
 | skills | `TC-010/012/013` | `skills-catalog.yaml`, lockfile, `bundleHash` |
 | agents | `TC-011` | `axiom.config/agents-catalog.yaml`, cada entry con agent válido |
 | workflow-config | `TC-014/015` | config de workflow/lifecycle |
@@ -73,6 +73,10 @@ Las checks de lockfile **TC-020..TC-023** son project-scoped: TC-020 valida exis
 - Warnings de retención: revisar política espejo en `telemetry-sinks.yaml`.
 
 **`axiom doctor`**: correr con `--json`, corregir primero fallos estructurales, dejar warnings para una segunda pasada.
+
+**Higiene de artefactos compilados (verificado 2026-09-13, R-16)**
+- El gate `apps/cli/tests/artifact-hygiene.test.ts` comprueba que Git no trackee artefactos compilados: nada `.js`/`.d.ts`/`.map` bajo carpetas `src/` ni `dist/` anidados (`packages/adapters/*/dist/`). `.gitignore` cubre ambos patrones (`packages/**/src/**/*.js` etc. y `packages/*/*/dist/`).
+- Estado verificado en el HEAD `a51262a`: los 19 artefactos bajo `src/` están retirados, pero los **148 archivos bajo `packages/adapters/*/dist/` siguen trackeados** pese a que `INC-20260911-r14-build-artifact-hygiene` (ACC-084) registra su desversión; `.gitignore` no afecta archivos ya trackeados. El gate falla por este motivo y es el único fallo de la suite completa (357/358 archivos). Remediación conocida: `git rm -r --cached packages/adapters/*/dist` y commitear (Grupo F de `PLAN-BASELINE-TESTS-20260913.md`, no presente en el HEAD actual).
 
 **Mutaciones de workspace (`setup|adopt`, `repo add`, `role add`)**
 - `AXIOM_STRUCTURAL_*` antes del journal: revisar el path, operación, código de filesystem y causa; `ENOTDIR`, `EACCES` y `EIO` no equivalen a target ausente.

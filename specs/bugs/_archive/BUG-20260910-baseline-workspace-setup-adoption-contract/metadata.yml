@@ -1,0 +1,18 @@
+id: BUG-20260910-baseline-workspace-setup-adoption-contract
+kind: bug
+title: baseline workspace setup adoption and scaffolding contract
+status: archived
+createdAt: '2026-09-10T11:30:14.274Z'
+updatedAt: '2026-09-13T21:00:46.012Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-10T11:30:14.274Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

@@ -1,0 +1,18 @@
+id: BUG-20260910-baseline-validate-changes-scope
+kind: bug
+title: baseline validate changes repo affinity and scope
+status: archived
+createdAt: '2026-09-10T11:30:22.905Z'
+updatedAt: '2026-09-13T21:00:41.254Z'
+externalRefs: []
+origin:
+  source: axiom-native
+managedBy:
+  tool: axiom
+  since: '2026-09-10T11:30:22.905Z'
+lifecycle:
+  state: axiom-native
+exportPolicy:
+  rollbackEligible: true
+links:
+  planId: null

@@ -1,0 +1,45 @@
+{
+  "incrementId": "BUG-20260910-baseline-adoption-e2e-provenance",
+  "phase": "bug-archive",
+  "status": "success",
+  "timestamp": "2026-09-13T21:00:31.814Z",
+  "documentationReview": {
+    "mode": "warning",
+    "disposition": "warn",
+    "scope": "documents",
+    "documents": [
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/01_Requisitos.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/02_Cambios_Modelo.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/03_Criterios_Aceptacion.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/04_Interacciones_UI.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/context/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      }
+    ],
+    "message": "Documentation review: revisá los documentos antes de endurecer el gate a block. specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/01_Requisitos.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/02_Cambios_Modelo.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/03_Criterios_Aceptacion.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/04_Interacciones_UI.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/context/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-adoption-e2e-provenance/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02)"
+  },
+  "hash": "74a65fa2251b87005f052ac426f55dd33aa71675cad399eb0c6a9ef09f34a9c4"
+}

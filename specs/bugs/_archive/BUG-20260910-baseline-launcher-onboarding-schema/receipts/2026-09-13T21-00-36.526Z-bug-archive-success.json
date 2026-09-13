@@ -1,0 +1,45 @@
+{
+  "incrementId": "BUG-20260910-baseline-launcher-onboarding-schema",
+  "phase": "bug-archive",
+  "status": "success",
+  "timestamp": "2026-09-13T21:00:36.526Z",
+  "documentationReview": {
+    "mode": "warning",
+    "disposition": "warn",
+    "scope": "documents",
+    "documents": [
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/01_Requisitos.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/02_Cambios_Modelo.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/03_Criterios_Aceptacion.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/04_Interacciones_UI.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/context/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      },
+      {
+        "document": "specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/README.md",
+        "status": "unreviewed",
+        "reason": "documento del artefacto cerrado entra en alcance por D-02"
+      }
+    ],
+    "message": "Documentation review: revisá los documentos antes de endurecer el gate a block. specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/01_Requisitos.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/02_Cambios_Modelo.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/03_Criterios_Aceptacion.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/04_Interacciones_UI.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/context/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02); specs/bugs/BUG-20260910-baseline-launcher-onboarding-schema/README.md=unreviewed (documento del artefacto cerrado entra en alcance por D-02)"
+  },
+  "hash": "82e9b63fbbcca723935e0c9a3590a9870cb1c8348e7efa701811b7e388a0dd50"
+}
